@@ -13,8 +13,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     })
   })
 
+  const publicPages = ['/login', '/signup']
+
   // Redirect unauthenticated users to login page
-  if (!auth.currentUser && to.path !== '/login') {
+  if (!auth.currentUser && !publicPages.includes(to.path)) {
     return navigateTo('/login')
   }
 
