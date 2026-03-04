@@ -15,8 +15,11 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
   const publicPages = ['/login', '/signup']
 
+  // Check if current path matches any public page (allowing trailing slashes)
+  const isPublicPage = publicPages.some(page => to.path === page || to.path === `${page}/`)
+
   // Redirect unauthenticated users to login page
-  if (!auth.currentUser && !publicPages.includes(to.path)) {
+  if (!auth.currentUser && !isPublicPage) {
     return navigateTo('/login')
   }
 
