@@ -13,7 +13,7 @@
   font-family: $font-family;
   background: $bg-app;
 
-  > div{ 
+  >div {
     width: 100%;
   }
 }
@@ -24,8 +24,9 @@
 .sidebar {
   width: 260px;
   flex-shrink: 0;
-  background: $white;
-  border-right: 1px solid $grey-lighten-2;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-right: 1px solid rgba(255, 255, 255, 0.5);
   display: none;
   flex-direction: column;
   height: 100vh;
@@ -34,7 +35,9 @@
   left: 0;
   z-index: 100;
 
-  @include md { display: flex; }
+  @include md {
+    display: flex;
+  }
 
   &__logo {
     display: flex;
@@ -43,8 +46,16 @@
     border-bottom: 1px solid $grey-lighten-2;
     gap: sp(2);
 
-    .logo-icon { color: $blue-darken-1; font-size: 1.75rem; }
-    .logo-text  { font-size: 1.25rem; font-weight: 900; color: $grey-darken-4; }
+    .logo-icon {
+      color: $blue-darken-1;
+      font-size: 1.75rem;
+    }
+
+    .logo-text {
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: $grey-darken-4;
+    }
   }
 
   &__nav {
@@ -66,10 +77,18 @@
     margin-bottom: sp(1);
     transition: all 0.2s;
 
-    &:hover { background: $grey-lighten-4; }
-    &.is-active { background: $blue-lighten-5; color: $blue-darken-1; }
+    &:hover {
+      background: $grey-lighten-4;
+    }
 
-    .mdi { font-size: 1.25rem; }
+    &.is-active {
+      background: $blue-lighten-5;
+      color: $blue-darken-1;
+    }
+
+    .mdi {
+      font-size: 1.25rem;
+    }
   }
 
   &__footer {
@@ -96,8 +115,20 @@
       flex-direction: column;
       min-width: 0;
 
-      .user-name  { font-size: 0.875rem; font-weight: 700; color: $grey-darken-4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-      .user-tier  { font-size: 0.75rem; font-weight: 700; color: $blue-darken-1; }
+      .user-name {
+        font-size: 0.875rem;
+        font-weight: 700;
+        color: $grey-darken-4;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .user-tier {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: $blue-darken-1;
+      }
     }
   }
 }
@@ -111,8 +142,9 @@
   left: 0;
   right: 0;
   height: 64px;
-  background: $white;
-  border-bottom: 1px solid $grey-lighten-2;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
   z-index: 99;
   display: flex;
   align-items: center;
@@ -128,17 +160,31 @@
     display: flex;
     align-items: center;
     width: 100%;
-    @include md { display: none; }
 
-    .logo-icon { color: $blue-darken-1; font-size: 1.5rem; margin-right: sp(2); }
-    .logo-text  { font-size: 1.0625rem; font-weight: 900; }
+    @include md {
+      display: none;
+    }
+
+    .logo-icon {
+      color: $blue-darken-1;
+      font-size: 1.5rem;
+      margin-right: sp(2);
+    }
+
+    .logo-text {
+      font-size: 1.0625rem;
+      font-weight: 900;
+    }
   }
 
   &__desktop {
     display: none;
     align-items: center;
     gap: sp(3);
-    @include md { display: flex; }
+
+    @include md {
+      display: flex;
+    }
 
     .search-box {
       display: flex;
@@ -149,7 +195,10 @@
       padding: sp(2) sp(4);
       width: 300px;
 
-      .mdi { color: $grey-darken-1; }
+      .mdi {
+        color: $grey-darken-1;
+      }
+
       input {
         border: none;
         background: transparent;
@@ -157,12 +206,17 @@
         font-size: 0.875rem;
         color: $grey-darken-4;
         width: 100%;
-        &::placeholder { color: $grey-darken-1; }
+
+        &::placeholder {
+          color: $grey-darken-1;
+        }
       }
     }
   }
 
-  .spacer { flex: 1; }
+  .spacer {
+    flex: 1;
+  }
 }
 
 // ============================
@@ -172,7 +226,9 @@
   flex: 1;
   padding-top: 64px;
 
-  @include md { margin-left: 260px; }
+  @include md {
+    margin-left: 260px;
+  }
 }
 
 .container {
@@ -180,7 +236,9 @@
   margin: 0 auto;
   padding: sp(4) sp(4) sp(16);
 
-  @include md { padding: sp(8) sp(8) sp(8); }
+  @include md {
+    padding: sp(8) sp(8) sp(8);
+  }
 }
 
 // ============================
@@ -192,13 +250,16 @@
   left: 0;
   right: 0;
   height: 60px;
-  background: $white;
-  border-top: 1px solid $grey-lighten-2;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
   display: flex;
   z-index: 100;
-  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
 
-  @include md { display: none; }
+  @include md {
+    display: none;
+  }
 
   &__item {
     flex: 1;
@@ -207,16 +268,23 @@
     align-items: center;
     justify-content: center;
     gap: 2px;
-    font-size: 0.625rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: $grey-darken-1;
     text-decoration: none;
     transition: color 0.2s;
 
-    .mdi { font-size: 1.375rem; }
+    .mdi {
+      font-size: 1.375rem;
+    }
 
-    &.is-active { color: $blue-darken-1; }
-    &:hover { color: $blue-darken-1; }
+    &.is-active {
+      color: $blue-darken-1;
+    }
+
+    &:hover {
+      color: $blue-darken-1;
+    }
   }
 }
 

@@ -21,8 +21,8 @@
     <!-- 메인 히어로 배너 -->
     <div class="hero-banner mb-10">
       <img
-        src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=2072&auto=format&fit=crop"
-        alt="독서 배너"
+        src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2072&auto=format&fit=crop"
+        alt="우주와 독서 배너"
       />
       <div class="hero-banner__overlay">
         <div class="hero-banner__content">
@@ -196,12 +196,14 @@ const recentActivities = [
 }
 
 .hero-info-card {
-  background: rgba(255,255,255,0.1);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255,255,255,0.3);
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   border-radius: 16px;
   padding: 20px;
   min-width: 250px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
 }
 
 .hero-avatars { display: flex; }
