@@ -113,6 +113,11 @@ const isEditMode = computed(() => !!route.query.edit)
 
 onMounted(async () => {
   if (!authStore.user || authStore.userData?.status !== 'active') { showLoginDialog.value = true; return }
+  
+  if (route.query.category) {
+    formData.value.category = route.query.category
+  }
+
   if (isEditMode.value) {
     loading.value = true
     try {
@@ -126,6 +131,9 @@ onMounted(async () => {
       if (existingPost.attachedBook) attachedBook.value = existingPost.attachedBook
     } catch (err) { alert('게시글을 불러올 수 없습니다.'); router.back() }
     finally { loading.value = false }
+  } else if (route.query.openSearch === 'true' && formData.value.category === '책 리뷰') {
+    // URL에 openSearch=true가 있으면 자동으로 도서 검색 모달 열기
+    showBookSearchModal.value = true
   }
 })
 
