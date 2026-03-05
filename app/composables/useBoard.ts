@@ -7,9 +7,19 @@ import {
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 export const useBoard = () => {
-  const { $firebase } = useNuxtApp()
-  const db = ($firebase as any).firestore
-  const storage = ($firebase as any).storage
+  const nuxtApp = useNuxtApp()
+  
+  const getDb = () => {
+    const fb = nuxtApp.$firebase as any
+    if (!fb) throw new Error('Firebase client-only plugin not loaded yet.')
+    return fb.firestore
+  }
+
+  const getStorage = () => {
+    const fb = nuxtApp.$firebase as any
+    if (!fb) throw new Error('Firebase client-only plugin not loaded yet.')
+    return fb.storage
+  }
   
   const loading = ref(false)
   const error = ref<string | null>(null)
@@ -19,7 +29,7 @@ export const useBoard = () => {
     loading.value = true
     error.value = null
     try {
-      const postsRef = collection(db, 'posts')
+      const postsRef = collection(getDb(), 'posts')
       let q = query(postsRef, orderBy('createdAt', 'desc'))
       
       if (category !== '전체') {
@@ -27,9 +37,9 @@ export const useBoard = () => {
       }
 
       const snapshot = await getDocs(q)
-      const posts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+      const posts = snapshot.docs.map(document => ({
+        id: document.id,
+        ...document.data()
       }))
       return posts
     } catch (err: any) {
@@ -46,7 +56,7 @@ export const useBoard = () => {
     loading.value = true
     error.value = null
     try {
-      const docRef = doc(db, 'posts', id)
+      const docRef = doc(getDb(), 'posts', id)
       const docSnap = await getDoc(docRef)
       if (docSnap.exists()) {
         return { id: docSnap.id, ...docSnap.data() }
@@ -64,7 +74,7 @@ export const useBoard = () => {
   // 2-1. 조회수 1 증가 (상세 페이지 진입 시 호출)
   const incrementViewCount = async (id: string) => {
     try {
-      const docRef = doc(db, 'posts', id)
+      const docRef = doc(getDb(), 'posts', id)
       await updateDoc(docRef, {
         viewCount: increment(1)
       })
@@ -78,7 +88,7 @@ export const useBoard = () => {
     loading.value = true
     error.value = null
     try {
-      const postsRef = collection(db, 'posts')
+      const postsRef = collection(getDb(), 'posts')
       const docRef = await addDoc(postsRef, {
         ...postData,
         viewCount: 0,
@@ -102,7 +112,7 @@ export const useBoard = () => {
     loading.value = true
     error.value = null
     try {
-      const docRef = doc(db, 'posts', id)
+      const docRef = doc(getDb(), 'posts', id)
       await updateDoc(docRef, {
         ...updateData,
         isEdited: true
@@ -122,7 +132,7 @@ export const useBoard = () => {
     loading.value = true
     error.value = null
     try {
-      const docRef = doc(db, 'posts', id)
+      const docRef = doc(getDb(), 'posts', id)
       await deleteDoc(docRef)
       return true
     } catch (err: any) {
@@ -151,7 +161,7 @@ export const useBoard = () => {
       
       // 2. Firebase Storage 업로드 (경로: board_images/timestamp_filename)
       const filename = `board_images/${Date.now()}_${compressedFile.name}`
-      const fileRef = storageRef(storage, filename)
+      const fileRef = storageRef(getStorage(), filename)
       
       const snapshot = await uploadBytes(fileRef, compressedFile)
       const downloadURL = await getDownloadURL(snapshot.ref)
