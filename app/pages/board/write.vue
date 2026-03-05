@@ -1,0 +1,175 @@
+<template>
+  <div class="pa-4 bg-grey-lighten-4 min-vh-100 fade-in">
+    <v-container max-width="900" class="px-0">
+      
+      <!-- 헤더 보드 -->
+      <div class="d-flex align-center justify-space-between mb-4">
+        <v-btn icon="mdi-arrow-left" variant="text" size="small" color="grey-darken-2" @click="router.back()"></v-btn>
+        <h1 class="text-h5 font-weight-black text-grey-darken-4">게시글 작성</h1>
+        <div style="width: 32px"></div> <!-- 중앙 정렬용 여백 -->
+      </div>
+      
+      <v-card class="rounded-xl border bg-white pa-6" elevation="0">
+        
+        <!-- 카테고리 선택 -->
+        <v-select
+          v-model="formData.category"
+          :items="categories"
+          label="카테고리 선택"
+          variant="outlined"
+          color="blue-darken-1"
+          bg-color="grey-lighten-5"
+          class="font-weight-bold mb-4"
+          hide-details
+          rounded="lg"
+        ></v-select>
+
+        <!-- 제목 입력 -->
+        <v-text-field
+          v-model="formData.title"
+          label="제목을 입력하세요 (최대 50자)"
+          variant="outlined"
+          color="blue-darken-1"
+          bg-color="grey-lighten-5"
+          class="font-weight-bold mb-6 text-h6"
+          hide-details
+          rounded="lg"
+          counter
+          maxlength="50"
+        ></v-text-field>
+
+        <!-- 팁탭 에디터 컴포넌트 -->
+        <p class="text-subtitle-2 font-weight-bold mb-2 text-grey-darken-3">내용 작성 (이미지 복사/붙여넣기 가능)</p>
+        <TiptapEditor v-model="formData.content" class="mb-6" />
+
+        <v-alert v-if="errorMsg" type="error" variant="tonal" class="mb-6 rounded-lg font-weight-bold text-caption text-left">
+          {{ errorMsg }}
+        </v-alert>
+
+        <!-- 버튼 영역 -->
+        <div class="d-flex gap-3 justify-end">
+          <v-btn 
+            color="grey-lighten-2" 
+            variant="flat" 
+            size="large" 
+            class="font-weight-bold rounded-lg text-grey-darken-3" 
+            elevation="0" 
+            @click="router.back()"
+            :disabled="loading"
+          >
+            취소
+          </v-btn>
+          <v-btn 
+            color="blue-darken-1" 
+            variant="flat" 
+            size="large" 
+            class="font-weight-bold rounded-lg" 
+            elevation="0" 
+            :loading="loading"
+            @click="handleSubmit"
+          >
+            등록하기
+          </v-btn>
+        </div>
+      </v-card>
+
+    </v-container>
+
+    <!-- 비인가 접근 차단 모달 -->
+    <v-dialog v-model="showLoginDialog" persistent max-width="400">
+      <v-card class="pa-6 rounded-xl text-center border" elevation="0">
+        <v-icon color="orange-darken-2" size="48" class="mb-4">mdi-lock-alert-outline</v-icon>
+        <h3 class="text-h6 font-weight-black mb-2">권한이 없습니다</h3>
+        <p class="text-body-2 text-grey-darken-1 mb-6">게시글 작성은 로그인 후 이용 가능합니다.</p>
+        <div class="d-flex gap-2 justify-center">
+          <v-btn color="grey-darken-2" variant="tonal" class="rounded-lg font-weight-bold" @click="router.push('/')">돌아가기</v-btn>
+          <v-btn color="blue-darken-1" variant="flat" class="rounded-lg font-weight-bold" @click="router.push('/login')">로그인</v-btn>
+        </div>
+      </v-card>
+    </v-dialog>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '~/stores/auth'
+import { useBoard } from '~/composables/useBoard'
+import TiptapEditor from '~/components/TiptapEditor.vue'
+
+const router = useRouter()
+const authStore = useAuthStore()
+const { createPost } = useBoard()
+
+const showLoginDialog = ref(false)
+const loading = ref(false)
+const errorMsg = ref('')
+
+const categories = ['책 리뷰', '자유글', '정보/팁', '건의사항']
+
+const formData = ref({
+  category: '자유글',
+  title: '',
+  content: ''
+})
+
+onMounted(() => {
+  if (!authStore.user || authStore.userData?.status !== 'active') {
+    showLoginDialog.value = true
+  }
+})
+
+// HTML 태그를 제거하고 순수 텍스트만 추출해서 미리보기(contentPreview)용으로 생성
+const extractTextFromHTML = (htmlString) => {
+  const span = document.createElement('span')
+  span.innerHTML = htmlString
+  const text = span.textContent || span.innerText || ''
+  return text.substring(0, 150) + (text.length > 150 ? '...' : '')
+}
+
+const handleSubmit = async () => {
+  errorMsg.value = ''
+  
+  if (!formData.value.title.trim()) {
+    errorMsg.value = '제목을 입력해주세요.'
+    return
+  }
+  
+  if (!formData.value.content || formData.value.content === '<p></p>') {
+    errorMsg.value = '내용을 작성해주세요.'
+    return
+  }
+
+  loading.value = true
+
+  try {
+    const postData = {
+      category: formData.value.category,
+      title: formData.value.title.trim(),
+      content: formData.value.content,
+      contentPreview: extractTextFromHTML(formData.value.content),
+      author: {
+        uid: authStore.user.uid,
+        nickname: authStore.userData.nickname,
+        profileImageId: authStore.userData.profileImageId || 'avatar_bronze_01'
+      }
+    }
+
+    const docId = await createPost(postData)
+    router.replace(`/board`) // 작성 후 목록 혹은 상세페이지로 이동
+  } catch (err) {
+    console.error('Submit error:', err)
+    errorMsg.value = '게시글 등록에 실패했습니다. 다시 시도해주세요.'
+  } finally {
+    loading.value = false
+  }
+}
+</script>
+
+<style scoped>
+.min-vh-100 {
+  min-height: 100vh;
+}
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+</style>
