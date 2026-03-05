@@ -175,8 +175,7 @@ export const useAuthStore = defineStore('auth', {
 
         // 3. 검증 통과 시 재설정 메일 발송
         const actionCodeSettings = {
-          // url: window.location.origin + '/reset-password',
-          url: 'https://gameint2.netlify.app/reset-password', // 배포 기본 주소
+          url: window.location.origin + '/reset-password',
           handleCodeInApp: false
         }
         await sendPasswordResetEmail(auth, email, actionCodeSettings)
