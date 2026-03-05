@@ -10,13 +10,17 @@
 
       <div class="card">
         <div class="card-body">
-          <!-- 카테고리 + 책 찾기 -->
+          <!-- 카테고리 + 책 찾기 + (도서 장르) -->
           <div class="flex gap-3 mb-4">
             <select v-model="formData.category" class="select flex-grow" @change="handleCategoryChange">
               <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
             </select>
+            <select v-if="formData.category === '도서 추천'" v-model="formData.bookGenre" class="select flex-grow">
+              <option value="" disabled>장르를 선택하세요</option>
+              <option v-for="genre in bookGenres" :key="genre" :value="genre">{{ genre }}</option>
+            </select>
             <button
-              v-if="formData.category === '책 리뷰' && !attachedBook"
+              v-if="(formData.category === '책 리뷰' || formData.category === '도서 추천') && !attachedBook"
               class="btn btn--indigo flex items-center gap-2 rounded-sm"
               style="height:52px;padding:0 24px;"
               @click="showBookSearchModal = true"
@@ -107,8 +111,9 @@ const showBookSearchModal = ref(false)
 const attachedBook = ref(null)
 const loading = ref(false)
 const errorMsg = ref('')
-const categories = ['책 리뷰', '자유글', '정보/팁', '건의사항']
-const formData = ref({ category: '자유글', title: '', content: '' })
+const categories = ['도서 추천', '책 리뷰', '자유글', '정보/팁', '건의사항']
+const bookGenres = ['소설', '인문/철학', '자기계발', 'IT과학', '시/에세이', '역사', '예술', '기타']
+const formData = ref({ category: '자유글', bookGenre: '', title: '', content: '' })
 const isEditMode = computed(() => !!route.query.edit)
 
 onMounted(async () => {
@@ -126,12 +131,13 @@ onMounted(async () => {
         alert('수정 권한이 없습니다.'); router.replace('/board'); return
       }
       formData.value.category = existingPost.category
+      formData.value.bookGenre = existingPost.bookGenre || ''
       formData.value.title = existingPost.title
       formData.value.content = existingPost.content
       if (existingPost.attachedBook) attachedBook.value = existingPost.attachedBook
     } catch (err) { alert('게시글을 불러올 수 없습니다.'); router.back() }
     finally { loading.value = false }
-  } else if (route.query.openSearch === 'true' && formData.value.category === '책 리뷰') {
+  } else if (route.query.openSearch === 'true' && (formData.value.category === '책 리뷰' || formData.value.category === '도서 추천')) {
     // URL에 openSearch=true가 있으면 자동으로 도서 검색 모달 열기
     showBookSearchModal.value = true
   }
@@ -144,11 +150,20 @@ const extractTextFromHTML = (htmlString) => {
   return text.substring(0, 150) + (text.length > 150 ? '...' : '')
 }
 const handleBookSelect = (book) => { attachedBook.value = book }
-const handleCategoryChange = (e) => { if (e.target.value !== '책 리뷰') attachedBook.value = null }
+const handleCategoryChange = (e) => { 
+  if (e.target.value !== '책 리뷰' && e.target.value !== '도서 추천') {
+    attachedBook.value = null 
+  }
+  if (e.target.value !== '도서 추천') {
+    formData.value.bookGenre = ''
+  }
+}
 
 const handleSubmit = async () => {
   errorMsg.value = ''
   if (!formData.value.title.trim()) { errorMsg.value = '제목을 입력해주세요.'; return }
+  if (formData.value.category === '도서 추천' && !formData.value.bookGenre) { errorMsg.value = '도서 장르를 선택해주세요.'; return }
+  if ((formData.value.category === '도서 추천' || formData.value.category === '책 리뷰') && !attachedBook.value) { errorMsg.value = '책을 첨부해주세요.'; return }
   if (!formData.value.content || formData.value.content === '<p></p>') { errorMsg.value = '내용을 작성해주세요.'; return }
   loading.value = true
   try {
@@ -156,6 +171,7 @@ const handleSubmit = async () => {
       category: formData.value.category, title: formData.value.title.trim(),
       content: formData.value.content, contentPreview: extractTextFromHTML(formData.value.content),
       attachedBook: attachedBook.value,
+      bookGenre: formData.value.bookGenre || null,
       author: { uid: authStore.user.uid, nickname: authStore.userData.nickname, profileImageId: authStore.userData.profileImageId || 'avatar_bronze_01' }
     }
     if (isEditMode.value) { await updatePost(route.query.edit, postData); router.replace(`/board/${route.query.edit}`) }

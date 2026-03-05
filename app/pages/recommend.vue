@@ -8,7 +8,7 @@
           <h1 class="text-h5 font-black text-grey-dark mb-2">내 인생의 책을 소개합니다 💡</h1>
           <p class="text-body-2 font-medium text-grey-2">월간 주제와 무관하게 자유롭게 책을 추천해주세요.</p>
         </div>
-        <button class="btn btn--primary btn--lg rounded-xl font-bold flex items-center gap-2" @click="router.push('/board/write?category=책 리뷰&openSearch=true')">
+        <button class="btn btn--primary btn--lg rounded-xl font-bold flex items-center gap-2" @click="router.push('/board/write?category=도서 추천&openSearch=true')">
           <i class="mdi mdi-pencil"></i> 새 추천글 쓰기
         </button>
       </div>
@@ -56,7 +56,7 @@
           <div class="rec-book-bg" :style="{ backgroundImage: `url(${post.attachedBook?.thumbnail || 'https://via.placeholder.com/300x400?text=No+Cover'})` }"></div>
           <img :src="post.attachedBook?.thumbnail || 'https://via.placeholder.com/120x170?text=No+Cover'" class="rec-book-fg" alt="책 표지" />
           <span class="chip chip--white-translucent chip--sm position-absolute" style="top:12px;right:12px;z-index:2;">
-            <i class="mdi mdi-tag"></i> {{ post.category }}
+            <i class="mdi mdi-tag"></i> {{ post.bookGenre || post.category }}
           </span>
         </div>
         
@@ -91,19 +91,19 @@ import { getProfileImagePath } from '~/composables/useProfileImages'
 const router = useRouter()
 const { fetchPosts, loading } = useBoard()
 
-const tags = ['전체', '책 리뷰', '소설', '인문/철학', '자기계발', 'IT/과학', '에세이']
+const tags = ['전체', '소설', '인문/철학', '자기계발', 'IT과학', '시/에세이', '역사', '예술', '기타']
 const recommendTag = ref('전체')
 const posts = ref([])
 
 onMounted(async () => {
-  const allPosts = await fetchPosts()
-  // 도서 기록이 첨부된 게시글만 필터링
+  const allPosts = await fetchPosts('도서 추천')
+  // 모든 도서 추천 게시글은 원칙적으로 책이 첨부되어야 하지만 방어용 필터링 유지
   posts.value = allPosts.filter(p => p.attachedBook)
 })
 
 const filteredPosts = computed(() => {
   if (recommendTag.value === '전체') return posts.value
-  return posts.value.filter(p => p.category === recommendTag.value)
+  return posts.value.filter(p => p.bookGenre === recommendTag.value)
 })
 </script>
 
