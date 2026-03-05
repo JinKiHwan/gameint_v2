@@ -302,8 +302,57 @@
           >{{ tab.label }}</button>
         </div>
 
-        <!-- 탭 패널: 참여 현황 -->
+        <!-- 탭 패널: 수 -->
         <div v-if="activeTab === 'members'">
+          <!-- Phase 2: 공통도서 + 당쳊자 자율유 특집 표시 -->
+          <template v-if="cycle.phase === 'phase2_reading'">
+            <div class="mt-4 mb-4">
+              <h3 class="text-h6 font-black text-grey-dark">📚 2회차 공통 도서</h3>
+            </div>
+            <!-- 공통 돈 -->
+            <div v-if="cycle.commonBook" class="phase2-book-featured mb-4">
+              <div class="phase2-book-badge">👑 이달의 공통 돈</div>
+              <img v-if="cycle.commonBook.thumbnail" :src="cycle.commonBook.thumbnail" class="phase2-book-thumb" alt="표지" />
+              <div class="phase2-book-info">
+                <div class="text-subtitle-1 font-black text-grey-dark">{{ cycle.commonBook.title }}</div>
+                <div class="text-caption text-grey-2 mt-1">{{ cycle.commonBook.authors?.join(', ') }}</div>
+                <div class="text-caption text-grey-2">{{ cycle.commonBook.publisher }}</div>
+                <div class="text-caption font-bold mt-2" style="color:#1E88E5;">
+                  추체인: @{{ recommenderNickname }}
+                </div>
+              </div>
+            </div>
+            <!-- 당쳊자 자율유 -->
+            <template v-if="participants.find(p => p.uid === cycle.commonBookRecommenderUid)">
+              <div class="mt-2 mb-3">
+                <h3 class="text-h6 font-black text-grey-dark">🌟 선정왕 자율 돈</h3>
+              </div>
+              <template v-if="participants.find(p => p.uid === cycle.commonBookRecommenderUid)?.freeBookRegistered">
+                <div class="phase2-book-featured">
+                  <div class="phase2-book-badge" style="background:#E8F5E9;color:#2E7D32;">✍️ 자율 돈</div>
+                  <img
+                    v-if="participants.find(p => p.uid === cycle.commonBookRecommenderUid)?.book?.thumbnail"
+                    :src="participants.find(p => p.uid === cycle.commonBookRecommenderUid).book.thumbnail"
+                    class="phase2-book-thumb"
+                    alt="표지"
+                  />
+                  <div class="phase2-book-info">
+                    <div class="text-subtitle-1 font-black text-grey-dark">{{ participants.find(p => p.uid === cycle.commonBookRecommenderUid)?.book?.title }}</div>
+                    <div class="text-caption text-grey-2 mt-1">{{ participants.find(p => p.uid === cycle.commonBookRecommenderUid)?.book?.authors?.join(', ') }}</div>
+                  </div>
+                </div>
+              </template>
+              <div v-else class="card">
+                <div class="card-body text-center text-grey-2 font-bold pa-6">
+                  <i class="mdi mdi-book-clock-outline" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
+                  추체인 @{{ recommenderNickname }}님이 자율 돈를 선정 중입니다...
+                </div>
+              </div>
+            </template>
+          </template>
+
+          <!-- Phase 1 / Voting: 기존 참여자 그리드 -->
+          <template v-else>
           <div class="flex justify-between items-center mb-4 mt-4">
             <h3 class="text-h6 font-black text-grey-dark">📚 참여 현황 <span class="text-blue-dark">{{ participants.length }}명</span></h3>
           </div>
@@ -353,6 +402,7 @@
               </div>
             </div>
           </div>
+          </template> <!-- end v-else (Phase 1 grid) -->
         </div>
 
         <!-- 탭 패널: 리뷰 모아보기 -->
@@ -362,7 +412,7 @@
             <div v-if="avgRating > 0" class="flex items-center gap-2">
               <StarRating :modelValue="avgRating" :readonly="true" />
               <span class="text-subtitle-1 font-black text-amber">{{ avgRating.toFixed(1) }}</span>
-              <span class="text-caption text-grey-2">({{ reviews.length }}명)</span>
+              <span class="text-caption text-grey-2">({{ currentPhaseReviews.length }}명)</span>
             </div>
           </div>
           <div v-if="loadingReviews" class="text-center pa-8"><div class="spinner" style="margin:0 auto;"></div></div>
@@ -586,9 +636,17 @@ const myVote = ref(null)
 const reviews = ref([])
 const loadingReviews = ref(false)
 const myReview = ref(null)
+
+// 현재 페이즈의 리뷰만 필터
+const currentPhaseKey = computed(() =>
+  cycle.value?.phase === 'phase2_reading' ? 'phase2' : 'phase1'
+)
+const currentPhaseReviews = computed(() =>
+  reviews.value.filter(r => r.phase === currentPhaseKey.value)
+)
 const avgRating = computed(() => {
-  if (!reviews.value.length) return 0
-  return reviews.value.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.value.length
+  if (!currentPhaseReviews.value.length) return 0
+  return currentPhaseReviews.value.reduce((sum, r) => sum + (r.rating || 0), 0) / currentPhaseReviews.value.length
 })
 
 // ── 모임 기록 ─────────────────────────────────────────────────────
@@ -1078,6 +1136,43 @@ const formatDate = (dateValue) => {
   &:hover { background: rgba(0,0,0,0.03); }
 }
 .chip--green { background: #E8F5E9 !important; color: #2E7D32 !important; }
+
+/* ── Phase 2 \uacf5\ud1b5\ub3c8 \ud2b9\uc9d1 \uce74\ub4dc ──────────────── */
+.phase2-book-featured {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+  background: linear-gradient(135deg, #E3F2FD, #F3E5F5);
+  border-radius: 16px;
+  border: 2px solid rgba(30,136,229,0.15);
+}
+.phase2-book-badge {
+  position: absolute;
+  top: -10px;
+  left: 16px;
+  background: #FFB300;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 2px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.phase2-book-thumb {
+  width: 80px;
+  height: 115px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+.phase2-book-info {
+  flex: 1;
+  min-width: 0;
+}
+
 
 
 </style>
