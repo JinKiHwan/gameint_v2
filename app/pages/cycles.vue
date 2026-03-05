@@ -235,11 +235,11 @@
             </button>
           </div>
 
-          <!-- 마스터: 리빰 미작성자 현황 -->
+          <!-- 마스터: 리뷰 미작성자 현황 -->
           <div v-if="cycle.phase !== 'closed' && participants.length > 0" class="mt-4 pt-4" style="border-top: 1px solid rgba(0,0,0,0.08);">
             <div class="text-caption font-bold text-grey-2 mb-2">
               <i class="mdi mdi-clipboard-check-outline"></i>
-              리빷 작성 현황 ({{ cycle.phase === 'phase2_reading' ? '2회차' : '1회차' }})
+              리뷰 작성 현황 ({{ cycle.phase === 'phase2_reading' ? '2회차' : '1회차' }})
             </div>
             <div class="master-review-progress">
               <div
@@ -257,7 +257,7 @@
                   class="chip chip--sm"
                   :class="reviews.some(r => r.authorUid === p.uid && r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1')) ? 'chip--green' : 'chip--grey'"
                 >
-                  {{ reviews.some(r => r.authorUid === p.uid && r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1')) ? '리빷 완료 ✓' : '리빷 없음' }}
+                  {{ reviews.some(r => r.authorUid === p.uid && r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1')) ? '리뷰 완료 ✓' : '리뷰 없음' }}
                 </span>
               </div>
             </div>
@@ -372,7 +372,11 @@
             </div>
           </div>
           <div v-else class="flex flex-col gap-3">
-            <div v-for="r in reviews" :key="r.id" class="card">
+            <div
+              v-for="r in reviews.filter(r => r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1'))"
+              :key="r.id"
+              class="card"
+            >
               <div class="card-body">
                 <div class="flex items-center gap-3 mb-3">
                   <div class="avatar avatar--sm">
