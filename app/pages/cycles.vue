@@ -159,9 +159,12 @@
         </div>
       </div>
 
-      <!-- ② 추천인 특권 (Phase 2에서 내 책이 공통도서로 선정됐을 때) -->
+      <!-- 효천인 특권:
+           - Phase 2에서 내 책이 공통도서로 선정되었을 때
+           - 아직 자유도서를 등록하지 않은 상태(freeBookRegistered가 없음)
+        -->
       <div
-        v-if="cycle?.phase === 'phase2_reading' && cycle.commonBookRecommenderUid === authStore.user?.uid"
+        v-if="cycle?.phase === 'phase2_reading' && cycle.commonBookRecommenderUid === authStore.user?.uid && !myParticipation?.freeBookRegistered"
         class="card mb-6 recommender-privilege"
       >
         <div class="card-body action-box">
@@ -230,6 +233,34 @@
               <i :class="meetings.length > 0 ? 'mdi mdi-pencil-box-outline' : 'mdi mdi-pencil-box'"></i>
               {{ meetings.length > 0 ? '모임 기록 수정' : '모임 기록 작성' }}
             </button>
+          </div>
+
+          <!-- 마스터: 리빰 미작성자 현황 -->
+          <div v-if="cycle.phase !== 'closed' && participants.length > 0" class="mt-4 pt-4" style="border-top: 1px solid rgba(0,0,0,0.08);">
+            <div class="text-caption font-bold text-grey-2 mb-2">
+              <i class="mdi mdi-clipboard-check-outline"></i>
+              리빷 작성 현황 ({{ cycle.phase === 'phase2_reading' ? '2회차' : '1회차' }})
+            </div>
+            <div class="master-review-progress">
+              <div
+                v-for="p in participants"
+                :key="p.uid"
+                class="master-review-item"
+              >
+                <div class="avatar avatar--xs">
+                  <img :src="getProfileImagePath(p.profileImageId)" alt="프로필" />
+                </div>
+                <span class="text-caption font-medium text-grey-dark flex-1">
+                  {{ p.nickname }}
+                </span>
+                <span
+                  class="chip chip--sm"
+                  :class="reviews.some(r => r.authorUid === p.uid && r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1')) ? 'chip--green' : 'chip--grey'"
+                >
+                  {{ reviews.some(r => r.authorUid === p.uid && r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1')) ? '리빷 완료 ✓' : '리빷 없음' }}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -586,7 +617,9 @@ const loadTabData = async () => {
   if (authStore.user) {
     myParticipation.value = await fetchMyParticipation(cycle.value.id)
     myVote.value = await fetchMyVote(cycle.value.id)
-    myReview.value = await fetchMyReview(cycle.value.id)
+    // 페이즈별 리빰 조회: Phase 1에서의 리빰가 Phase 2에 다가오지 않도록
+    const currentPhaseKey = cycle.value.phase === 'phase2_reading' ? 'phase2' : 'phase1'
+    myReview.value = await fetchMyReview(cycle.value.id, currentPhaseKey)
   }
 }
 
@@ -686,6 +719,9 @@ const handleRegisterBook = async () => {
   registerError.value = ''
   registeringBook.value = true
   try {
+    const isFreeBook = cycle.value?.phase === 'phase2_reading'
+      && cycle.value?.commonBookRecommenderUid === authStore.user?.uid
+
     await registerBook(cycle.value.id, {
       title: selectedBook.value.title,
       authors: selectedBook.value.authors,
@@ -693,7 +729,8 @@ const handleRegisterBook = async () => {
       thumbnail: selectedBook.value.thumbnail,
       url: selectedBook.value.url,
       isbn: selectedBook.value.isbn,
-    }, bookRegisterReason.value.trim())
+    }, bookRegisterReason.value.trim(), isFreeBook)
+
     bookRegisterModal.value = false
     myParticipation.value = await fetchMyParticipation(cycle.value.id)
     participants.value = await fetchParticipants(cycle.value.id)
@@ -1021,5 +1058,22 @@ const formatDate = (dateValue) => {
   font-size: 1.2rem;
 }
 .w-100 { width: 100%; }
+
+/* ── 마스터 리뷰 현황 ──────────────────────── */
+.master-review-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.master-review-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  border-radius: 8px;
+  &:hover { background: rgba(0,0,0,0.03); }
+}
+.chip--green { background: #E8F5E9 !important; color: #2E7D32 !important; }
+
 
 </style>

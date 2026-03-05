@@ -76,10 +76,10 @@ export const useCycle = () => {
     }
 
     // ── 책 등록 ───────────────────────────────────────────────────────
-    const registerBook = async (cycleId: string, book: any, reason: string) => {
+    const registerBook = async (cycleId: string, book: any, reason: string, isFreeBook = false) => {
         const uid = authStore.user?.uid
         if (!uid) throw new Error('로그인이 필요합니다.')
-        const data = {
+        const data: any = {
             uid,
             nickname: authStore.userData?.nickname || '익명',
             profileImageId: authStore.userData?.profileImageId || 'avatar_bronze_01',
@@ -89,6 +89,8 @@ export const useCycle = () => {
             hasReviewed: false,
             createdAt: serverTimestamp(),
         }
+        // 자유도서 등록 시 플래그 저장 (재등록 방지)
+        if (isFreeBook) data.freeBookRegistered = true
         // uid를 문서 ID로 사용 (1인 1책)
         await setDoc(doc(getDb(), 'cycles', cycleId, 'participants', uid), data)
     }
@@ -172,13 +174,19 @@ export const useCycle = () => {
         } catch { }
     }
 
-    // ── 내 리뷰 조회 ──────────────────────────────────────────────────
-    const fetchMyReview = async (cycleId: string) => {
+    // ── 내 리뷰 조회 (페이즈별) ──────────────────────────────────────
+    const fetchMyReview = async (cycleId: string, phase?: string) => {
         const uid = authStore.user?.uid
         if (!uid) return null
         try {
             const snapshot = await getDocs(collection(getDb(), 'cycles', cycleId, 'reviews'))
-            const myReview = snapshot.docs.find(d => d.data().authorUid === uid)
+            // phase가 전달된 경우 해당 페이즈의 리뷰만 찾음
+            const myReview = snapshot.docs.find(d => {
+                const data = d.data()
+                if (data.authorUid !== uid) return false
+                if (phase) return data.phase === phase
+                return true
+            })
             return myReview ? { id: myReview.id, ...myReview.data() } : null
         } catch {
             return null
