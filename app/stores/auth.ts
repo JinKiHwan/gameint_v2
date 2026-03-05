@@ -88,7 +88,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // 회원가입: Firebase Auth 사용자 생성 및 Firestore 보류(pending) 상태 저장
-    async signup(payload: { username: string, email: string, password: string, realName: string, nickname: string }) {
+    async signup(payload: { username: string, email: string, password: string, realName: string, nickname: string, securityQuestion: string, securityAnswer: string }) {
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
       const firestore = ($firebase as any).firestore
@@ -111,6 +111,8 @@ export const useAuthStore = defineStore('auth', {
           dnaTitle: '아직 데이터가 부족해요',
           role: 'user', 
           status: 'pending', 
+          securityQuestion: payload.securityQuestion,
+          securityAnswer: payload.securityAnswer,
           createdAt: serverTimestamp()
         }
         
@@ -128,8 +130,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // 4. 아이디 찾기 (이메일 + 실명 교차검증)
-    async findIdByEmail(realName: string, email: string) {
+    // 4. 아이디 찾기 (이메일 + 가입시 등록한 질문/답변 교차검증)
+    async findIdByEmail(securityQuestion: string, securityAnswer: string, email: string) {
       const { $firebase } = useNuxtApp()
       const firestore = ($firebase as any).firestore
       
@@ -142,15 +144,15 @@ export const useAuthStore = defineStore('auth', {
       }
 
       const userDoc = querySnapshot.docs[0].data()
-      if (userDoc.realName !== realName) {
-        throw new Error('입력하신 본명과 이메일 정보가 일치하지 않습니다.')
+      if (userDoc.securityQuestion !== securityQuestion || userDoc.securityAnswer !== securityAnswer) {
+        throw new Error('입력하신 답변이 가입 정보와 일치하지 않습니다.')
       }
       
       return userDoc.username
     },
 
-    // 5. 비밀번호 재설정 이메일 발송 (아이디+이메일+실명 3중 교차검증)
-    async sendPasswordReset(username: string, realName: string, email: string) {
+    // 5. 비밀번호 재설정 이메일 발송 (아이디+이메일+질문/답변 교차검증)
+    async sendPasswordReset(username: string, securityQuestion: string, securityAnswer: string, email: string) {
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
       const firestore = ($firebase as any).firestore
@@ -165,10 +167,10 @@ export const useAuthStore = defineStore('auth', {
           throw new Error('해당 이메일로 가입된 계정이 없습니다.')
         }
 
-        // 2. 입력한 아이디/본명과 DB 교차 검증
+        // 2. 입력한 인증 정보와 DB 교차 검증
         const userDoc = querySnapshot.docs[0].data()
-        if (userDoc.username !== username || userDoc.realName !== realName) {
-          throw new Error('입력하신 정보(아이디 또는 본명)가 계정 정보와 일치하지 않습니다.')
+        if (userDoc.username !== username || userDoc.securityQuestion !== securityQuestion || userDoc.securityAnswer !== securityAnswer) {
+          throw new Error('입력하신 정보가 계정 정보와 일치하지 않습니다.')
         }
 
         // 3. 검증 통과 시 재설정 메일 발송

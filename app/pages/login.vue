@@ -99,9 +99,21 @@
             @keyup.enter="handleFind"
           ></v-text-field>
 
+          <v-select
+            v-model="findSecurityQuestion"
+            :items="securityQuestions"
+            label="본인 확인 질문"
+            variant="outlined"
+            color="blue-darken-1"
+            bg-color="grey-lighten-5"
+            class="mb-3 font-weight-bold"
+            rounded="lg"
+            hide-details
+          ></v-select>
+
           <v-text-field
-            v-model="findRealName"
-            label="본명 (실명)"
+            v-model="findSecurityAnswer"
+            label="질문에 대한 답변"
             variant="outlined"
             color="blue-darken-1"
             bg-color="grey-lighten-5"
@@ -189,8 +201,18 @@ const findModal = ref(false)
 const findType = ref('id') // 'id' or 'pw'
 const findEmailPrefix = ref('')
 const findPwId = ref('') // 비밀번호 찾기 시 교차검증용 아이디
-const findRealName = ref('') // 실명 교차검증용
+const findSecurityQuestion = ref('')
+const findSecurityAnswer = ref('')
 const emailDomain = '@gamedex.co.kr'
+
+const securityQuestions = [
+  '가장 기억에 남는 추억의 장소는?',
+  '자신이 가장 존경하는 인물은?',
+  '가장 좋아하는 색깔은?',
+  '어릴 적 장래희망은?',
+  '가장 좋아하는 음식은?',
+  '나의 가장 큰 보물 1호는?'
+]
 const fullFindEmail = computed(() => `${findEmailPrefix.value}${emailDomain}`)
 const findLoading = ref(false)
 const findErrorMsg = ref('')
@@ -200,7 +222,8 @@ const openFindModal = (type) => {
   findType.value = type
   findEmailPrefix.value = ''
   findPwId.value = ''
-  findRealName.value = ''
+  findSecurityQuestion.value = ''
+  findSecurityAnswer.value = ''
   findErrorMsg.value = ''
   findSuccessMsg.value = ''
   findModal.value = true
@@ -212,9 +235,9 @@ const handleFind = async () => {
     findSuccessMsg.value = ''
     return
   }
-  
-  if (!findRealName.value.trim()) {
-    findErrorMsg.value = '본명(실명)을 입력해주세요.'
+
+  if (!findSecurityQuestion.value || !findSecurityAnswer.value.trim()) {
+    findErrorMsg.value = '확인 질문과 답변을 모두 입력해주세요.'
     findSuccessMsg.value = ''
     return
   }
@@ -231,10 +254,10 @@ const handleFind = async () => {
 
   try {
     if (findType.value === 'id') {
-      const foundUsername = await authStore.findIdByEmail(findRealName.value.trim(), fullFindEmail.value)
+      const foundUsername = await authStore.findIdByEmail(findSecurityQuestion.value, findSecurityAnswer.value.trim(), fullFindEmail.value)
       findSuccessMsg.value = `회원님의 아이디는 [ ${foundUsername} ] 입니다.`
     } else {
-      await authStore.sendPasswordReset(findPwId.value.trim(), findRealName.value.trim(), fullFindEmail.value)
+      await authStore.sendPasswordReset(findPwId.value.trim(), findSecurityQuestion.value, findSecurityAnswer.value.trim(), fullFindEmail.value)
       findSuccessMsg.value = '비밀번호 재설정 메일이 발송되었습니다. 스팸함을 확인해주세요!'
     }
   } catch (error) {

@@ -22,8 +22,19 @@ const formData = ref({
   password: '',
   passwordConfirm: '',
   nickname: '',
-  realName: ''
+  realName: '',
+  securityQuestion: '',
+  securityAnswer: ''
 })
+
+const securityQuestions = [
+  '가장 기억에 남는 추억의 장소는?',
+  '자신이 가장 존경하는 인물은?',
+  '가장 좋아하는 색깔은?',
+  '어릴 적 장래희망은?',
+  '가장 좋아하는 음식은?',
+  '나의 가장 큰 보물 1호는?'
+]
 
 const emailDomain = '@gamedex.co.kr'
 const fullEmail = computed(() => `${formData.value.emailPrefix}${emailDomain}`)
@@ -80,8 +91,8 @@ const handleSignup = async () => {
     return
   }
   
-  if (!formData.value.nickname.trim() || !formData.value.realName.trim()) {
-    errorMsg.value = '닉네임과 실명을 모두 입력해주세요.'
+  if (!formData.value.password || !formData.value.passwordConfirm || !formData.value.realName || !formData.value.nickname || !formData.value.securityQuestion || !formData.value.securityAnswer) {
+    errorMsg.value = '모든 필드(비밀번호, 본명, 닉네임, 질문/답변)를 입력해주세요.'
     return
   }
 
@@ -92,7 +103,9 @@ const handleSignup = async () => {
       email: fullEmail.value,
       password: formData.value.password,
       nickname: formData.value.nickname,
-      realName: formData.value.realName
+      realName: formData.value.realName,
+      securityQuestion: formData.value.securityQuestion,
+      securityAnswer: formData.value.securityAnswer
     }
     
     await authStore.signup(payload)
@@ -219,6 +232,27 @@ const handleSignup = async () => {
         <v-text-field
           v-model="formData.nickname"
           label="활동 닉네임"
+          variant="outlined"
+          color="blue-darken-1"
+          class="mb-6 font-weight-bold bg-grey-lighten-5 rounded-lg"
+          hide-details
+        ></v-text-field>
+
+        <p class="text-subtitle-2 font-weight-bold mb-4 text-grey-darken-3">계정 찾기 질문/답변 (비밀번호 분실 시 필요)</p>
+
+        <v-select
+          v-model="formData.securityQuestion"
+          :items="securityQuestions"
+          label="본인 확인 질문 선택"
+          variant="outlined"
+          color="blue-darken-1"
+          class="mb-2 font-weight-bold bg-grey-lighten-5 rounded-lg"
+          hide-details
+        ></v-select>
+
+        <v-text-field
+          v-model="formData.securityAnswer"
+          label="질문에 대한 답변"
           variant="outlined"
           color="blue-darken-1"
           class="mb-6 font-weight-bold bg-grey-lighten-5 rounded-lg"
