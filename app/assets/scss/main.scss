@@ -24,9 +24,9 @@
 .sidebar {
   width: 260px;
   flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  border-right: 1px solid rgba(255, 255, 255, 0.5);
+  background: $bg-app;
+  border: none;
+  box-shadow: 4px 0 16px rgba(184, 185, 190, 0.4);
   display: none;
   flex-direction: column;
   height: 100vh;
@@ -142,9 +142,9 @@
   left: 0;
   right: 0;
   height: 64px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  background: $bg-app;
+  border: none;
+  box-shadow: 0 4px 16px rgba(184, 185, 190, 0.2);
   z-index: 99;
   display: flex;
   align-items: center;
@@ -250,12 +250,9 @@
   left: 0;
   right: 0;
   height: 60px;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 255, 255, 0.5);
-  display: flex;
-  z-index: 100;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  background: $bg-app;
+  border: none;
+  box-shadow: 0 -4px 16px rgba(184, 185, 190, 0.2);
 
   @include md {
     display: none;
