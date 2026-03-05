@@ -26,7 +26,8 @@ export const useBoard = () => {
       let q = query(postsRef, orderBy('createdAt', 'desc'))
       
       if (category !== '전체') {
-        q = query(postsRef, where('category', '==', category), orderBy('createdAt', 'desc'))
+        // 복합 인덱스(Composite Index) 에러를 피하기 위해 where만 사용하고, 정렬은 클라이언트에서 수행
+        q = query(postsRef, where('category', '==', category))
       }
 
       const snapshot = await getDocs(q)
@@ -34,6 +35,15 @@ export const useBoard = () => {
         id: document.id,
         ...document.data()
       }))
+      
+      if (category !== '전체') {
+        posts.sort((a: any, b: any) => {
+          const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime()
+          const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime()
+          return dateB - dateA
+        })
+      }
+      
       return posts
     } catch (err: any) {
       console.error('Fetch posts error:', err)
