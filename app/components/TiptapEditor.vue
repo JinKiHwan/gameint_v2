@@ -130,6 +130,9 @@ const fileInput = ref(null)
 const uploading = ref(false)
 const { uploadImage } = useBoard()
 
+// 무한 루프 방지용 플래그
+let isUpdateFromEditor = false
+
 // Tiptap 에디터 초기화
 onMounted(() => {
   editor.value = new Editor({
@@ -143,6 +146,7 @@ onMounted(() => {
     ],
     onUpdate: ({ editor }) => {
       // 에디터 내용이 변경될 때 v-model 업데이트
+      isUpdateFromEditor = true
       emit('update:modelValue', editor.getHTML())
     },
     // 에디터에 파일을 직접 드래그앤드랍 했을 때 가로채는 핸들러
@@ -182,6 +186,11 @@ onBeforeUnmount(() => {
 
 // 부모 컴포넌트에서 강제로 값을 변경할 때 에디터 내용 동기화
 watch(() => props.modelValue, (value) => {
+  if (isUpdateFromEditor) {
+    isUpdateFromEditor = false
+    return
+  }
+  
   const isSame = editor.value && editor.value.getHTML() === value
   if (!isSame && editor.value) {
     editor.value.commands.setContent(value, false)
