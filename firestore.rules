@@ -2,14 +2,43 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow anyone to read users (needed for ID duplicate check and login email mapping)
-    // Allow users to create their own profile during signup
-    // Allow users to update their own profile, or master to update any
+    
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    function isMaster() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'master';
+    }
+    function isActiveUser() {
+      return isAuthenticated() && 
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.status == 'active';
+    }
+
     match /users/{userId} {
+      // Allow anyone to read users (needed for ID duplicate check)
       allow read: if true;
-      allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && (request.auth.uid == userId || resource.data.role == 'master');
-      allow delete: if request.auth != null && (request.auth.uid == userId || resource.data.role == 'master');
+      
+      // Allow users to create their own profile during signup, forcing default role/status
+      allow create: if isAuthenticated() && request.auth.uid == userId
+                    && request.resource.data.role == 'user'
+                    && request.resource.data.status == 'pending';
+                    
+      // Allow users to update their own profile (but prevent tampering with status/role)
+      // OR allow master to update any field
+      allow update: if (isAuthenticated() && request.auth.uid == userId 
+                        && request.resource.data.role == resource.data.role 
+                        && request.resource.data.status == resource.data.status)
+                    || isMaster();
+                    
+      // Only masters can delete users
+      allow delete: if isMaster();
+    }
+    
+    // Future collections like posts will use isActiveUser()
+    match /{document=**} {
+      allow read, write: if false; 
     }
   }
 }

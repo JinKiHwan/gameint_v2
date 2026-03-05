@@ -2,10 +2,7 @@ import { defineStore } from 'pinia'
 import { 
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
-  sendSignInLinkToEmail,
-  isSignInWithEmailLink,
-  signInWithEmailLink,
-  updatePassword,
+  createUserWithEmailAndPassword,
   signOut,
   type User 
 } from 'firebase/auth'
@@ -87,60 +84,22 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // 1. 회원가입용 인증 메일 발송
-    async sendSignupEmailLink(email: string) {
-      const { $firebase } = useNuxtApp()
-      const auth = ($firebase as any).auth
-
-      const actionCodeSettings = {
-        url: window.location.origin + '/signup',
-        handleCodeInApp: true,
-      }
-
-      await sendSignInLinkToEmail(auth, email, actionCodeSettings)
-      window.localStorage.setItem('emailForSignIn', email)
-    },
-
-    // 2. 이메일 링크 인증 처리
-    async verifyEmailLink(url: string) {
-      const { $firebase } = useNuxtApp()
-      const auth = ($firebase as any).auth
-
-      if (isSignInWithEmailLink(auth, url)) {
-        let email = window.localStorage.getItem('emailForSignIn')
-        if (!email) {
-          throw new Error('브라우저 환경이 변경되어 이메일 정보가 유실되었습니다. 동일한 이메일을 다시 입력해주세요.')
-        }
-        
-        try {
-          const result = await signInWithEmailLink(auth, email, url)
-          window.localStorage.removeItem('emailForSignIn')
-          return result.user
-        } catch (error) {
-           throw new Error('만료되었거나 유효하지 않은 인증 링크입니다.')
-        }
-      }
-      return null
-    },
-
-    // 3. 비밀번호 업데이트 및 Firestore 계정 생성
-    async signup(payload: { username: string, password: string, realName: string, nickname: string }) {
+    // 회원가입: Firebase Auth 사용자 생성 및 Firestore 보류(pending) 상태 저장
+    async signup(payload: { username: string, email: string, password: string, realName: string, nickname: string }) {
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
       const firestore = ($firebase as any).firestore
-      
-      const user = auth.currentUser
-      if (!user) throw new Error('이메일 인증이 완료되지 않았습니다.')
 
       try {
-        // 비밀번호 설정 (초기 회원가입이므로)
-        await updatePassword(user, payload.password)
+        // 1. Firebase Auth에 이메일/비밀번호로 사용자 생성
+        const userCredential = await createUserWithEmailAndPassword(auth, payload.email, payload.password)
+        const user = userCredential.user
 
-        // Firestore에 회원 정보 저장
+        // 2. Firestore에 회원 정보 저장 (status: pending 부여)
         const newUserData = {
           uid: user.uid,
           username: payload.username,
-          email: user.email,
+          email: payload.email,
           realName: payload.realName,
           nickname: payload.nickname,
           profileImageId: 'avatar_bronze_01', 
@@ -159,6 +118,9 @@ export const useAuthStore = defineStore('auth', {
         return true
       } catch (error: any) {
         console.error('Signup profile error:', error)
+        if (error.code === 'auth/email-already-in-use') {
+           throw new Error('이미 가입된 회사 이메일입니다.')
+        }
         throw new Error('회원가입 처리 중 오류가 발생했습니다.')
       }
     },

@@ -108,10 +108,32 @@
         <span>{{ item.label }}</span>
       </v-btn>
     </v-bottom-navigation>
+
+    <!-- 승인 대기 유저 안내 화면 -->
+    <v-dialog 
+      :model-value="isPendingUser" 
+      persistent 
+      fullscreen
+      transition="fade-transition"
+    >
+      <v-card class="d-flex align-center justify-center bg-grey-lighten-4">
+        <v-card class="pa-8 rounded-xl text-center border" elevation="0" max-width="400" width="100%">
+          <v-icon color="orange-darken-2" size="64" class="mb-4">mdi-account-clock-outline</v-icon>
+          <h2 class="text-h5 font-weight-black text-grey-darken-4 mb-3">승인 대기 중입니다</h2>
+          <p class="text-subtitle-2 text-grey-darken-2 mb-8 line-height-relaxed">
+            마스터(관리자)의 가입 승인이 완료되면<br/>모든 서비스를 정상적으로 이용하실 수 있습니다.
+          </p>
+          <v-btn color="grey-darken-3" variant="tonal" class="font-weight-bold px-8 rounded-lg" size="large" @click="handleLogout">
+            로그아웃
+          </v-btn>
+        </v-card>
+      </v-card>
+    </v-dialog>
   </v-app>
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
 const authStore = useAuthStore()
@@ -119,6 +141,11 @@ const authStore = useAuthStore()
 const handleLogout = async () => {
   await authStore.logout()
 }
+
+// status가 pending인 유저 감지
+const isPendingUser = computed(() => {
+  return authStore.user && authStore.userData?.status === 'pending'
+})
 
 const navigation = [
   { id: 'home', label: '홈', icon: 'mdi-home-variant', to: '/' },
