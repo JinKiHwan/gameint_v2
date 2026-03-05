@@ -108,8 +108,6 @@ export const useAuthStore = defineStore('auth', {
           profileImageId: 'avatar_bronze_01', 
           tier: 'Bronze',
           exp: 0,
-          level: 1,
-          unlockedAvatars: ['avatar_bronze_01'],
           dnaTitle: '아직 데이터가 부족해요',
           role: 'user', 
           status: 'pending', 

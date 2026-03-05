@@ -260,7 +260,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
-import { AVATARS } from '~/constants/avatars'
 
 const route = useRoute()
 const router = useRouter()
@@ -294,12 +293,6 @@ const isLoggedIn = computed(() => {
 const isAuthor = computed(() => {
   return authStore.user && post.value && post.value.author.uid === authStore.user.uid
 })
-
-const getProfileImageUrl = (profileImageId) => {
-  if (!profileImageId) return AVATARS[0].src
-  const avatar = AVATARS.find(a => a.id === profileImageId)
-  return avatar ? avatar.src : AVATARS[0].src
-}
 
 onMounted(async () => {
   const postId = route.params.id
@@ -463,6 +456,10 @@ const getCategoryColor = (cat) => {
     '건의사항': 'red-darken-2'
   }
   return map[cat] || 'blue-grey'
+}
+
+const getProfileImageUrl = (imageId) => {
+  return `https://api.dicebear.com/7.x/bottts/svg?seed=${imageId}` 
 }
 
 const formatDate = (dateValue) => {

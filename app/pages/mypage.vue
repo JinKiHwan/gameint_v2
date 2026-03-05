@@ -9,8 +9,7 @@
     <v-card class="rounded-xl pa-6 border bg-white mb-6" elevation="0">
       <div v-if="authStore.userData" class="d-flex flex-column flex-sm-row align-center align-sm-start text-center text-sm-left">
         <v-avatar color="blue-lighten-5" size="100" class="border flex-shrink-0 mb-4 mb-sm-0 mr-sm-6">
-          <v-img v-if="currentAvatarSrc" :src="currentAvatarSrc" alt="Profile Image"></v-img>
-          <span v-else class="text-h4 font-weight-black text-blue-darken-1">{{ authStore.userData.nickname?.charAt(0) || 'U' }}</span>
+          <span class="text-h4 font-weight-black text-blue-darken-1">{{ authStore.userData.nickname?.charAt(0) || 'U' }}</span>
         </v-avatar>
         
         <div class="flex-grow-1 w-100">
@@ -38,10 +37,10 @@
           
           <div class="mt-8">
             <div class="d-flex justify-space-between text-caption font-weight-bold mb-2">
-              <span class="text-grey-darken-2">다음 등급(Lv.{{ authStore.userData.level + 1 }})까지 경험치</span>
-              <span class="text-blue-darken-1">{{ authStore.userData.exp }} / {{ nextLevelExp }} EXP</span>
+              <span class="text-grey-darken-2">다음 등급까지 경험치</span>
+              <span class="text-blue-darken-1">{{ authStore.userData.exp }} / 150 EXP</span>
             </div>
-            <v-progress-linear :model-value="(authStore.userData.exp / nextLevelExp) * 100" color="blue-darken-1" height="8" rounded></v-progress-linear>
+            <v-progress-linear :model-value="(authStore.userData.exp / 150) * 100" color="blue-darken-1" height="8" rounded></v-progress-linear>
           </div>
         </div>
       </div>
@@ -118,40 +117,12 @@
         </v-card-title>
         
         <v-card-text class="px-4 py-2">
-          <!-- 아바타 선택 영역 -->
-          <div class="mb-4">
-            <div class="text-caption font-weight-bold text-grey-darken-2 mb-2">대표 아바타 선택</div>
-            <v-row dense>
-              <v-col v-for="avatar in AVATARS" :key="avatar.id" cols="4" class="text-center">
-                <v-card 
-                  :disabled="authStore.userData.level < avatar.requiredLevel"
-                  :class="['pa-2 cursor-pointer transition-fast', editProfileImageId === avatar.id ? 'border-primary bg-blue-lighten-5' : 'border border-transparent bg-transparent']"
-                  flat
-                  @click="editProfileImageId = avatar.id"
-                >
-                  <v-avatar size="60" :color="authStore.userData.level < avatar.requiredLevel ? 'grey-lighten-3' : 'white'" class="border mb-1" :style="authStore.userData.level < avatar.requiredLevel ? 'filter: grayscale(100%); opacity: 0.5;' : ''">
-                    <v-img :src="avatar.src"></v-img>
-                    <v-overlay :model-value="authStore.userData.level < avatar.requiredLevel" contained class="align-center justify-center">
-                      <v-icon color="grey-darken-3" size="small">mdi-lock</v-icon>
-                    </v-overlay>
-                  </v-avatar>
-                  <div class="text-caption font-weight-bold text-truncate" :class="authStore.userData.level < avatar.requiredLevel ? 'text-grey' : 'text-grey-darken-4'">
-                    {{ avatar.name }}
-                  </div>
-                  <div v-if="authStore.userData.level < avatar.requiredLevel" class="text-xs text-grey" style="font-size: 10px;">
-                    Lv.{{ avatar.requiredLevel }} 해금
-                  </div>
-                </v-card>
-              </v-col>
-            </v-row>
-          </div>
-
           <v-text-field
             v-model="editNickname"
             label="새로운 닉네임"
             variant="outlined"
             density="comfortable"
-            prepend-inner-icon="mdi-account-edit"
+            prepend-inner-icon="mdi-account"
             bg-color="grey-lighten-5"
             class="mb-2"
             hide-details
@@ -178,22 +149,10 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useAuthStore } from '~/stores/auth'
-import { AVATARS } from '~/constants/avatars'
 
 const authStore = useAuthStore()
-
-const currentAvatarSrc = computed(() => {
-  if (!authStore.userData?.profileImageId) return null
-  const avatar = AVATARS.find(a => a.id === authStore.userData.profileImageId)
-  return avatar ? avatar.src : null
-})
-
-const nextLevelExp = computed(() => {
-  const currentLevel = authStore.userData?.level || 1
-  return currentLevel * 100 // 간단한 경험치 공식: [현재레벨 * 100] EXP 필요
-})
 
 const handleLogout = async () => {
   await authStore.logout()
@@ -243,14 +202,12 @@ const handleChangePassword = async () => {
 // 프로필 수정 상태
 const changeProfileModal = ref(false)
 const editNickname = ref('')
-const editProfileImageId = ref('')
 const profileLoading = ref(false)
 const profileErrorMsg = ref('')
 const profileSuccessMsg = ref('')
 
 const openProfileModal = () => {
   editNickname.value = authStore.userData?.nickname || ''
-  editProfileImageId.value = authStore.userData?.profileImageId || 'avatar_bronze_01'
   profileErrorMsg.value = ''
   profileSuccessMsg.value = ''
   changeProfileModal.value = true
@@ -263,10 +220,7 @@ const handleUpdateProfile = async () => {
   }
 
   // 변경사항이 없을경우 스킵
-  const isNicknameChanged = editNickname.value.trim() !== authStore.userData.nickname
-  const isAvatarChanged = editProfileImageId.value !== authStore.userData.profileImageId
-
-  if (!isNicknameChanged && !isAvatarChanged) {
+  if (editNickname.value.trim() === authStore.userData.nickname) {
     changeProfileModal.value = false
     return
   }
@@ -275,15 +229,7 @@ const handleUpdateProfile = async () => {
   profileErrorMsg.value = ''
   
   try {
-    // 1. 닉네임 업데이트
-    if (isNicknameChanged) {
-      await authStore.updateNickname(editNickname.value.trim())
-    }
-    // 2. 아바타 업데이트
-    if (isAvatarChanged) {
-      await authStore.updateProfileImage(editProfileImageId.value)
-    }
-    
+    await authStore.updateNickname(editNickname.value.trim())
     profileSuccessMsg.value = '프로필이 성공적으로 변경되었습니다.'
     setTimeout(() => {
       changeProfileModal.value = false
