@@ -108,6 +108,7 @@ export const useAuthStore = defineStore('auth', {
           profileImageId: 'avatar_bronze_01', 
           tier: 'Bronze',
           exp: 0,
+          level: 1,
           dnaTitle: '아직 데이터가 부족해요',
           role: 'user', 
           status: 'pending', 
@@ -231,6 +232,25 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async updateNickname(newNickname: string) {
+      if (!this.user || !this.userData) throw new Error('로그아웃 상태입니다.')
+
+      const { $firebase } = useNuxtApp()
+      const firestore = ($firebase as any).firestore
+
+      try {
+        const userDocRef = doc(firestore, 'users', this.user.uid)
+        await setDoc(userDocRef, { nickname: newNickname }, { merge: true })
+        
+        // 로컬 상태 업데이트
+        this.userData.nickname = newNickname
+        return true
+      } catch (error: any) {
+        console.error('Update nickname error:', error)
+        throw new Error('닉네임 변경 중 오류가 발생했습니다.')
+      }
+    },
+
     async logout() {
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
@@ -245,3 +265,4 @@ export const useAuthStore = defineStore('auth', {
     }
   }
 })
+//force HMR test

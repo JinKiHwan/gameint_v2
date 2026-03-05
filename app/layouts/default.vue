@@ -2,10 +2,11 @@
   <v-app class="bg-grey-lighten-4">
     <!-- 사이드바 (데스크톱) -->
     <v-navigation-drawer 
+      app
       permanent 
       elevation="0" 
       border="end"
-      class="d-none d-md-flex bg-white"
+      class="d-none d-md-flex bg-white h-screen"
       width="260"
     >
       <div class="d-flex align-center px-6 py-4 border-b">
@@ -152,7 +153,7 @@ const navigation = [
   { id: 'monthly', label: '월간 주제', icon: 'mdi-book-open-page-variant', to: '/cycles' },
   { id: 'recommend', label: '도서 추천', icon: 'mdi-bookshelf', to: '/recommend' },
   { id: 'board', label: '통합 게시판', icon: 'mdi-forum', to: '/board' },
-  // { id: 'ranking', label: '랭킹', icon: 'mdi-trophy', to: '/ranking' },
+  { id: 'ranking', label: '랭킹', icon: 'mdi-trophy', to: '/ranking' },
   { id: 'mypage', label: '마이페이지', icon: 'mdi-account', to: '/mypage' },
 ]
 </script>

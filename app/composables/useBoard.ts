@@ -54,6 +54,37 @@ export const useBoard = () => {
     }
   }
 
+  // 1-1. 특정 유저의 게시글 목록조회 (마이페이지용)
+  const fetchUserPosts = async (userId: string) => {
+    loading.value = true
+    error.value = null
+    try {
+      const postsRef = collection(getDb(), 'posts')
+      const q = query(postsRef, where('author.uid', '==', userId))
+      const snapshot = await getDocs(q)
+      
+      const posts = snapshot.docs.map(document => ({
+        id: document.id,
+        ...document.data()
+      }))
+      
+      // 최신순 정렬 (클라이언트 사이즈)
+      posts.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime()
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime()
+        return dateB - dateA
+      })
+      
+      return posts
+    } catch (err: any) {
+      console.error('Fetch user posts error:', err)
+      error.value = '게시글을 불러오는데 실패했습니다.'
+      return []
+    } finally {
+      loading.value = false
+    }
+  }
+
   // 2. 특정 게시글 상세 조회 (+조회수 증가 로직은 여기서 수행하지 않거나 분리)
   const fetchPost = async (id: string) => {
     loading.value = true
@@ -312,6 +343,7 @@ export const useBoard = () => {
     deleteComment,
     checkUserLiked,
     toggleLike,
-    fetchHotPosts
+    fetchHotPosts,
+    fetchUserPosts
   }
 }

@@ -17,8 +17,11 @@
             <div>
               <div class="d-flex align-center justify-center justify-sm-start mb-1">
                 <h2 class="text-h5 font-weight-black text-grey-darken-4 mr-2">{{ authStore.userData.nickname }}</h2>
-                <v-chip size="small" color="amber-darken-2" bg-color="amber-lighten-5" variant="flat" class="font-weight-bold border-amber-lighten-4 border">
-                  <v-icon start size="x-small">mdi-trophy</v-icon>{{ authStore.userData.tier }}
+                <v-chip size="small" :color="getTierColor(authStore.userData.tier)" :bg-color="getTierBgColor(authStore.userData.tier)" variant="flat" class="font-weight-bold" :class="`border-${getTierColor(authStore.userData.tier)}-lighten-4 border`">
+                  <v-icon start size="x-small">mdi-trophy</v-icon>{{ authStore.userData.tier || 'Bronze' }}
+                </v-chip>
+                <v-chip class="ml-2 font-weight-bold bg-grey-lighten-4 border" size="small" variant="flat" text-color="grey-darken-3">
+                  Lv.{{ authStore.userData.level || 1 }}
                 </v-chip>
               </div>
               <p class="text-caption font-weight-medium text-grey-darken-1 d-flex align-center justify-center justify-sm-start mt-1">
@@ -35,18 +38,63 @@
             </div>
           </div>
           
-          <div class="mt-8">
+          <div class="mt-6 bg-grey-lighten-5 pa-4 rounded-xl border">
             <div class="d-flex justify-space-between text-caption font-weight-bold mb-2">
               <span class="text-grey-darken-2">다음 등급까지 경험치</span>
-              <span class="text-blue-darken-1">{{ authStore.userData.exp }} / 150 EXP</span>
+              <span class="text-blue-darken-1">{{ authStore.userData.exp || 0 }} / {{ (authStore.userData.level || 1) * 100 }} EXP</span>
             </div>
-            <v-progress-linear :model-value="(authStore.userData.exp / 150) * 100" color="blue-darken-1" height="8" rounded></v-progress-linear>
+            <v-progress-linear 
+              :model-value="((authStore.userData.exp || 0) / ((authStore.userData.level || 1) * 100)) * 100" 
+              color="blue-darken-1" 
+              height="8" 
+              rounded
+              striped
+            ></v-progress-linear>
           </div>
         </div>
       </div>
       <div v-else class="text-center pa-10">
         <v-progress-circular indeterminate color="blue-darken-1"></v-progress-circular>
         <p class="text-caption font-weight-bold text-grey-darken-1 mt-4">프로필 정보를 불러오는 중입니다...</p>
+      </div>
+    </v-card>
+
+    <!-- 내가 쓴 글 영역 -->
+    <v-card class="rounded-xl pa-6 border bg-white mb-6" elevation="0">
+      <h3 class="text-h6 font-weight-black text-grey-darken-4 mb-4 d-flex align-center">
+        <v-icon color="blue-darken-1" class="mr-2">mdi-pencil-box-multiple</v-icon> 내가 쓴 글
+      </h3>
+      
+      <v-skeleton-loader v-if="loadingPosts" type="list-item-two-line" v-for="i in 3" :key="`skel-${i}`" class="border-b"></v-skeleton-loader>
+      
+      <div v-else-if="userPosts.length === 0" class="text-center pa-8">
+        <v-icon size="48" color="grey-lighten-1" class="mb-3">mdi-note-off-outline</v-icon>
+        <p class="text-body-2 font-weight-bold text-grey-darken-2">아직 작성한 글이 없습니다.</p>
+      </div>
+
+      <v-list v-else lines="two" class="pa-0">
+        <template v-for="(post, index) in userPosts.slice(0, 5)" :key="post.id">
+          <v-list-item class="pa-3 hover-bg-grey cursor-pointer rounded-lg" @click="router.push(`/board/${post.id}`)">
+            <template v-slot:prepend>
+               <v-chip size="x-small" :color="getCategoryColor(post.category)" variant="flat" class="font-weight-bold px-2 mr-3 rounded">
+                {{ post.category }}
+              </v-chip>
+            </template>
+            <v-list-item-title class="text-subtitle-2 font-weight-bold text-grey-darken-4 text-truncate mb-1">{{ post.title }}</v-list-item-title>
+            <v-list-item-subtitle class="text-caption font-weight-medium text-grey-darken-1">
+              <span>{{ formatDate(post.createdAt) }}</span>
+              <span class="mx-2">·</span>
+              <span class="d-inline-flex align-center"><v-icon size="x-small" class="mr-1">mdi-eye</v-icon> {{ post.viewCount || 0 }}</span>
+              <span class="mx-2">·</span>
+              <span class="d-inline-flex align-center text-red-lighten-1"><v-icon size="x-small" class="mr-1">mdi-heart</v-icon> {{ post.likeCount || 0 }}</span>
+            </v-list-item-subtitle>
+          </v-list-item>
+          <v-divider v-if="index !== Math.min(userPosts.length, 5) - 1" class="my-1"></v-divider>
+        </template>
+      </v-list>
+      
+      <div v-if="userPosts.length > 5" class="text-center mt-4 pt-2 border-t">
+        <v-btn variant="text" color="grey-darken-2" class="font-weight-bold" size="small" append-icon="mdi-chevron-down">더보기</v-btn>
       </div>
     </v-card>
 
@@ -149,10 +197,90 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
+import { useBoard } from '~/composables/useBoard'
 
+const router = useRouter()
 const authStore = useAuthStore()
+const { fetchUserPosts } = useBoard()
+
+const userPosts = ref([])
+const loadingPosts = ref(false)
+
+const loadUserPosts = async () => {
+  if (authStore.userData?.uid) {
+    loadingPosts.value = true
+    userPosts.value = await fetchUserPosts(authStore.userData.uid)
+    loadingPosts.value = false
+  }
+}
+
+onMounted(() => {
+  if (authStore.userData?.uid) {
+    loadUserPosts()
+  } else {
+    const stopWatch = watch(() => authStore.userData, (newVal) => {
+      if (newVal?.uid) {
+        loadUserPosts()
+        stopWatch()
+      }
+    }, { immediate: true })
+  }
+})
+
+const getCategoryColor = (cat) => {
+  const map = {
+    '책 리뷰': 'green-darken-1',
+    '자유글': 'grey-darken-2',
+    '정보/팁': 'orange-darken-2',
+    '건의사항': 'red-darken-2'
+  }
+  return map[cat] || 'blue-grey'
+}
+
+const getTierColor = (tier) => {
+  if (!tier) return 'amber-darken-2';
+  const t = tier.toLowerCase();
+  if (t.includes('bronze')) return 'amber-darken-4';
+  if (t.includes('silver')) return 'grey-darken-1';
+  if (t.includes('gold')) return 'amber-darken-2';
+  if (t.includes('platinum')) return 'teal-darken-2';
+  if (t.includes('diamond')) return 'blue-darken-2';
+  return 'amber-darken-2';
+}
+
+const getTierBgColor = (tier) => {
+  if (!tier) return 'amber-lighten-5';
+  const t = tier.toLowerCase();
+  if (t.includes('bronze')) return 'amber-lighten-5';
+  if (t.includes('silver')) return 'grey-lighten-4';
+  if (t.includes('gold')) return 'amber-lighten-5';
+  if (t.includes('platinum')) return 'teal-lighten-5';
+  if (t.includes('diamond')) return 'blue-lighten-5';
+  return 'amber-lighten-5';
+}
+
+const formatDate = (dateValue) => {
+  if (!dateValue) return ''
+  const date = dateValue.toDate ? dateValue.toDate() : new Date(dateValue)
+  const now = new Date()
+  const diffMs = now - date
+  const diffSec = Math.floor(diffMs / 1000)
+  const diffMin = Math.floor(diffSec / 60)
+  const diffHour = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHour / 24)
+
+  if (diffSec < 60) return '방금 전'
+  if (diffMin < 60) return `${diffMin}분 전`
+  if (diffHour < 24) return `${diffHour}시간 전`
+  if (diffDay < 7) return `${diffDay}일 전`
+  
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}.${m}.${d}`
+}
 
 const handleLogout = async () => {
   await authStore.logout()
