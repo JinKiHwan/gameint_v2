@@ -1,161 +1,118 @@
 <template>
-  <div class="d-flex align-center justify-center min-vh-100 bg-grey-lighten-4 pa-4 fade-in">
-    <v-card class="rounded-xl pa-8 bg-white border" elevation="0" max-width="400" width="100%">
+  <div class="auth-page fade-in">
+    <div class="card auth-card">
       <div class="mb-8 text-center">
-        <h1 class="text-h4 font-weight-black text-blue-darken-1 mb-2">Game Int</h1>
-        <p class="text-body-2 font-weight-medium text-grey-darken-1">사내 독서동호회 전용 공간입니다.</p>
+        <h1 class="text-h4 font-black text-blue-dark mb-2">Game Int</h1>
+        <p class="text-body-2 font-medium text-grey-2">사내 독서동호회 전용 공간입니다.</p>
       </div>
 
-      <v-alert v-if="errorMsg" type="error" variant="tonal" class="mb-6 text-caption font-weight-bold text-left rounded-lg" closable @click:close="errorMsg = ''">
-        {{ errorMsg }}
-      </v-alert>
+      <div v-if="errorMsg" class="alert alert--error mb-6">
+        <i class="mdi mdi-alert-circle-outline"></i>
+        <span>{{ errorMsg }}</span>
+        <button class="alert__close" @click="errorMsg = ''"><i class="mdi mdi-close"></i></button>
+      </div>
 
-      <v-form @submit.prevent="handleLogin">
-        <v-text-field
-          v-model="username"
-          label="사내 커스텀 아이디"
-          variant="outlined"
-          color="blue-darken-1"
-          bg-color="grey-lighten-5"
-          prepend-inner-icon="mdi-account-outline"
-          class="mb-2 font-weight-bold"
-          rounded="lg"
-          hide-details
-        ></v-text-field>
+      <form @submit.prevent="handleLogin">
+        <div class="field mb-3">
+          <div class="input-with-suffix">
+            <i class="mdi mdi-account-outline" style="padding: 0 8px 0 16px; color: #757575;"></i>
+            <input v-model="username" type="text" placeholder="사내 커스텀 아이디" />
+          </div>
+        </div>
 
-        <v-text-field
-          v-model="password"
-          label="비밀번호"
-          type="password"
-          variant="outlined"
-          color="blue-darken-1"
-          bg-color="grey-lighten-5"
-          prepend-inner-icon="mdi-lock-outline"
-          class="mb-6 font-weight-bold"
-          rounded="lg"
-          hide-details
-        ></v-text-field>
+        <div class="field mb-6">
+          <div class="input-with-suffix">
+            <i class="mdi mdi-lock-outline" style="padding: 0 8px 0 16px; color: #757575;"></i>
+            <input v-model="password" type="password" placeholder="비밀번호" />
+          </div>
+        </div>
 
-        <v-btn
+        <button
           type="submit"
-          :loading="loading"
-          color="blue-darken-1"
-          size="x-large"
-          block
-          class="font-weight-bold rounded-xl mb-6"
-          elevation="0"
+          class="btn btn--primary btn--xl btn--block font-black mb-6 rounded-xl"
+          :class="{ 'is-loading': loading }"
+          :disabled="loading"
         >
           로그인
-        </v-btn>
-      </v-form>
+        </button>
+      </form>
 
-      <div class="text-center text-caption font-weight-bold text-grey-darken-1 mb-2">
-        아직 계정이 없으신가요? 
-        <v-btn href="/signup" variant="text" size="small" color="blue-darken-1" class="font-weight-black pa-0 ml-1" ripple="false">회원가입</v-btn>
+      <div class="text-center text-caption font-bold text-grey-2 mb-2">
+        아직 계정이 없으신가요?
+        <a href="/signup" class="text-primary font-black ml-1">회원가입</a>
       </div>
-      
+
       <div class="text-center">
-        <v-btn variant="text" size="small" color="grey-darken-1" class="font-weight-bold px-2" @click="openFindModal('id')">아이디 찾기</v-btn>
-        <span class="text-grey-lighten-1">|</span>
-        <v-btn variant="text" size="small" color="grey-darken-1" class="font-weight-bold px-2" @click="openFindModal('pw')">비밀번호 찾기</v-btn>
+        <button class="btn btn--text" style="font-size: 0.8rem;" @click="openFindModal('id')">아이디 찾기</button>
+        <span class="text-grey-1" style="margin: 0 4px;">|</span>
+        <button class="btn btn--text" style="font-size: 0.8rem;" @click="openFindModal('pw')">비밀번호 찾기</button>
       </div>
-    </v-card>
+    </div>
 
     <!-- 아이디/비밀번호 찾기 모달 -->
-    <v-dialog v-model="findModal" max-width="400">
-      <v-card class="rounded-xl pa-2">
-        <v-card-title class="d-flex justify-space-between align-center pt-4 px-4 pb-2">
-          <span class="text-h6 font-weight-black text-grey-darken-4">
-            {{ findType === 'id' ? '아이디 찾기' : '비밀번호 재설정' }}
-          </span>
-          <v-btn icon="mdi-close" variant="text" size="small" @click="findModal = false"></v-btn>
-        </v-card-title>
-        
-        <v-card-text class="px-4 pb-4">
-          <p class="text-caption font-weight-medium text-grey-darken-2 mb-4">
+    <div v-if="findModal" class="modal-overlay" @click.self="findModal = false">
+      <div class="modal">
+        <div class="modal__header">
+          <span class="modal__title">{{ findType === 'id' ? '아이디 찾기' : '비밀번호 재설정' }}</span>
+          <button class="btn btn--text btn--icon" @click="findModal = false"><i class="mdi mdi-close"></i></button>
+        </div>
+        <div class="modal__body">
+          <p class="text-caption font-medium text-grey-2 mb-4">
             가입 시 등록한 <strong>본명</strong>과 <strong>사내 이메일(@gamedex.co.kr)</strong>을 입력해주세요.
             <template v-if="findType === 'pw'">
               <br/>안전한 비밀번호 재설정을 위해 <strong>아이디</strong>도 함께 입력해주세요.
             </template>
           </p>
 
-          <v-alert v-if="findErrorMsg" type="error" variant="tonal" class="mb-4 text-caption font-weight-bold rounded-lg" closable @click:close="findErrorMsg = ''">
-            {{ findErrorMsg }}
-          </v-alert>
-          <v-alert v-if="findSuccessMsg" type="success" variant="tonal" class="mb-4 text-caption font-weight-bold rounded-lg" closable @click:close="findSuccessMsg = ''">
-            {{ findSuccessMsg }}
-          </v-alert>
+          <div v-if="findErrorMsg" class="alert alert--error mb-4">
+            <i class="mdi mdi-alert-circle-outline"></i>
+            <span>{{ findErrorMsg }}</span>
+            <button class="alert__close" @click="findErrorMsg = ''"><i class="mdi mdi-close"></i></button>
+          </div>
+          <div v-if="findSuccessMsg" class="alert alert--success mb-4">
+            <i class="mdi mdi-check-circle-outline"></i>
+            <span>{{ findSuccessMsg }}</span>
+          </div>
 
-          <v-text-field
-            v-if="findType === 'pw'"
-            v-model="findPwId"
-            label="사내 커스텀 아이디"
-            variant="outlined"
-            color="blue-darken-1"
-            bg-color="grey-lighten-5"
-            class="mb-3 font-weight-bold"
-            rounded="lg"
-            hide-details
-            @keyup.enter="handleFind"
-          ></v-text-field>
+          <div v-if="findType === 'pw'" class="field mb-3">
+            <input v-model="findPwId" class="input" type="text" placeholder="사내 커스텀 아이디" @keyup.enter="handleFind" />
+          </div>
 
-          <v-select
-            v-model="findSecurityQuestion"
-            :items="securityQuestions"
-            label="본인 확인 질문"
-            variant="outlined"
-            color="blue-darken-1"
-            bg-color="grey-lighten-5"
-            class="mb-3 font-weight-bold"
-            rounded="lg"
-            hide-details
-          ></v-select>
+          <div class="field mb-3">
+            <select v-model="findSecurityQuestion" class="select">
+              <option value="" disabled>본인 확인 질문 선택</option>
+              <option v-for="q in securityQuestions" :key="q" :value="q">{{ q }}</option>
+            </select>
+          </div>
 
-          <v-text-field
-            v-model="findSecurityAnswer"
-            label="질문에 대한 답변"
-            variant="outlined"
-            color="blue-darken-1"
-            bg-color="grey-lighten-5"
-            class="mb-3 font-weight-bold"
-            rounded="lg"
-            hide-details
-            @keyup.enter="handleFind"
-          ></v-text-field>
+          <div class="field mb-3">
+            <input v-model="findSecurityAnswer" class="input" type="text" placeholder="질문에 대한 답변" @keyup.enter="handleFind" />
+          </div>
 
-          <v-text-field
-            v-model="findEmailPrefix"
-            :suffix="emailDomain"
-            label="이메일 주소"
-            variant="outlined"
-            color="blue-darken-1"
-            bg-color="grey-lighten-5"
-            class="mb-2 font-weight-bold"
-            rounded="lg"
-            hide-details
-            @keyup.enter="handleFind"
-          ></v-text-field>
-          
-          <div v-if="findType === 'pw'" class="text-caption text-error font-weight-bold mt-2 mb-2 px-1">
+          <div class="field mb-3">
+            <div class="input-with-suffix">
+              <input v-model="findEmailPrefix" type="text" placeholder="이메일 주소" @keyup.enter="handleFind" />
+              <span class="suffix">{{ emailDomain }}</span>
+            </div>
+          </div>
+
+          <div v-if="findType === 'pw'" class="text-caption text-red font-bold mt-2 px-1">
             * 발송된 메일이 보이지 않는다면 스팸/정크 메일함을 꼭 확인해 주세요!
           </div>
-        </v-card-text>
-        
-        <v-card-actions class="px-4 pb-4 pt-0">
-          <v-btn
-            :loading="findLoading"
-            color="grey-darken-4"
-            variant="flat"
-            block
-            size="large"
-            class="font-weight-bold rounded-lg"
+        </div>
+
+        <div class="modal__footer">
+          <button
+            class="btn btn--dark btn--lg btn--block font-black rounded-lg"
+            :class="{ 'is-loading': findLoading }"
+            :disabled="findLoading"
             @click="handleFind"
           >
             {{ findType === 'id' ? '내 아이디 확인하기' : '재설정 링크 받기' }}
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -164,14 +121,11 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 
-definePageMeta({
-  layout: 'empty'
-})
+definePageMeta({ layout: 'empty' })
 
 const authStore = useAuthStore()
 const router = useRouter()
 
-// 로그인 상태
 const username = ref('')
 const password = ref('')
 const loading = ref(false)
@@ -182,10 +136,8 @@ const handleLogin = async () => {
     errorMsg.value = '아이디와 비밀번호를 모두 입력해주세요.'
     return
   }
-
   loading.value = true
   errorMsg.value = ''
-  
   try {
     await authStore.login(username.value, password.value)
     router.push('/')
@@ -196,22 +148,16 @@ const handleLogin = async () => {
   }
 }
 
-// 아이디/비밀번호 찾기 상태
 const findModal = ref(false)
-const findType = ref('id') // 'id' or 'pw'
+const findType = ref('id')
 const findEmailPrefix = ref('')
-const findPwId = ref('') // 비밀번호 찾기 시 교차검증용 아이디
+const findPwId = ref('')
 const findSecurityQuestion = ref('')
 const findSecurityAnswer = ref('')
 const emailDomain = '@gamedex.co.kr'
-
 const securityQuestions = [
-  '가장 기억에 남는 추억의 장소는?',
-  '자신이 가장 존경하는 인물은?',
-  '가장 좋아하는 색깔은?',
-  '어릴 적 장래희망은?',
-  '가장 좋아하는 음식은?',
-  '나의 가장 큰 보물 1호는?'
+  '가장 기억에 남는 추억의 장소는?', '자신이 가장 존경하는 인물은?', '가장 좋아하는 색깔은?',
+  '어릴 적 장래희망은?', '가장 좋아하는 음식은?', '나의 가장 큰 보물 1호는?'
 ]
 const fullFindEmail = computed(() => `${findEmailPrefix.value}${emailDomain}`)
 const findLoading = ref(false)
@@ -232,26 +178,19 @@ const openFindModal = (type) => {
 const handleFind = async () => {
   if (findType.value === 'pw' && !findPwId.value.trim()) {
     findErrorMsg.value = '아이디를 입력해주세요.'
-    findSuccessMsg.value = ''
     return
   }
-
   if (!findSecurityQuestion.value || !findSecurityAnswer.value.trim()) {
     findErrorMsg.value = '확인 질문과 답변을 모두 입력해주세요.'
-    findSuccessMsg.value = ''
     return
   }
-  
   if (!findEmailPrefix.value.trim()) {
     findErrorMsg.value = '이메일 앞자리를 입력해주세요.'
-    findSuccessMsg.value = ''
     return
   }
-
   findLoading.value = true
   findErrorMsg.value = ''
   findSuccessMsg.value = ''
-
   try {
     if (findType.value === 'id') {
       const foundUsername = await authStore.findIdByEmail(findSecurityQuestion.value, findSecurityAnswer.value.trim(), fullFindEmail.value)
@@ -269,7 +208,55 @@ const handleFind = async () => {
 </script>
 
 <style scoped>
-.min-vh-100 {
+.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-height: 100vh;
+  background: #F5F5F5;
+  padding: 16px;
 }
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  padding: 32px;
+}
+
+.input-with-suffix {
+  display: flex;
+  align-items: center;
+  border: 1.5px solid #E0E0E0;
+  border-radius: 8px;
+  background: #FAFAFA;
+  overflow: hidden;
+  transition: border-color 0.2s;
+
+  &:focus-within {
+    border-color: #1E88E5;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.12);
+  }
+
+  input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 14px 16px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    outline: none;
+    color: #212121;
+    &::placeholder { color: #BDBDBD; font-weight: 500; }
+  }
+}
+
+.ml-1 { margin-left: 4px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; }
+.mb-8 { margin-bottom: 32px; }
+.mt-2 { margin-top: 8px; }
+.px-1 { padding-left: 4px; padding-right: 4px; }
 </style>

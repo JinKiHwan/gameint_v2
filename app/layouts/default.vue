@@ -1,140 +1,123 @@
 <template>
-  <v-app class="bg-grey-lighten-4">
+  <div>
     <!-- 사이드바 (데스크톱) -->
-    <v-navigation-drawer 
-      app
-      permanent 
-      elevation="0" 
-      border="end"
-      class="d-none d-md-flex bg-white h-screen"
-      width="260"
-    >
-      <div class="d-flex align-center px-6 py-4 border-b">
-        <v-icon color="blue-darken-1" size="28" class="mr-2">mdi-book-open-page-variant</v-icon>
-        <span class="text-h6 font-weight-black text-grey-darken-4">Game Int</span>
+    <aside class="sidebar">
+      <div class="sidebar__logo">
+        <i class="mdi mdi-book-open-page-variant logo-icon"></i>
+        <span class="logo-text">Game Int</span>
       </div>
 
-      <v-list class="px-3 py-4" nav>
-        <v-list-item
+      <nav class="sidebar__nav">
+        <NuxtLink
           v-for="item in navigation"
           :key="item.id"
           :to="item.to"
-          active-class="text-blue-darken-1 bg-blue-lighten-5"
-          class="rounded-xl mb-1 font-weight-bold text-grey-darken-2"
+          class="sidebar__nav-item"
+          active-class="is-active"
+          exact-active-class="is-active"
         >
-          <template v-slot:prepend>
-            <v-icon :icon="item.icon"></v-icon>
-          </template>
-          <v-list-item-title>
-            {{ item.label }}
-          </v-list-item-title>
-        </v-list-item>
-      </v-list>
+          <i :class="`mdi ${item.icon}`"></i>
+          {{ item.label }}
+        </NuxtLink>
+      </nav>
 
-      <template v-slot:append>
-        <div class="pa-4 border-t bg-grey-lighten-5">
-          <div v-if="authStore.user" class="d-flex align-center justify-space-between w-100">
-            <div class="d-flex align-center cursor-pointer hover-bg-grey rounded pa-1" style="min-width: 0;">
-              <v-avatar color="blue-lighten-5" border size="40" class="flex-shrink-0">
-                <span class="text-caption font-weight-bold text-blue-darken-1">
-                  {{ authStore.userData?.nickname?.charAt(0) || 'U' }}
-                </span>
-              </v-avatar>
-              <div class="ml-3 d-flex flex-column text-truncate mr-2">
-                <span class="text-subtitle-2 font-weight-bold text-truncate">{{ authStore.userData?.nickname || '신규회원' }}</span>
-                <span class="text-caption font-weight-bold text-blue-darken-1">{{ authStore.userData?.tier || 'Bronze' }}</span>
-              </div>
+      <div class="sidebar__footer">
+        <div v-if="authStore.user" class="sidebar__user">
+          <div class="user-info">
+            <div class="avatar avatar--md avatar--blue">
+              <span>{{ authStore.userData?.nickname?.charAt(0) || 'U' }}</span>
             </div>
-            <v-btn icon="mdi-logout" variant="text" size="small" color="grey-darken-2" @click="handleLogout"></v-btn>
+            <div class="user-text">
+              <span class="user-name">{{ authStore.userData?.nickname || '신규회원' }}</span>
+              <span class="user-tier">{{ authStore.userData?.tier || 'Bronze' }}</span>
+            </div>
           </div>
-          <div v-else class="text-center">
-            <v-btn color="blue-darken-1" variant="flat" block rounded="lg" to="/login">로그인</v-btn>
+          <button class="btn btn--text btn--icon" @click="handleLogout" title="로그아웃">
+            <i class="mdi mdi-logout"></i>
+          </button>
+        </div>
+        <div v-else class="text-center">
+          <NuxtLink to="/login" class="btn btn--primary btn--block">로그인</NuxtLink>
+        </div>
+      </div>
+    </aside>
+
+    <!-- 앱 바 -->
+    <header class="app-bar">
+      <!-- 모바일 -->
+      <div class="app-bar__mobile">
+        <i class="mdi mdi-book-open-page-variant logo-icon"></i>
+        <span class="logo-text">Game Int</span>
+        <div class="spacer"></div>
+        <button class="btn btn--text btn--icon mr-2">
+          <i class="mdi mdi-bell-outline"></i>
+        </button>
+
+        <div v-if="authStore.user" class="mobile-menu" ref="mobileMenuRef">
+          <div class="avatar avatar--sm avatar--blue cursor-pointer" @click="mobileMenuOpen = !mobileMenuOpen">
+            <span>{{ authStore.userData?.nickname?.charAt(0) || 'U' }}</span>
+          </div>
+          <div v-if="mobileMenuOpen" class="mobile-dropdown">
+            <button class="mobile-dropdown__item" @click="handleLogout; mobileMenuOpen = false">
+              <i class="mdi mdi-logout"></i> 로그아웃
+            </button>
           </div>
         </div>
-      </template>
-    </v-navigation-drawer>
-
-    <!-- 상단 앱 바 (모바일 헤더 & 데스크톱 검색창) -->
-    <v-app-bar elevation="0" border="bottom" color="white" height="64">
-      <!-- 모바일 뷰 -->
-      <div class="d-flex d-md-none align-center w-100 px-4">
-        <v-icon color="blue-darken-1" size="24" class="mr-2">mdi-book-open-page-variant</v-icon>
-        <span class="text-subtitle-1 font-weight-black">Game Int</span>
-        <v-spacer></v-spacer>
-        <v-btn icon="mdi-bell-outline" variant="text" color="grey-darken-2" class="mr-1"></v-btn>
-        
-        <v-menu v-if="authStore.user" location="bottom end">
-          <template v-slot:activator="{ props }">
-            <v-avatar v-bind="props" color="blue-lighten-5" border size="32" class="cursor-pointer">
-              <span class="text-caption font-weight-bold text-blue-darken-1">{{ authStore.userData?.nickname?.charAt(0) || 'U' }}</span>
-            </v-avatar>
-          </template>
-          <v-list class="pa-2 rounded-lg" elevation="3">
-            <v-list-item @click="handleLogout" prepend-icon="mdi-logout" class="rounded-lg hover-bg-grey">
-              <v-list-item-title class="font-weight-bold text-grey-darken-3">로그아웃</v-list-item-title>
-            </v-list-item>
-          </v-list>
-        </v-menu>
-        <v-btn v-else icon="mdi-login" variant="text" color="blue-darken-1" to="/login"></v-btn>
+        <NuxtLink v-else to="/login" class="btn btn--text btn--icon">
+          <i class="mdi mdi-login"></i>
+        </NuxtLink>
       </div>
 
-      <!-- 데스크톱 뷰 -->
-      <div class="d-none d-md-flex align-center justify-end w-100 px-8">
-        <v-text-field
-          prepend-inner-icon="mdi-magnify"
-          placeholder="어떤 모임을 찾으시나요?"
-          variant="solo-filled"
-          flat
-          bg-color="grey-lighten-4"
-          density="compact"
-          hide-details
-          class="mr-4 rounded-xl"
-          style="max-width: 300px;"
-        ></v-text-field>
-        <v-btn icon="mdi-bell-outline" variant="text" color="grey-darken-2"></v-btn>
+      <!-- 데스크톱 -->
+      <div class="app-bar__desktop">
+        <div class="search-box">
+          <i class="mdi mdi-magnify"></i>
+          <input type="text" placeholder="어떤 모임을 찾으시나요?" />
+        </div>
+        <button class="btn btn--text btn--icon">
+          <i class="mdi mdi-bell-outline"></i>
+        </button>
       </div>
-    </v-app-bar>
+    </header>
 
-    <!-- 메인 콘텐츠 영역 -->
-    <v-main>
-      <v-container class="pa-4 pa-md-8 pb-16 pb-md-8" max-width="1000">
+    <!-- 메인 콘텐츠 -->
+    <main class="page-main">
+      <div class="container">
         <slot />
-      </v-container>
-    </v-main>
+      </div>
+    </main>
 
     <!-- 모바일 하단 네비게이션 -->
-    <v-bottom-navigation class="d-md-none bg-white font-weight-bold" grow elevation="4">
-      <v-btn v-for="item in navigation.slice(0, 5)" :key="item.id" :to="item.to" color="blue-darken-1">
-        <v-icon>{{ item.icon }}</v-icon>
+    <nav class="bottom-nav">
+      <NuxtLink
+        v-for="item in navigation.slice(0, 5)"
+        :key="item.id"
+        :to="item.to"
+        class="bottom-nav__item"
+        active-class="is-active"
+        exact-active-class="is-active"
+      >
+        <i :class="`mdi ${item.icon}`"></i>
         <span>{{ item.label }}</span>
-      </v-btn>
-    </v-bottom-navigation>
+      </NuxtLink>
+    </nav>
 
-    <!-- 승인 대기 유저 안내 화면 -->
-    <v-dialog 
-      :model-value="isPendingUser" 
-      persistent 
-      fullscreen
-      transition="fade-transition"
-    >
-      <v-card class="d-flex align-center justify-center bg-grey-lighten-4">
-        <v-card class="pa-8 rounded-xl text-center border" elevation="0" max-width="400" width="100%">
-          <v-icon color="orange-darken-2" size="64" class="mb-4">mdi-account-clock-outline</v-icon>
-          <h2 class="text-h5 font-weight-black text-grey-darken-4 mb-3">승인 대기 중입니다</h2>
-          <p class="text-subtitle-2 text-grey-darken-2 mb-8 line-height-relaxed">
-            마스터(관리자)의 가입 승인이 완료되면<br/>모든 서비스를 정상적으로 이용하실 수 있습니다.
-          </p>
-          <v-btn color="grey-darken-3" variant="tonal" class="font-weight-bold px-8 rounded-lg" size="large" @click="handleLogout">
-            로그아웃
-          </v-btn>
-        </v-card>
-      </v-card>
-    </v-dialog>
-  </v-app>
+    <!-- 승인 대기 유저 안내 -->
+    <div v-if="isPendingUser" class="pending-overlay">
+      <div class="card" style="max-width: 400px; width: 100%; text-align: center; padding: 32px;">
+        <i class="mdi mdi-account-clock-outline" style="font-size: 4rem; color: #F57C00; display: block; margin-bottom: 16px;"></i>
+        <h2 class="text-h5 font-black text-grey-dark mb-3">승인 대기 중입니다</h2>
+        <p class="text-subtitle-2 text-grey-2 mb-8 line-height-relaxed">
+          마스터(관리자)의 가입 승인이 완료되면<br/>모든 서비스를 정상적으로 이용하실 수 있습니다.
+        </p>
+        <button class="btn btn--dark btn--lg" @click="handleLogout">로그아웃</button>
+      </div>
+    </div>
+  </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 
 const authStore = useAuthStore()
@@ -143,19 +126,63 @@ const handleLogout = async () => {
   await authStore.logout()
 }
 
-// status가 pending인 유저 감지
 const isPendingUser = computed(() => {
   return authStore.user && authStore.userData?.status === 'pending'
 })
 
 const navigation = [
-  { id: 'home', label: '홈', icon: 'mdi-home-variant', to: '/' },
-  { id: 'monthly', label: '월간 주제', icon: 'mdi-book-open-page-variant', to: '/cycles' },
-  { id: 'recommend', label: '도서 추천', icon: 'mdi-bookshelf', to: '/recommend' },
-  { id: 'board', label: '통합 게시판', icon: 'mdi-forum', to: '/board' },
-  // { id: 'ranking', label: '랭킹', icon: 'mdi-trophy', to: '/ranking' },
-  { id: 'mypage', label: '마이페이지', icon: 'mdi-account', to: '/mypage' },
+  { id: 'home',      label: '홈',       icon: 'mdi-home-variant',          to: '/' },
+  { id: 'monthly',   label: '월간 주제',  icon: 'mdi-book-open-page-variant', to: '/cycles' },
+  { id: 'recommend', label: '도서 추천',  icon: 'mdi-bookshelf',              to: '/recommend' },
+  { id: 'board',     label: '통합 게시판', icon: 'mdi-forum',                 to: '/board' },
+  { id: 'mypage',    label: '마이페이지', icon: 'mdi-account',               to: '/mypage' },
 ]
+
+// 모바일 드롭다운
+const mobileMenuOpen = ref(false)
+const mobileMenuRef = ref(null)
+
+const handleClickOutside = (e) => {
+  if (mobileMenuRef.value && !mobileMenuRef.value.contains(e.target)) {
+    mobileMenuOpen.value = false
+  }
+}
+onMounted(() => document.addEventListener('click', handleClickOutside))
+onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 </script>
 
+<style scoped>
+.mobile-menu { position: relative; }
 
+.mobile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+  padding: 8px;
+  min-width: 140px;
+  z-index: 200;
+
+  &__item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 12px;
+    background: none;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #424242;
+    cursor: pointer;
+
+    &:hover { background: #f5f5f5; }
+  }
+}
+
+.mr-2 { margin-right: 8px; }
+</style>

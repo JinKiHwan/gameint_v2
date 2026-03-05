@@ -1,12 +1,7 @@
-import vuetify, { transformAssetUrls } from 'vite-plugin-vuetify'
-
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  build: {
-    transpile: ['vuetify'],
-  },
   runtimeConfig: {
     public: {
       firebaseApiKey: process.env.FIREBASE_API_KEY,
@@ -21,18 +16,16 @@ export default defineNuxtConfig({
   },
   modules: [
     '@pinia/nuxt',
-    (_options, nuxt) => {
-      nuxt.hooks.hook('vite:extendConfig', (config) => {
-        // @ts-expect-error
-        config.plugins.push(vuetify({ autoImport: true }))
-      })
-    }
   ],
+  css: ['~/assets/scss/main.scss'],
   vite: {
-    vue: {
-      template: {
-        transformAssetUrls,
-      },
-    },
-  },
+    css: {
+      preprocessorOptions: {
+        scss: {
+          // 모든 파일에서 변수, 믹스인 자동 주입
+          additionalData: `@use "~/assets/scss/_variables.scss" as *;`
+        }
+      }
+    }
+  }
 })

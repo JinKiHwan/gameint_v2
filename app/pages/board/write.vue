@@ -1,148 +1,91 @@
 <template>
-  <div class="pa-4 bg-grey-lighten-4 min-vh-100 fade-in">
-    <v-container max-width="900" class="px-0">
-      
-      <!-- 헤더 보드 -->
-      <div class="d-flex align-center justify-space-between mb-4">
-        <v-btn icon="mdi-arrow-left" variant="text" size="small" color="grey-darken-2" @click="router.back()"></v-btn>
-        <h1 class="text-h5 font-weight-black text-grey-darken-4">{{ isEditMode ? '게시글 수정' : '게시글 작성' }}</h1>
-        <div style="width: 32px"></div> <!-- 중앙 정렬용 여백 -->
+  <div class="write-page pa-4 fade-in">
+    <div class="write-container">
+      <!-- 헤더 -->
+      <div class="flex items-center justify-between mb-4">
+        <button class="btn btn--text btn--icon" @click="router.back()"><i class="mdi mdi-arrow-left"></i></button>
+        <h1 class="text-h5 font-black text-grey-dark">{{ isEditMode ? '게시글 수정' : '게시글 작성' }}</h1>
+        <div style="width:36px;"></div>
       </div>
-      
-      <v-card class="rounded-xl border bg-white pa-6" elevation="0">
-        
-        <div class="d-flex align-center gap-3 mb-4">
-          <v-select
-            v-model="formData.category"
-            :items="categories"
-            label="카테고리 선택"
-            variant="outlined"
-            color="blue-darken-1"
-            bg-color="grey-lighten-5"
-            class="font-weight-bold flex-grow-1"
-            hide-details
-            rounded="lg"
-            @update:model-value="handleCategoryChange"
-          ></v-select>
 
-          <!-- 도서 첨부 버튼 -->
-          <v-btn 
-            v-if="formData.category === '책 리뷰' && !attachedBook"
-            color="indigo-darken-2" 
-            variant="flat" 
-            height="56"
-            class="rounded-lg font-weight-bold px-6 shrink-0"
-            prepend-icon="mdi-book-search-outline"
-            @click="showBookSearchModal = true"
-          >
-            책 찾기
-          </v-btn>
-        </div>
-
-        <!-- 첨부된 도서 정보 카드 (있을 경우만 표시) -->
-        <v-card 
-          v-if="attachedBook" 
-          variant="outlined" 
-          color="indigo-lighten-4" 
-          class="mb-6 rounded-lg bg-indigo-lighten-5 position-relative"
-        >
-          <div class="d-flex pa-3 align-center">
-            <v-img 
-              :src="attachedBook.thumbnail || 'https://via.placeholder.com/60x85?text=No+Cover'" 
-              width="45" 
-              height="65" 
-              cover 
-              class="rounded border mr-4 flex-grow-0 shrink-0"
-            ></v-img>
-            <div class="flex-grow-1 overflow-hidden">
-              <div class="text-caption text-indigo-darken-2 font-weight-bold mb-1">첨부된 도서</div>
-              <div class="text-subtitle-2 font-weight-black text-grey-darken-4 text-truncate">{{ attachedBook.title }}</div>
-              <div class="text-caption text-grey-darken-2 text-truncate">{{ attachedBook.authors?.join(', ') || '알수없음' }} | {{ attachedBook.publisher }}</div>
-            </div>
-            
-            <!-- 삭제 버튼 (우측 상단 절대배치) -->
-            <v-btn 
-              icon="mdi-close-circle" 
-              variant="text" 
-              color="grey-darken-1" 
-              size="small" 
-              class="position-absolute" 
-              style="top: 4px; right: 4px;"
-              @click="attachedBook = null"
-            ></v-btn>
+      <div class="card">
+        <div class="card-body">
+          <!-- 카테고리 + 책 찾기 -->
+          <div class="flex gap-3 mb-4">
+            <select v-model="formData.category" class="select flex-grow" @change="handleCategoryChange">
+              <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+            </select>
+            <button
+              v-if="formData.category === '책 리뷰' && !attachedBook"
+              class="btn btn--indigo flex items-center gap-2 rounded-sm"
+              style="height:52px;padding:0 24px;"
+              @click="showBookSearchModal = true"
+            >
+              <i class="mdi mdi-book-search-outline"></i>책 찾기
+            </button>
           </div>
-        </v-card>
 
-        <!-- 제목 입력 -->
-        <v-text-field
-          v-model="formData.title"
-          label="제목을 입력하세요 (최대 50자)"
-          variant="outlined"
-          color="blue-darken-1"
-          bg-color="grey-lighten-5"
-          class="font-weight-bold mb-6 text-h6"
-          hide-details
-          rounded="lg"
-          counter
-          maxlength="50"
-        ></v-text-field>
+          <!-- 첨부 도서 -->
+          <div v-if="attachedBook" class="attached-book mb-6">
+            <div class="flex items-center pa-3">
+              <img
+                :src="attachedBook.thumbnail || 'https://via.placeholder.com/60x85?text=No+Cover'"
+                class="book-img mr-4" style="width:45px;height:65px;"
+                alt="책 표지"
+              />
+              <div class="flex-grow overflow-hidden">
+                <div class="text-caption font-bold mb-1" style="color:#283593;">첨부된 도서</div>
+                <div class="text-subtitle-2 font-black text-grey-dark text-truncate">{{ attachedBook.title }}</div>
+                <div class="text-caption text-grey-2 text-truncate">{{ attachedBook.authors?.join(', ') || '알수없음' }} | {{ attachedBook.publisher }}</div>
+              </div>
+              <button class="btn btn--text btn--icon" @click="attachedBook = null"><i class="mdi mdi-close-circle"></i></button>
+            </div>
+          </div>
 
-        <!-- 팁탭 에디터 컴포넌트 -->
-        <p class="text-subtitle-2 font-weight-bold mb-2 text-grey-darken-3">
-          내용 작성 <span class="text-caption text-orange-darken-3 ml-2">* 무료로 운영되는 공간이므로 서버 용량상 이미지 첨부는 불가합니다.</span>
-        </p>
-        <TiptapEditor v-model="formData.content" class="mb-6" />
+          <!-- 제목 -->
+          <input
+            v-model="formData.title"
+            class="input mb-6"
+            type="text"
+            placeholder="제목을 입력하세요 (최대 50자)"
+            maxlength="50"
+          />
 
-        <v-alert v-if="errorMsg" type="error" variant="tonal" class="mb-6 rounded-lg font-weight-bold text-caption text-left">
-          {{ errorMsg }}
-        </v-alert>
+          <!-- 에디터 -->
+          <p class="text-subtitle-2 font-bold mb-2 text-grey-3">
+            내용 작성 <span class="text-caption font-bold" style="color:#E65100;margin-left:8px;">* 서버 용량상 이미지 첨부는 불가합니다.</span>
+          </p>
+          <TiptapEditor v-model="formData.content" class="mb-6" />
 
-        <!-- 버튼 영역 -->
-        <div class="d-flex gap-3 justify-end">
-          <v-btn 
-            color="grey-lighten-2" 
-            variant="flat" 
-            size="large" 
-            class="font-weight-bold rounded-lg text-grey-darken-3" 
-            elevation="0" 
-            @click="router.back()"
-            :disabled="loading"
-          >
-            취소
-          </v-btn>
-          <v-btn 
-            color="blue-darken-1" 
-            variant="flat" 
-            size="large" 
-            class="font-weight-bold rounded-lg" 
-            elevation="0" 
-            :loading="loading"
-            @click="handleSubmit"
-          >
-            {{ isEditMode ? '수정완료' : '등록하기' }}
-          </v-btn>
+          <div v-if="errorMsg" class="alert alert--error mb-6 rounded-sm font-bold text-caption">{{ errorMsg }}</div>
+
+          <!-- 버튼 -->
+          <div class="flex gap-3 justify-end">
+            <button class="btn btn--grey btn--lg rounded-sm font-bold" :disabled="loading" @click="router.back()">취소</button>
+            <button class="btn btn--primary btn--lg rounded-sm font-bold" :class="{'is-loading':loading}" :disabled="loading" @click="handleSubmit">
+              {{ isEditMode ? '수정완료' : '등록하기' }}
+            </button>
+          </div>
         </div>
-      </v-card>
+      </div>
+    </div>
 
-    </v-container>
-
-    <!-- 비인가 접근 차단 모달 -->
-    <v-dialog v-model="showLoginDialog" persistent max-width="400">
-      <v-card class="pa-6 rounded-xl text-center border" elevation="0">
-        <v-icon color="orange-darken-2" size="48" class="mb-4">mdi-lock-alert-outline</v-icon>
-        <h3 class="text-h6 font-weight-black mb-2">권한이 없습니다</h3>
-        <p class="text-body-2 text-grey-darken-1 mb-6">게시글 작성은 로그인 후 이용 가능합니다.</p>
-        <div class="d-flex gap-2 justify-center">
-          <v-btn color="grey-darken-2" variant="tonal" class="rounded-lg font-weight-bold" @click="router.push('/')">돌아가기</v-btn>
-          <v-btn color="blue-darken-1" variant="flat" class="rounded-lg font-weight-bold" @click="router.push('/login')">로그인</v-btn>
+    <!-- 비인가 모달 -->
+    <div v-if="showLoginDialog" class="modal-overlay">
+      <div class="modal" style="text-align:center;">
+        <div class="card-body">
+          <i class="mdi mdi-lock-alert-outline" style="font-size:3rem;color:#F57C00;display:block;margin-bottom:16px;"></i>
+          <h3 class="text-h6 font-black mb-2">권한이 없습니다</h3>
+          <p class="text-body-2 text-grey-2 mb-6">게시글 작성은 로그인 후 이용 가능합니다.</p>
+          <div class="flex gap-2 justify-center">
+            <button class="btn btn--tonal font-bold rounded-sm" @click="router.push('/')">돌아가기</button>
+            <button class="btn btn--primary font-bold rounded-sm" @click="router.push('/login')">로그인</button>
+          </div>
         </div>
-      </v-card>
-    </v-dialog>
+      </div>
+    </div>
 
-    <BookSearchModal 
-      v-model="showBookSearchModal" 
-      @select="handleBookSelect" 
-    />
+    <BookSearchModal v-model="showBookSearchModal" @select="handleBookSelect" />
   </div>
 </template>
 
@@ -164,116 +107,66 @@ const showBookSearchModal = ref(false)
 const attachedBook = ref(null)
 const loading = ref(false)
 const errorMsg = ref('')
-
 const categories = ['책 리뷰', '자유글', '정보/팁', '건의사항']
-
-const formData = ref({
-  category: '자유글',
-  title: '',
-  content: ''
-})
-
+const formData = ref({ category: '자유글', title: '', content: '' })
 const isEditMode = computed(() => !!route.query.edit)
 
 onMounted(async () => {
-  if (!authStore.user || authStore.userData?.status !== 'active') {
-    showLoginDialog.value = true
-    return
-  }
-  
-  // 수정 모드 진입 시 기존 데이터 조회 로직
+  if (!authStore.user || authStore.userData?.status !== 'active') { showLoginDialog.value = true; return }
   if (isEditMode.value) {
     loading.value = true
     try {
       const existingPost = await fetchPost(route.query.edit)
-      // 본인 글이 아니거나 마스터가 아닌 경우 튕겨냄 (보안규칙에서도 막히지만 프론트 선제어)
       if (existingPost.author.uid !== authStore.user.uid && authStore.userData?.role !== 'master') {
-        alert('수정 권한이 없습니다.')
-        router.replace('/board')
-        return
+        alert('수정 권한이 없습니다.'); router.replace('/board'); return
       }
       formData.value.category = existingPost.category
       formData.value.title = existingPost.title
       formData.value.content = existingPost.content
-      if (existingPost.attachedBook) {
-        attachedBook.value = existingPost.attachedBook
-      }
-    } catch (err) {
-      alert('게시글을 불러올 수 없습니다.')
-      router.back()
-    } finally {
-      loading.value = false
-    }
+      if (existingPost.attachedBook) attachedBook.value = existingPost.attachedBook
+    } catch (err) { alert('게시글을 불러올 수 없습니다.'); router.back() }
+    finally { loading.value = false }
   }
 })
 
-// HTML 태그를 제거하고 순수 텍스트만 추출해서 미리보기(contentPreview)용으로 생성
 const extractTextFromHTML = (htmlString) => {
   const span = document.createElement('span')
   span.innerHTML = htmlString
   const text = span.textContent || span.innerText || ''
   return text.substring(0, 150) + (text.length > 150 ? '...' : '')
 }
-
-const handleBookSelect = (book) => {
-  attachedBook.value = book
-}
-
-const handleCategoryChange = (val) => {
-  if (val !== '책 리뷰') {
-    attachedBook.value = null
-  }
-}
+const handleBookSelect = (book) => { attachedBook.value = book }
+const handleCategoryChange = (e) => { if (e.target.value !== '책 리뷰') attachedBook.value = null }
 
 const handleSubmit = async () => {
   errorMsg.value = ''
-  
-  if (!formData.value.title.trim()) {
-    errorMsg.value = '제목을 입력해주세요.'
-    return
-  }
-  
-  if (!formData.value.content || formData.value.content === '<p></p>') {
-    errorMsg.value = '내용을 작성해주세요.'
-    return
-  }
-
+  if (!formData.value.title.trim()) { errorMsg.value = '제목을 입력해주세요.'; return }
+  if (!formData.value.content || formData.value.content === '<p></p>') { errorMsg.value = '내용을 작성해주세요.'; return }
   loading.value = true
-
   try {
     const postData = {
-      category: formData.value.category,
-      title: formData.value.title.trim(),
-      content: formData.value.content,
-      contentPreview: extractTextFromHTML(formData.value.content),
+      category: formData.value.category, title: formData.value.title.trim(),
+      content: formData.value.content, contentPreview: extractTextFromHTML(formData.value.content),
       attachedBook: attachedBook.value,
-      author: {
-        uid: authStore.user.uid,
-        nickname: authStore.userData.nickname,
-        profileImageId: authStore.userData.profileImageId || 'avatar_bronze_01'
-      }
+      author: { uid: authStore.user.uid, nickname: authStore.userData.nickname, profileImageId: authStore.userData.profileImageId || 'avatar_bronze_01' }
     }
-
-    if (isEditMode.value) {
-      await updatePost(route.query.edit, postData)
-      router.replace(`/board/${route.query.edit}`)
-    } else {
-      const docId = await createPost(postData)
-      router.replace(`/board/${docId}`) // 새로 작성 후 상세페이지로 바로 이동 개선
-    }
+    if (isEditMode.value) { await updatePost(route.query.edit, postData); router.replace(`/board/${route.query.edit}`) }
+    else { const docId = await createPost(postData); router.replace(`/board/${docId}`) }
   } catch (err) {
-    console.error('Submit error:', err)
-    errorMsg.value = isEditMode.value ? '게시글 수정에 실패했습니다.' : '게시글 등록에 실패했습니다. 다시 시도해주세요.'
-  } finally {
-    loading.value = false
-  }
+    errorMsg.value = isEditMode.value ? '게시글 수정에 실패했습니다.' : '게시글 등록에 실패했습니다.'
+  } finally { loading.value = false }
 }
 </script>
 
 <style scoped>
-.min-vh-100 {
-  min-height: 100vh;
-}
+.write-page { min-height: 100vh; background: #F5F5F5; }
+.write-container { max-width: 900px; margin: 0 auto; }
+.attached-book { background: #E8EAF6; border: 1px solid #9FA8DA; border-radius: 8px; position: relative; }
+.mb-2 { margin-bottom: 8px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; }
+.mr-4 { margin-right: 16px; }
 .gap-2 { gap: 8px; }
 .gap-3 { gap: 12px; }
+.pa-3 { padding: 12px; }
 </style>

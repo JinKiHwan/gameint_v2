@@ -1,0 +1,231 @@
+@use 'variables' as *;
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+@use 'base';
+@use 'components';
+
+// ============================
+// App Layout
+// ============================
+#app {
+  display: flex;
+  min-height: 100vh;
+  font-family: $font-family;
+  background: $bg-app;
+}
+
+// ============================
+// Sidebar (Desktop)
+// ============================
+.sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  background: $white;
+  border-right: 1px solid $grey-lighten-2;
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+
+  @include md { display: flex; }
+
+  &__logo {
+    display: flex;
+    align-items: center;
+    padding: sp(4) sp(6);
+    border-bottom: 1px solid $grey-lighten-2;
+    gap: sp(2);
+
+    .logo-icon { color: $blue-darken-1; font-size: 1.75rem; }
+    .logo-text  { font-size: 1.25rem; font-weight: 900; color: $grey-darken-4; }
+  }
+
+  &__nav {
+    flex: 1;
+    padding: sp(4) sp(3);
+    overflow-y: auto;
+  }
+
+  &__nav-item {
+    display: flex;
+    align-items: center;
+    gap: sp(3);
+    padding: sp(3) sp(4);
+    border-radius: $radius-lg;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    color: $grey-darken-2;
+    text-decoration: none;
+    margin-bottom: sp(1);
+    transition: all 0.2s;
+
+    &:hover { background: $grey-lighten-4; }
+    &.is-active { background: $blue-lighten-5; color: $blue-darken-1; }
+
+    .mdi { font-size: 1.25rem; }
+  }
+
+  &__footer {
+    padding: sp(4);
+    border-top: 1px solid $grey-lighten-2;
+    background: $grey-lighten-5;
+  }
+
+  &__user {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: sp(2);
+      min-width: 0;
+    }
+
+    .user-text {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+
+      .user-name  { font-size: 0.875rem; font-weight: 700; color: $grey-darken-4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .user-tier  { font-size: 0.75rem; font-weight: 700; color: $blue-darken-1; }
+    }
+  }
+}
+
+// ============================
+// App Bar (Header)
+// ============================
+.app-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: $white;
+  border-bottom: 1px solid $grey-lighten-2;
+  z-index: 99;
+  display: flex;
+  align-items: center;
+  padding: 0 sp(4);
+
+  @include md {
+    left: 260px;
+    padding: 0 sp(8);
+    justify-content: flex-end;
+  }
+
+  &__mobile {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    @include md { display: none; }
+
+    .logo-icon { color: $blue-darken-1; font-size: 1.5rem; margin-right: sp(2); }
+    .logo-text  { font-size: 1.0625rem; font-weight: 900; }
+  }
+
+  &__desktop {
+    display: none;
+    align-items: center;
+    gap: sp(3);
+    @include md { display: flex; }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: sp(2);
+      background: $grey-lighten-4;
+      border-radius: $radius-lg;
+      padding: sp(2) sp(4);
+      width: 300px;
+
+      .mdi { color: $grey-darken-1; }
+      input {
+        border: none;
+        background: transparent;
+        outline: none;
+        font-size: 0.875rem;
+        color: $grey-darken-4;
+        width: 100%;
+        &::placeholder { color: $grey-darken-1; }
+      }
+    }
+  }
+
+  .spacer { flex: 1; }
+}
+
+// ============================
+// Main Content
+// ============================
+.page-main {
+  flex: 1;
+  padding-top: 64px;
+
+  @include md { margin-left: 260px; }
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: sp(4) sp(4) sp(16);
+
+  @include md { padding: sp(8) sp(8) sp(8); }
+}
+
+// ============================
+// Bottom Navigation (Mobile)
+// ============================
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 60px;
+  background: $white;
+  border-top: 1px solid $grey-lighten-2;
+  display: flex;
+  z-index: 100;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+
+  @include md { display: none; }
+
+  &__item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    font-size: 0.625rem;
+    font-weight: 700;
+    color: $grey-darken-1;
+    text-decoration: none;
+    transition: color 0.2s;
+
+    .mdi { font-size: 1.375rem; }
+
+    &.is-active { color: $blue-darken-1; }
+    &:hover { color: $blue-darken-1; }
+  }
+}
+
+// ============================
+// Pending User Screen
+// ============================
+.pending-overlay {
+  position: fixed;
+  inset: 0;
+  background: $grey-lighten-4;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: sp(4);
+}

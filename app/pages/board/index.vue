@@ -1,115 +1,119 @@
 <template>
   <div class="fade-in">
-    <v-card class="rounded-xl pa-6 mb-8 border bg-white d-flex justify-space-between align-center" elevation="0">
-      <div>
-        <h1 class="text-h5 font-weight-black text-grey-darken-4 mb-1">자유 게시판 💬</h1>
-        <p class="text-body-2 font-weight-medium text-grey-darken-1">멤버들과 자유롭게 소통하는 공간입니다.</p>
+    <!-- 헤더 -->
+    <div class="card mb-8">
+      <div class="card-body flex justify-between items-center">
+        <div>
+          <h1 class="text-h5 font-black text-grey-dark mb-1">자유 게시판 💬</h1>
+          <p class="text-body-2 font-medium text-grey-2">멤버들과 자유롭게 소통하는 공간입니다.</p>
+        </div>
+        <NuxtLink to="/board/write" class="btn btn--primary rounded-xl font-bold flex items-center gap-2">
+          <i class="mdi mdi-pencil"></i>글쓰기
+        </NuxtLink>
       </div>
-      <v-btn color="blue-darken-1" prepend-icon="mdi-pencil" class="rounded-xl font-weight-bold" variant="flat" to="/board/write">글쓰기</v-btn>
-    </v-card>
-
-    <div v-if="hotPosts.length > 0" class="mb-8">
-      <h3 class="text-h6 font-weight-black text-grey-darken-4 mb-4 d-flex align-center">
-        <v-icon color="red-lighten-1" class="mr-2">mdi-fire</v-icon> 주간 HOT 인기글
-      </h3>
-      <v-row>
-        <v-col v-for="post in hotPosts" :key="post.id" cols="12" md="4" sm="6">
-          <v-card 
-            class="rounded-xl pa-5 border-red-lighten-4 bg-red-lighten-5 hover-shadow cursor-pointer h-100 d-flex flex-column" 
-            elevation="0" 
-            border
-            @click="router.push(`/board/${post.id}`)"
-          >
-            <div class="d-flex justify-space-between align-start mb-3">
-              <v-chip color="red-lighten-1" size="small" variant="flat" class="font-weight-bold px-2">HOT</v-chip>
-              <div class="d-flex gap-2 text-caption font-weight-bold text-grey-darken-1">
-                <span class="d-flex align-center text-red-lighten-1"><v-icon size="small" class="mr-1">mdi-heart</v-icon> {{ post.likeCount || 0 }}</span>
-                <span class="d-flex align-center"><v-icon size="small" class="mr-1">mdi-forum</v-icon> {{ post.commentCount || 0 }}</span>
-              </div>
-            </div>
-            <h4 class="text-subtitle-1 font-weight-black text-grey-darken-4 mb-2 line-clamp-1">{{ post.title }}</h4>
-            <p class="text-body-2 text-grey-darken-2 line-clamp-2 mt-auto">{{ post.contentPreview || '내용이 없습니다.' }}</p>
-          </v-card>
-        </v-col>
-      </v-row>
     </div>
 
-    <v-card class="rounded-xl border bg-white overflow-hidden" elevation="0">
-      <div class="d-flex flex-column flex-sm-row justify-space-between align-sm-center pa-4 bg-grey-lighten-5 border-b">
-        <v-chip-group v-model="boardTag" selected-class="bg-grey-darken-4 text-white" mandatory class="mb-2 mb-sm-0">
-          <v-chip value="전체" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">전체</v-chip>
-          <v-chip value="책 리뷰" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">책 리뷰</v-chip>
-          <v-chip value="자유글" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">자유글</v-chip>
-          <v-chip value="정보/팁" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">정보/팁</v-chip>
-          <v-chip value="건의사항" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">건의</v-chip>
-        </v-chip-group>
-        <v-select
-          v-model="boardSort"
-          :items="['최신순', '인기순', '댓글순']"
-          variant="outlined"
-          density="compact"
-          hide-details
-          bg-color="white"
-          class="font-weight-bold rounded-lg"
-          style="max-width: 150px;"
-        ></v-select>
-      </div>
-      
-      <!-- Loding state -->
-      <v-skeleton-loader v-if="loading" type="list-item-avatar-two-line" v-for="i in 5" :key="`skel-${i}`" class="border-b"></v-skeleton-loader>
-
-      <!-- Empty state -->
-      <div v-else-if="paginatedPosts.length === 0" class="text-center pa-10">
-        <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-text-box-search-outline</v-icon>
-        <h3 class="text-h6 font-weight-bold text-grey-darken-2 mb-2">등록된 게시글이 없습니다.</h3>
-      </div>
-
-      <!-- Real posts list -->
-      <v-list v-else lines="two" class="pa-0">
-        <template v-for="(post, index) in paginatedPosts" :key="post.id">
-          <v-list-item class="pa-4 pa-md-5 hover-bg-grey cursor-pointer" @click="router.push(`/board/${post.id}`)">
-            <div class="d-flex align-center w-100">
-              <div class="d-none d-sm-flex flex-column align-center justify-center w-16 text-grey-darken-1 mr-4">
-                <v-icon size="small" class="mb-1">mdi-heart</v-icon>
-                <span class="text-caption font-weight-bold">{{ post.likeCount || 0 }}</span>
-              </div>
-              
-              <div class="flex-grow-1 min-w-0">
-                <div class="d-flex align-center mb-1">
-                  <v-chip size="x-small" :color="getCategoryColor(post.category)" variant="flat" class="font-weight-bold px-2 mr-2 rounded">
-                    {{ post.category }}
-                  </v-chip>
-                  <h4 class="text-subtitle-1 font-weight-bold text-grey-darken-4 text-truncate">{{ post.title }}</h4>
-                </div>
-                <div class="d-flex align-center gap-3 text-caption font-weight-medium text-grey-darken-1">
-                  <span class="font-weight-bold text-grey-darken-3">{{ post.author?.nickname || '알수없음' }}</span>
-                  <span>{{ formatDate(post.createdAt) }}</span>
-                  <span class="d-flex align-center"><v-icon size="x-small" class="mr-1">mdi-eye</v-icon> {{ post.viewCount || 0 }}</span>
-                </div>
-              </div>
-              
-              <div class="d-flex flex-column align-center justify-center w-16 ml-2">
-                <v-icon color="blue-lighten-2" class="mb-1">mdi-comment-processing-outline</v-icon>
-                <span class="text-caption font-weight-bold text-blue-darken-1">{{ post.commentCount || 0 }}</span>
+    <!-- HOT 게시글 -->
+    <div v-if="hotPosts.length > 0" class="mb-8">
+      <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2">
+        <i class="mdi mdi-fire text-red"></i> 주간 HOT 인기글
+      </h3>
+      <div class="hot-grid">
+        <div
+          v-for="post in hotPosts" :key="post.id"
+          class="hot-card card cursor-pointer hover-shadow"
+          @click="router.push(`/board/${post.id}`)"
+        >
+          <div class="hot-card__body">
+            <div class="flex justify-between items-start mb-3">
+              <span class="chip chip--red">HOT</span>
+              <div class="flex gap-2 text-caption font-bold text-grey-2">
+                <span class="flex items-center gap-1 text-red"><i class="mdi mdi-heart" style="font-size:.9em;"></i>{{ post.likeCount || 0 }}</span>
+                <span class="flex items-center gap-1"><i class="mdi mdi-forum" style="font-size:.9em;"></i>{{ post.commentCount || 0 }}</span>
               </div>
             </div>
-          </v-list-item>
-          <v-divider v-if="index !== paginatedPosts.length - 1"></v-divider>
-        </template>
-      </v-list>
-      
-      <!-- Pagination -->
-      <div v-if="totalPages > 1" class="d-flex justify-center pa-4 bg-white border-t">
-        <v-pagination
-          v-model="page"
-          :length="totalPages"
-          :total-visible="5"
-          rounded="circle"
-          color="blue-darken-1"
-          active-color="blue-darken-1"
-        ></v-pagination>
+            <h4 class="text-subtitle-1 font-black text-grey-dark mb-2 line-clamp-1">{{ post.title }}</h4>
+            <p class="text-body-2 text-grey-3 line-clamp-2 mt-auto">{{ post.contentPreview || '내용이 없습니다.' }}</p>
+          </div>
+        </div>
       </div>
-    </v-card>
+    </div>
+
+    <!-- 게시글 목록 카드 -->
+    <div class="card overflow-hidden">
+      <!-- 필터 헤더 -->
+      <div class="board-filter-bar">
+        <div class="chip-group">
+          <span
+            v-for="tag in categoryTags" :key="tag"
+            class="chip chip--outlined bg-white cursor-pointer"
+            :class="{ 'chip--active': boardTag === tag }"
+            @click="boardTag = tag"
+          >{{ tag }}</span>
+        </div>
+        <select v-model="boardSort" class="select" style="max-width:150px;" @change="page = 1">
+          <option>최신순</option><option>인기순</option><option>댓글순</option>
+        </select>
+      </div>
+
+      <!-- 로딩 스켈레톤 -->
+      <template v-if="loading">
+        <div v-for="i in 5" :key="`skel-${i}`" class="skeleton-item">
+          <div class="skeleton skeleton--avatar" style="width:40px;height:40px;border-radius:50%;"></div>
+          <div style="flex:1;"><div class="skeleton skeleton--title" style="width:50%;"></div><div class="skeleton skeleton--text" style="width:70%;"></div></div>
+        </div>
+      </template>
+
+      <!-- 빈 상태 -->
+      <div v-else-if="paginatedPosts.length === 0" class="text-center pa-10">
+        <i class="mdi mdi-text-box-search-outline" style="font-size:4rem;color:#BDBDBD;display:block;margin-bottom:16px;"></i>
+        <h3 class="text-h6 font-bold text-grey-2 mb-2">등록된 게시글이 없습니다.</h3>
+      </div>
+
+      <!-- 게시글 목록 -->
+      <ul v-else class="list pa-0">
+        <template v-for="(post, index) in paginatedPosts" :key="post.id">
+          <li class="list-item board-row cursor-pointer" @click="router.push(`/board/${post.id}`)">
+            <!-- 좋아요 수 (데스크톱) -->
+            <div class="board-like-col show-on-sm">
+              <i class="mdi mdi-heart" style="font-size:.9em;"></i>
+              <span class="text-caption font-bold">{{ post.likeCount || 0 }}</span>
+            </div>
+
+            <div class="flex-grow min-w-0">
+              <div class="flex items-center mb-1 gap-2">
+                <span :class="`chip chip--${getCategoryChipClass(post.category)} chip--xs`">{{ post.category }}</span>
+                <h4 class="text-subtitle-1 font-bold text-grey-dark text-truncate">{{ post.title }}</h4>
+              </div>
+              <div class="flex items-center gap-3 text-caption font-medium text-grey-2">
+                <span class="font-bold text-grey-3">{{ post.author?.nickname || '알수없음' }}</span>
+                <span>{{ formatDate(post.createdAt) }}</span>
+                <span class="flex items-center gap-1"><i class="mdi mdi-eye" style="font-size:.8em;"></i>{{ post.viewCount || 0 }}</span>
+              </div>
+            </div>
+
+            <!-- 댓글 수 -->
+            <div class="board-comment-col">
+              <i class="mdi mdi-comment-processing-outline" style="color:#90CAF9;"></i>
+              <span class="text-caption font-bold text-blue-dark">{{ post.commentCount || 0 }}</span>
+            </div>
+          </li>
+          <hr v-if="index !== paginatedPosts.length - 1" class="divider" />
+        </template>
+      </ul>
+
+      <!-- 페이지네이션 -->
+      <div v-if="totalPages > 1" class="pagination">
+        <button class="pagination__btn" :disabled="page <= 1" @click="page--"><i class="mdi mdi-chevron-left"></i></button>
+        <button
+          v-for="p in totalPages" :key="p"
+          class="pagination__btn"
+          :class="{ 'is-active': page === p }"
+          @click="page = p"
+        >{{ p }}</button>
+        <button class="pagination__btn" :disabled="page >= totalPages" @click="page++"><i class="mdi mdi-chevron-right"></i></button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -125,126 +129,85 @@ const boardTag = ref('전체')
 const boardSort = ref('최신순')
 const posts = ref([])
 const hotPosts = ref([])
-
-// 페이지네이션 상태
 const page = ref(1)
 const itemsPerPage = 10
+const categoryTags = ['전체', '책 리뷰', '자유글', '정보/팁', '건의사항']
 
-const loadPosts = async () => {
-  posts.value = await fetchPosts(boardTag.value)
-}
-
+const loadPosts = async () => { posts.value = await fetchPosts(boardTag.value) }
 const loadHotPosts = async () => {
-  const fetchedHot = await fetchHotPosts()
-  // 좋아요가 1개라도 있는 게시글만 HOT으로 취급
-  hotPosts.value = fetchedHot.filter(p => p.likeCount > 0)
+  const fetched = await fetchHotPosts()
+  hotPosts.value = fetched.filter(p => p.likeCount > 0)
 }
 
-onMounted(() => {
-  loadPosts()
-  loadHotPosts()
-})
+onMounted(() => { loadPosts(); loadHotPosts() })
+watch(boardTag, () => { page.value = 1; loadPosts() })
+watch(boardSort, () => { page.value = 1 })
 
-watch(boardTag, () => {
-  page.value = 1 // 탭 변경 시 1페이지로 초기화
-  loadPosts()
-})
-
-watch(boardSort, () => {
-  page.value = 1 // 정렬 변경 시 1페이지로 초기화
-})
-
-// 정렬 로직 (클라이언트 사이드 정렬)
 const sortedPosts = computed(() => {
   let sorted = [...posts.value]
-  
-  if (boardSort.value === '최신순') {
-    // 기본 fetchPosts 정렬 유지 (createdAt desc)
-  } else if (boardSort.value === '인기순') {
-    sorted.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
-  } else if (boardSort.value === '댓글순') {
-    sorted.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0))
-  }
-  
+  if (boardSort.value === '인기순') sorted.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+  else if (boardSort.value === '댓글순') sorted.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0))
   return sorted
 })
-
-const totalPages = computed(() => {
-  return Math.ceil(sortedPosts.value.length / itemsPerPage)
-})
-
+const totalPages = computed(() => Math.ceil(sortedPosts.value.length / itemsPerPage))
 const paginatedPosts = computed(() => {
   const start = (page.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return sortedPosts.value.slice(start, end)
+  return sortedPosts.value.slice(start, start + itemsPerPage)
 })
 
-// UI Helper 함수들
-const getCategoryColor = (cat) => {
-  const map = {
-    '책 리뷰': 'green-darken-1',
-    '자유글': 'grey-darken-2',
-    '정보/팁': 'orange-darken-2',
-    '건의사항': 'red-darken-2'
-  }
-  return map[cat] || 'blue-grey'
+const getCategoryChipClass = (cat) => {
+  const map = { '책 리뷰': 'green', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
+  return map[cat] || 'grey'
 }
-
-const getProfileImageUrl = (imageId) => {
-  return `https://api.dicebear.com/7.x/bottts/svg?seed=${imageId}`
-}
-
 const formatDate = (dateValue) => {
   if (!dateValue) return ''
   const date = dateValue.toDate ? dateValue.toDate() : new Date(dateValue)
   const now = new Date()
   const diffMs = now - date
-  const diffSec = Math.floor(diffMs / 1000)
-  const diffMin = Math.floor(diffSec / 60)
+  const diffMin = Math.floor(diffMs / 60000)
   const diffHour = Math.floor(diffMin / 60)
   const diffDay = Math.floor(diffHour / 24)
-
-  if (diffSec < 60) return '방금 전'
+  if (diffMin < 1) return '방금 전'
   if (diffMin < 60) return `${diffMin}분 전`
   if (diffHour < 24) return `${diffHour}시간 전`
   if (diffDay < 7) return `${diffDay}일 전`
-  
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
+  const m = String(date.getMonth()+1).padStart(2,'0')
+  const d = String(date.getDate()).padStart(2,'0')
   return `${date.getFullYear()}.${m}.${d}`
 }
 </script>
 
 <style scoped>
-.hover-shadow:hover {
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
-  transform: translateY(-2px);
-  transition: all 0.2s ease;
+.hot-grid {
+  display: grid; grid-template-columns: 1fr;
+  gap: 16px;
+  @media(min-width:600px) { grid-template-columns: repeat(2, 1fr); }
+  @media(min-width:960px) { grid-template-columns: repeat(3, 1fr); }
 }
-.hover-bg-grey:hover {
-  background-color: #f8f9fa !important;
+.hot-card { border-color: #FFCDD2; background: #FFEBEE; }
+.hot-card__body { padding: 20px; display:flex; flex-direction:column; height:100%; }
+
+.board-filter-bar {
+  display: flex; flex-direction: column; gap: 12px;
+  padding: 16px; background: #FAFAFA; border-bottom: 1px solid #e0e0e0;
+  @media(min-width:600px) { flex-direction: row; align-items: center; justify-content: space-between; }
 }
-.gap-2 { gap: 8px; }
-.gap-3 { gap: 12px; }
-.line-clamp-1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
+
+.board-row { padding: 16px 20px; align-items: center; }
+.board-like-col { display:none; flex-direction:column; align-items:center; width:40px; color:#757575; margin-right:16px; @media(min-width:600px){display:flex;} }
+.board-comment-col { display:flex; flex-direction:column; align-items:center; width:40px; margin-left:8px; }
+.show-on-sm { display:none; @media(min-width:600px){display:flex;} }
+
+.chip--active { background: #212121 !important; color: #fff !important; border-color: #212121 !important; }
+
+.pa-10 { padding: 40px; }
+.mb-1 { margin-bottom: 4px; }
+.mb-2 { margin-bottom: 8px; }
+.mb-3 { margin-bottom: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; }
+.mb-8 { margin-bottom: 32px; }
+.gap-1 { gap:4px; }
+.gap-2 { gap:8px; }
+.gap-3 { gap:12px; }
 </style>
