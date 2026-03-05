@@ -151,7 +151,7 @@ const navigation = [
   { id: 'home', label: '홈', icon: 'mdi-home-variant', to: '/' },
   { id: 'monthly', label: '월간 주제', icon: 'mdi-book-open-page-variant', to: '/cycles' },
   { id: 'recommend', label: '도서 추천', icon: 'mdi-bookshelf', to: '/recommend' },
-  { id: 'board', label: '자유 게시판', icon: 'mdi-forum', to: '/board' },
+  { id: 'board', label: '통합 게시판', icon: 'mdi-forum', to: '/board' },
   // { id: 'ranking', label: '랭킹', icon: 'mdi-trophy', to: '/ranking' },
   { id: 'mypage', label: '마이페이지', icon: 'mdi-account', to: '/mypage' },
 ]
