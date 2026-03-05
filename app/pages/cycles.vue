@@ -193,13 +193,14 @@
               <i class="mdi mdi-vote"></i> 투표 오픈
             </button>
             <button v-if="cycle.phase === 'voting'" class="btn btn--primary font-bold rounded-sm" @click="handleConfirmCommonBook">
-              <i class="mdi mdi-check-all"></i> 최다득표 도서 확정 → 2회차 시작
+              <i class="mdi mdi-check-all"></i> 공통 도서 확정 → 2회차 시작
             </button>
             <button v-if="cycle.phase === 'phase2_reading'" class="btn btn--dark font-bold rounded-sm" @click="changePhase('closed')">
               <i class="mdi mdi-flag-checkered"></i> 사이클 종료
             </button>
-            <button class="btn btn--tonal font-bold rounded-sm" @click="masterMeetingModal = true">
-              <i class="mdi mdi-pencil-box"></i> 모임 기록 작성
+            <button class="btn btn--tonal font-bold rounded-sm" @click="openMeetingModal">
+              <i :class="meetings.length > 0 ? 'mdi mdi-pencil-box-outline' : 'mdi mdi-pencil-box'"></i>
+              {{ meetings.length > 0 ? '모임 기록 수정' : '모임 기록 작성' }}
             </button>
           </div>
         </div>
@@ -592,8 +593,20 @@ const handleCreateCycle = async () => {
 }
 
 // ── 마스터: Phase 변경 ────────────────────────────────────────────
+const PHASE_DESCRIPTIONS = {
+  voting: {
+    title: '공통 도서 투표 오픈',
+    desc: '1회차 개별 독서를 마치고 투표를 시작합니다.\n멤버들은 다음 달 함께 읽고 싶은 책을 선택할 수 있습니다.\n\n계속하시겠습니까?',
+  },
+  closed: {
+    title: '사이클 종료',
+    desc: '현재 사이클을 완전히 종료합니다.\n종료 후에는 상태를 되돌릴 수 없습니다.\n\n정말 종료하시겠습니까?',
+  },
+}
 const changePhase = async (phase) => {
-  if (!confirm(`Phase를 "${phase}"로 변경하시겠습니까?`)) return
+  const info = PHASE_DESCRIPTIONS[phase]
+  const msg = info ? `[ ${info.title} ]\n\n${info.desc}` : `Phase를 "${phase}"로 변경하시겠습니까?`
+  if (!confirm(msg)) return
   await updateCyclePhase(cycle.value.id, phase)
   cycle.value = await fetchActiveCycle()
 }
@@ -700,22 +713,48 @@ const handleSubmitReview = async () => {
   finally { submittingReview.value = false }
 }
 
-// ── 모임 기록 ─────────────────────────────────────────────────────
+// ── 모임 기록 (단일 문서, 수정 가능) ─────────────────────────────
 const masterMeetingModal = ref(false)
 const meetingTitle = ref('')
 const meetingContent = ref('')
 const savingMeeting = ref(false)
 
+// 기존 기록이 있으면 수정 모드로 모달 열기
+const openMeetingModal = () => {
+  if (meetings.value.length > 0) {
+    const m = meetings.value[0]
+    meetingTitle.value = m.title || ''
+    meetingContent.value = m.content || ''
+  } else {
+    meetingTitle.value = ''
+    meetingContent.value = ''
+  }
+  masterMeetingModal.value = true
+}
+
 const handleAddMeeting = async () => {
   savingMeeting.value = true
   try {
-    await addMeetingRecord(cycle.value.id, meetingTitle.value.trim(), meetingContent.value.trim())
+    if (meetings.value.length > 0) {
+      // 기존 기록 수정
+      const existingId = meetings.value[0].id
+      const { updateDoc, doc } = await import('firebase/firestore')
+      const { serverTimestamp } = await import('firebase/firestore')
+      const nuxtApp = useNuxtApp()
+      const fb = nuxtApp.$firebase as any
+      await updateDoc(doc(fb.firestore, 'cycles', cycle.value.id, 'meetings', existingId), {
+        title: meetingTitle.value.trim(),
+        content: meetingContent.value.trim(),
+        updatedAt: serverTimestamp(),
+      })
+    } else {
+      // 신규 작성
+      await addMeetingRecord(cycle.value.id, meetingTitle.value.trim(), meetingContent.value.trim())
+    }
     masterMeetingModal.value = false
-    meetingTitle.value = ''
-    meetingContent.value = ''
     meetings.value = await fetchMeetingRecords(cycle.value.id)
     activeTab.value = 'history'
-  } catch (err) { alert('기록 저장 실패: ' + err.message) }
+  } catch (err) { alert('기록 저장 실패: ' + (err as any).message) }
   finally { savingMeeting.value = false }
 }
 
