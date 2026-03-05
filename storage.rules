@@ -1,0 +1,30 @@
+rules_version = '2';
+
+// Craft rules based on data in your Firestore database
+// allow write: if firestore.get(
+//    /databases/(default)/documents/users/$(request.auth.uid)
+// ).data.isAdmin;
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Function to check if user is logged in
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    match /board_images/{imageId} {
+      // Anyone can read board images
+      allow read: if true;
+      
+      // Only authenticated users can upload images (Max 2MB per image)
+      allow write: if isAuthenticated() 
+                   && request.resource.size < 2 * 1024 * 1024
+                   && request.resource.contentType.matches('image/.*');
+    }
+    
+    // Default deny for other paths
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

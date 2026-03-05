@@ -36,7 +36,26 @@ service cloud.firestore {
       allow delete: if isMaster();
     }
     
-    // Future collections like posts will use isActiveUser()
+    // Posts collection permissions
+    match /posts/{postId} {
+      // Anyone logged in and active can read posts
+      allow read: if isActiveUser();
+      
+      // Active users can create new posts (preventing spoofing of uid)
+      allow create: if isActiveUser() && request.resource.data.author.uid == request.auth.uid;
+      
+      // Post authors (or masters) can update or delete
+      // Notice: viewCount increases bypass the author.uid check so any active user can update viewCount
+      allow update: if isActiveUser() && (
+                      resource.data.author.uid == request.auth.uid || 
+                      isMaster() ||
+                      // Exception for viewCount increments
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']))
+                    );
+                    
+      allow delete: if isActiveUser() && (resource.data.author.uid == request.auth.uid || isMaster());
+    }
+
     match /{document=**} {
       allow read, write: if false; 
     }
