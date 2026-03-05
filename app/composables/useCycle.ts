@@ -45,10 +45,6 @@ export const useCycle = () => {
         keyword: string
         description: string
         heroImageUrl: string
-        phase1Start: string
-        phase1End: string
-        phase2Start: string
-        phase2End: string
     }) => {
         const cycleData = {
             ...data,

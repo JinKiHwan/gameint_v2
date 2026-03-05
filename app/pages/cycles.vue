@@ -196,29 +196,9 @@
           <div class="flex flex-col gap-3">
             <input v-model="newCycle.keyword" class="input" placeholder="이번 달 키워드 (예: 인간)" />
             <textarea v-model="newCycle.description" class="textarea" rows="2" placeholder="주제 설명"></textarea>
-            <div class="flex gap-2">
-              <div class="flex flex-col gap-1 flex-grow">
-                <label class="text-caption font-bold text-grey-2">1회차 시작</label>
-                <input v-model="newCycle.phase1Start" class="input" type="date" />
-              </div>
-              <div class="flex flex-col gap-1 flex-grow">
-                <label class="text-caption font-bold text-grey-2">1회차 종료</label>
-                <input v-model="newCycle.phase1End" class="input" type="date" />
-              </div>
-            </div>
-            <div class="flex gap-2">
-              <div class="flex flex-col gap-1 flex-grow">
-                <label class="text-caption font-bold text-grey-2">2회차 시작</label>
-                <input v-model="newCycle.phase2Start" class="input" type="date" />
-              </div>
-              <div class="flex flex-col gap-1 flex-grow">
-                <label class="text-caption font-bold text-grey-2">2회차 종료</label>
-                <input v-model="newCycle.phase2End" class="input" type="date" />
-              </div>
-            </div>
-            <input v-model="newCycle.heroImageUrl" class="input" placeholder="배너 이미지 URL (선택, 기본값 사용 가능)" />
-            <button class="btn btn--primary font-black rounded-sm btn--lg" :class="{'is-loading': creatingCycle}" :disabled="creatingCycle" @click="handleCreateCycle">
-              <i class="mdi mdi-play-circle-outline"></i> 사이클 시작하기
+            <input v-model="newCycle.heroImageUrl" class="input" placeholder="배너 이미지 URL (선택, 기본 이미지 사용 가능)" />
+            <button class="btn btn--primary font-black rounded-sm btn--lg" :class="{'is-loading': creatingCycle}" :disabled="creatingCycle || !newCycle.keyword.trim()" @click="handleCreateCycle">
+              <i class="mdi mdi-play-circle-outline"></i> 사이클 시작하기 (1회차 개별 독서)
             </button>
           </div>
         </div>

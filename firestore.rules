@@ -68,6 +68,42 @@ service cloud.firestore {
       }
     }
 
+    // Cycles collection permissions
+    match /cycles/{cycleId} {
+      allow read: if isActiveUser();
+      allow create, update, delete: if isMaster();
+
+      // participants sub-collection
+      match /participants/{uid} {
+        allow read: if isActiveUser();
+        // active user can write their own participation doc
+        allow create, update: if isActiveUser() && request.auth.uid == uid;
+        // master can update voteCount etc.
+        allow update: if isMaster();
+        allow delete: if isMaster();
+      }
+
+      // votes sub-collection (1 vote per user)
+      match /votes/{uid} {
+        allow read: if isActiveUser();
+        allow create, update: if isActiveUser() && request.auth.uid == uid;
+        allow delete: if isMaster();
+      }
+
+      // reviews sub-collection
+      match /reviews/{reviewId} {
+        allow read: if isActiveUser();
+        allow create: if isActiveUser() && request.resource.data.authorUid == request.auth.uid;
+        allow update, delete: if isActiveUser() && resource.data.authorUid == request.auth.uid || isMaster();
+      }
+
+      // meetings sub-collection (master only writes, all active users read)
+      match /meetings/{meetingId} {
+        allow read: if isActiveUser();
+        allow create, update, delete: if isMaster();
+      }
+    }
+
     match /{document=**} {
       allow read, write: if false; 
     }
