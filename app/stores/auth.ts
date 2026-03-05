@@ -144,12 +144,29 @@ export const useAuthStore = defineStore('auth', {
       return querySnapshot.docs[0]?.data()?.username
     },
 
-    // 5. 비밀번호 재설정 이메일 발송
-    async sendPasswordReset(email: string) {
+    // 5. 비밀번호 재설정 이메일 발송 (아이디+이메일 교차검증 추가)
+    async sendPasswordReset(username: string, email: string) {
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
-      
+      const firestore = ($firebase as any).firestore
+
       try {
+        // 1. Firestore에서 해당 이메일의 유저 정보 조회
+        const usersRef = collection(firestore, 'users')
+        const q = query(usersRef, where('email', '==', email))
+        const querySnapshot = await getDocs(q)
+        
+        if (querySnapshot.empty) {
+          throw new Error('해당 이메일로 가입된 계정이 없습니다.')
+        }
+
+        // 2. 입력한 아이디와 DB 아이디 교차 검증
+        const dbUsername = querySnapshot.docs[0]?.data()?.username
+        if (dbUsername !== username) {
+          throw new Error('입력하신 아이디와 이메일 정보가 일치하지 않습니다.')
+        }
+
+        // 3. 검증 통과 시 재설정 메일 발송
         const actionCodeSettings = {
           // url: window.location.origin + '/reset-password',
           url: 'https://gameint2.netlify.app/reset-password', // 배포 기본 주소
@@ -162,6 +179,8 @@ export const useAuthStore = defineStore('auth', {
         if (error.code === 'auth/user-not-found') {
           throw new Error('해당 이메일로 가입된 계정이 없습니다.')
         }
+        // Firestore 등에서 던진 커스텀 에러는 그대로 전달
+        if (error.message) throw error
         throw new Error('비밀번호 재설정 메일 발송 중 오류가 발생했습니다.')
       }
     },
