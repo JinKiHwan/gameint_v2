@@ -4,7 +4,6 @@ import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, 
   query, where, orderBy, serverTimestamp, increment 
 } from 'firebase/firestore'
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
 
 export const useBoard = () => {
   const nuxtApp = useNuxtApp()
@@ -15,12 +14,6 @@ export const useBoard = () => {
     return fb.firestore
   }
 
-  const getStorage = () => {
-    const fb = nuxtApp.$firebase as any
-    if (!fb) throw new Error('Firebase client-only plugin not loaded yet.')
-    return fb.storage
-  }
-  
   const loading = ref(false)
   const error = ref<string | null>(null)
 
@@ -144,35 +137,6 @@ export const useBoard = () => {
     }
   }
 
-  // 6. 이미지 업로드 (브라우저 압축 후 스토리지 업로드)
-  const uploadImage = async (file: File): Promise<string> => {
-    try {
-      // import imageCompression dynamically to avoid SSR crashes since it uses window object
-      const imageLib = await import('browser-image-compression')
-      const imageCompression = imageLib.default || imageLib
-
-      // 1. 이미지 압축 (최대 1MB, 권장 가로사이즈 1920)
-      const options = {
-        maxSizeMB: 1,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true
-      }
-      const compressedFile = await imageCompression(file, options)
-      
-      // 2. Firebase Storage 업로드 (경로: board_images/timestamp_filename)
-      const filename = `board_images/${Date.now()}_${compressedFile.name}`
-      const fileRef = storageRef(getStorage(), filename)
-      
-      const snapshot = await uploadBytes(fileRef, compressedFile)
-      const downloadURL = await getDownloadURL(snapshot.ref)
-      
-      return downloadURL
-    } catch (err) {
-      console.error('Image upload/compression error:', err)
-      throw new Error('이미지 처리 중 오류가 발생했습니다.')
-    }
-  }
-
   return {
     loading,
     error,
@@ -181,7 +145,6 @@ export const useBoard = () => {
     incrementViewCount,
     createPost,
     updatePost,
-    deletePost,
-    uploadImage
+    deletePost
   }
 }

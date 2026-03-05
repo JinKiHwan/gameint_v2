@@ -72,40 +72,10 @@
         :color="editor.isActive('blockquote') ? 'blue-darken-1' : 'grey-darken-3'"
         @click="editor.chain().focus().toggleBlockquote().run()"
       ></v-btn>
-
-      <v-spacer></v-spacer>
-      
-      <!-- 커스텀 이미지 업로드 버튼 -->
-      <v-btn
-        color="blue-darken-1"
-        variant="tonal"
-        size="small"
-        prepend-icon="mdi-image-plus"
-        class="font-weight-bold rounded-lg mr-2"
-        :loading="uploading"
-        @click="triggerImageUpload"
-      >
-        이미지 추가
-      </v-btn>
-      <input 
-        type="file" 
-        ref="fileInput" 
-        accept="image/*" 
-        style="display: none" 
-        @change="handleFileUpload" 
-      />
     </div>
 
     <!-- Tiptap 렌더링 영역 -->
     <editor-content :editor="editor" class="editor-content pa-4" />
-    
-    <!-- 업로드 로딩 오버레이 -->
-    <v-overlay :model-value="uploading" class="align-center justify-center" contained>
-      <div class="text-center bg-white pa-4 rounded-xl border elevation-2">
-        <v-progress-circular indeterminate color="blue-darken-1" size="40" class="mb-2"></v-progress-circular>
-        <div class="text-caption font-weight-bold text-grey-darken-3">이미지를 최적화하여 업로드 중입니다...</div>
-      </div>
-    </v-overlay>
   </div>
 </template>
 
@@ -113,8 +83,6 @@
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import { Editor, EditorContent } from '@tiptap/vue-3'
 import StarterKit from '@tiptap/starter-kit'
-import Image from '@tiptap/extension-image'
-import { useBoard } from '~/composables/useBoard'
 
 const props = defineProps({
   modelValue: {
@@ -126,9 +94,6 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const editor = ref(null)
-const fileInput = ref(null)
-const uploading = ref(false)
-const { uploadImage } = useBoard()
 
 // 무한 루프 방지용 플래그
 let isUpdateFromEditor = false
@@ -138,42 +103,12 @@ onMounted(() => {
   editor.value = new Editor({
     content: props.modelValue,
     extensions: [
-      StarterKit,
-      Image.configure({
-        inline: true,
-        allowBase64: true
-      })
+      StarterKit
     ],
     onUpdate: ({ editor }) => {
       // 에디터 내용이 변경될 때 v-model 업데이트
       isUpdateFromEditor = true
       emit('update:modelValue', editor.getHTML())
-    },
-    // 에디터에 파일을 직접 드래그앤드랍 했을 때 가로채는 핸들러
-    editorProps: {
-      handleDrop: (view, event, slice, moved) => {
-        if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
-          const file = event.dataTransfer.files[0]
-          if (file.type.startsWith('image/')) {
-            uploadAndInsertImage(file)
-            return true // Tiptap의 기본 동작 중단
-          }
-        }
-        return false
-      },
-      handlePaste: (view, event, slice) => {
-        const items = (event.clipboardData || event.originalEvent.clipboardData).items
-        for (const item of items) {
-          if (item.type.indexOf('image') === 0) {
-            const file = item.getAsFile()
-            if (file) {
-              uploadAndInsertImage(file)
-              return true
-            }
-          }
-        }
-        return false
-      }
     }
   })
 })
@@ -196,36 +131,6 @@ watch(() => props.modelValue, (value) => {
     editor.value.commands.setContent(value, false)
   }
 })
-
-// 파일 버튼 클릭 처리
-const triggerImageUpload = () => {
-  if (fileInput.value) {
-    fileInput.value.click()
-  }
-}
-
-const handleFileUpload = async (event) => {
-  const file = event.target.files[0]
-  if (!file) return
-  await uploadAndInsertImage(file)
-  event.target.value = '' // 초기화
-}
-
-// 실제 업로드 로직 및 에디터 삽입
-const uploadAndInsertImage = async (file) => {
-  uploading.value = true
-  try {
-    // 1. Storage에 압축 업로드 후 url 가져오기
-    const url = await uploadImage(file)
-    
-    // 2. 에디터 커서 위치에 이미지 태그 삽입
-    editor.value.chain().focus().setImage({ src: url }).run()
-  } catch (err) {
-    alert('이미지 업로드에 실패했습니다: ' + err.message)
-  } finally {
-    uploading.value = false
-  }
-}
 </script>
 
 <style>
@@ -251,14 +156,6 @@ const uploadAndInsertImage = async (file) => {
   float: left;
   height: 0;
   pointer-events: none;
-}
-
-/* 삽입된 이미지 반응형 처리 */
-.ProseMirror img {
-  max-width: 100%;
-  height: auto;
-  border-radius: 8px;
-  margin: 16px 0;
 }
 
 .ProseMirror blockquote {
