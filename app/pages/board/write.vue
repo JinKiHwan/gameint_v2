@@ -5,7 +5,7 @@
       <!-- 헤더 보드 -->
       <div class="d-flex align-center justify-space-between mb-4">
         <v-btn icon="mdi-arrow-left" variant="text" size="small" color="grey-darken-2" @click="router.back()"></v-btn>
-        <h1 class="text-h5 font-weight-black text-grey-darken-4">게시글 작성</h1>
+        <h1 class="text-h5 font-weight-black text-grey-darken-4">{{ isEditMode ? '게시글 수정' : '게시글 작성' }}</h1>
         <div style="width: 32px"></div> <!-- 중앙 정렬용 여백 -->
       </div>
       
@@ -119,7 +119,7 @@
             :loading="loading"
             @click="handleSubmit"
           >
-            등록하기
+            {{ isEditMode ? '수정완료' : '등록하기' }}
           </v-btn>
         </div>
       </v-card>
@@ -147,16 +147,17 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
 import TiptapEditor from '~/components/TiptapEditor.vue'
 import BookSearchModal from '~/components/BookSearchModal.vue'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
-const { createPost } = useBoard()
+const { createPost, fetchPost, updatePost } = useBoard()
 
 const showLoginDialog = ref(false)
 const showBookSearchModal = ref(false)
@@ -172,9 +173,37 @@ const formData = ref({
   content: ''
 })
 
-onMounted(() => {
+const isEditMode = computed(() => !!route.query.edit)
+
+onMounted(async () => {
   if (!authStore.user || authStore.userData?.status !== 'active') {
     showLoginDialog.value = true
+    return
+  }
+  
+  // 수정 모드 진입 시 기존 데이터 조회 로직
+  if (isEditMode.value) {
+    loading.value = true
+    try {
+      const existingPost = await fetchPost(route.query.edit)
+      // 본인 글이 아니거나 마스터가 아닌 경우 튕겨냄 (보안규칙에서도 막히지만 프론트 선제어)
+      if (existingPost.author.uid !== authStore.user.uid && authStore.userData?.role !== 'master') {
+        alert('수정 권한이 없습니다.')
+        router.replace('/board')
+        return
+      }
+      formData.value.category = existingPost.category
+      formData.value.title = existingPost.title
+      formData.value.content = existingPost.content
+      if (existingPost.attachedBook) {
+        attachedBook.value = existingPost.attachedBook
+      }
+    } catch (err) {
+      alert('게시글을 불러올 수 없습니다.')
+      router.back()
+    } finally {
+      loading.value = false
+    }
   }
 })
 
@@ -225,11 +254,16 @@ const handleSubmit = async () => {
       }
     }
 
-    const docId = await createPost(postData)
-    router.replace(`/board`) // 작성 후 목록 혹은 상세페이지로 이동
+    if (isEditMode.value) {
+      await updatePost(route.query.edit, postData)
+      router.replace(`/board/${route.query.edit}`)
+    } else {
+      const docId = await createPost(postData)
+      router.replace(`/board/${docId}`) // 새로 작성 후 상세페이지로 바로 이동 개선
+    }
   } catch (err) {
     console.error('Submit error:', err)
-    errorMsg.value = '게시글 등록에 실패했습니다. 다시 시도해주세요.'
+    errorMsg.value = isEditMode.value ? '게시글 수정에 실패했습니다.' : '게시글 등록에 실패했습니다. 다시 시도해주세요.'
   } finally {
     loading.value = false
   }

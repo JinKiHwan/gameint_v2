@@ -355,7 +355,9 @@ const handleDeleteComment = async (commentId) => {
 }
 
 const editPost = () => {
-  alert('수정 기능은 곧 추가됩니다!')
+  if (post.value) {
+    router.push(`/board/write?edit=${post.value.id}`)
+  }
 }
 
 const handleDelete = async () => {
