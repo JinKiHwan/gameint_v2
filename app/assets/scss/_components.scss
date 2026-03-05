@@ -4,10 +4,9 @@
 // Card
 // ============================
 .card {
-  background: $bg-app;
-  border: none;
+  background: $white;
+  border: 1px solid $grey-lighten-2;
   border-radius: $radius-xl;
-  box-shadow: $shadow-neumo;
   overflow: hidden;
 
   &--flat {
@@ -39,7 +38,7 @@
   gap: sp(2);
   padding: sp(2) sp(4);
   border: none;
-  border-radius: $radius-lg;
+  border-radius: $radius-sm;
   font-weight: 700;
   font-size: 0.875rem;
   cursor: pointer;
@@ -47,12 +46,6 @@
   text-decoration: none;
   white-space: nowrap;
   line-height: 1.5;
-  box-shadow: $shadow-neumo-sm;
-
-  &:active:not(:disabled) {
-    box-shadow: $shadow-neumo-inset-sm;
-    transform: translateY(1px);
-  }
 
   &:disabled {
     opacity: 0.5;
@@ -135,15 +128,9 @@
   &--text {
     background: transparent;
     color: $grey-darken-2;
-    box-shadow: none;
 
     &:hover {
-      background: rgba(0, 0, 0, 0.05);
-    }
-
-    &:active:not(:disabled) {
-      box-shadow: $shadow-neumo-inset-sm;
-      background: $bg-app;
+      background: $grey-lighten-4;
     }
   }
 
@@ -167,12 +154,11 @@
 
   &--outlined {
     background: transparent;
-    border: none;
+    border: 1px solid $grey-lighten-2;
     color: $grey-darken-2;
-    box-shadow: $shadow-neumo-inset-sm;
 
     &:hover {
-      box-shadow: $shadow-neumo-sm;
+      background: $grey-lighten-4;
     }
   }
 
@@ -272,15 +258,14 @@
 .textarea {
   width: 100%;
   padding: sp(3) sp(4);
-  border: none;
-  border-radius: $radius-md;
-  background: $bg-app;
-  box-shadow: $shadow-neumo-inset;
+  border: 1.5px solid $grey-lighten-2;
+  border-radius: $radius-sm;
+  background: $grey-lighten-5;
   font-size: 0.9375rem;
   font-weight: 600;
   color: $grey-darken-4;
   outline: none;
-  transition: box-shadow 0.2s;
+  transition: border-color 0.2s;
   appearance: none;
 
   &::placeholder {
@@ -289,7 +274,9 @@
   }
 
   &:focus {
-    box-shadow: $shadow-neumo-inset-sm, 0 0 0 2px rgba(0, 98, 66, 0.2); // primary color subtle border
+    border-color: $blue-darken-1;
+    background: $white;
+    box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.12);
   }
 
   &:disabled {
@@ -315,15 +302,16 @@
 .input-with-suffix {
   display: flex;
   align-items: center;
-  border: none;
-  border-radius: $radius-md;
-  background: $bg-app;
-  box-shadow: $shadow-neumo-inset;
+  border: 1.5px solid $grey-lighten-2;
+  border-radius: $radius-sm;
+  background: $grey-lighten-5;
   overflow: hidden;
-  transition: box-shadow 0.2s;
+  transition: border-color 0.2s;
 
   &:focus-within {
-    box-shadow: $shadow-neumo-inset-sm, 0 0 0 2px rgba(0, 98, 66, 0.2);
+    border-color: $blue-darken-1;
+    background: $white;
+    box-shadow: 0 0 0 3px rgba(30, 136, 229, 0.12);
   }
 
   input {
@@ -672,14 +660,14 @@
 }
 
 .modal {
-  background: $bg-app;
-  backdrop-filter: none;
-  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: $radius-xl;
   width: 100%;
   max-width: 400px;
   padding: sp(2);
-  box-shadow: $shadow-neumo-lg;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
   animation: fadeIn 0.2s ease;
 
 

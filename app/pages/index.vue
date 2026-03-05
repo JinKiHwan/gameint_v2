@@ -19,30 +19,36 @@
     </div>
 
     <!-- 메인 히어로 배너 -->
-    <div class="card mb-10 pb-6 pt-6 px-4">
-      <div class="flex flex-wrap items-center justify-between gap-6 px-4">
-        <div>
-          <span class="chip chip--red mb-4" style="display: inline-flex;">모집중 · 4월~5월 사이클</span>
-          <h2 class="text-h4 font-black mb-4 line-height-tight text-grey-dark">기술의 발전과 <br/>인간의 윤리</h2>
-          <p class="text-body-2 font-medium text-grey-2" style="max-width: 500px;">
-            빠르게 발전하는 AI와 생명공학 기술 속에서 우리는 무엇을 잃고 얻게 될까요?
-            자유롭게 책을 읽고 인사이트를 나누어 봅시다.
-          </p>
-        </div>
+    <div class="hero-banner mb-10">
+      <img
+        src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=2072&auto=format&fit=crop"
+        alt="우주와 독서 배너"
+      />
+      <div class="hero-banner__overlay">
+        <div class="hero-banner__content">
+          <div class="text-white">
+            <span class="chip chip--red mb-4" style="display: inline-flex;">모집중 · 4월~5월 사이클</span>
+            <h2 class="text-h4 font-black mb-4 line-height-tight">기술의 발전과 <br/>인간의 윤리</h2>
+            <p class="text-body-2 font-medium opacity-90" style="max-width: 500px;">
+              빠르게 발전하는 AI와 생명공학 기술 속에서 우리는 무엇을 잃고 얻게 될까요?
+              자유롭게 책을 읽고 인사이트를 나누어 봅시다.
+            </p>
+          </div>
 
-        <div class="card pa-5 hero-info-card" style="border-radius:16px;">
-          <div class="text-grey-dark text-subtitle-2 font-bold mb-3 flex items-center gap-2">
-            <i class="mdi mdi-account-group text-primary"></i> 현재 42명 참여중
-          </div>
-          <div class="hero-avatars mb-5">
-            <div v-for="i in 4" :key="i" class="avatar avatar--sm avatar--grey avatar--stacked">
-              <span>U{{i}}</span>
+          <div class="hero-info-card">
+            <div class="text-white text-subtitle-2 font-bold mb-3 flex items-center gap-2">
+              <i class="mdi mdi-account-group"></i> 현재 42명 참여중
             </div>
-            <div class="avatar avatar--sm avatar--white avatar--stacked">
-              <span class="text-blue-dark font-bold">+38</span>
+            <div class="hero-avatars mb-5">
+              <div v-for="i in 4" :key="i" class="avatar avatar--sm avatar--grey avatar--stacked">
+                <span>U{{i}}</span>
+              </div>
+              <div class="avatar avatar--sm avatar--white avatar--stacked">
+                <span class="text-blue-dark">+38</span>
+              </div>
             </div>
+            <button class="btn btn--block" style="background:#fff; color:#1E88E5; font-weight:700;">참여하기</button>
           </div>
-          <button class="btn btn--primary btn--block rounded-lg font-black shadow-sm">참여하기</button>
         </div>
       </div>
     </div>
@@ -190,7 +196,14 @@ const recentActivities = [
 }
 
 .hero-info-card {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 16px;
+  padding: 20px;
   min-width: 250px;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
 }
 
 .hero-avatars { display: flex; }
