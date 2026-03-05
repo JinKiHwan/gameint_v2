@@ -59,14 +59,14 @@
       <v-skeleton-loader v-if="loading" type="list-item-avatar-two-line" v-for="i in 5" :key="`skel-${i}`" class="border-b"></v-skeleton-loader>
 
       <!-- Empty state -->
-      <div v-else-if="sortedPosts.length === 0" class="text-center pa-10">
+      <div v-else-if="paginatedPosts.length === 0" class="text-center pa-10">
         <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-text-box-search-outline</v-icon>
         <h3 class="text-h6 font-weight-bold text-grey-darken-2 mb-2">등록된 게시글이 없습니다.</h3>
       </div>
 
       <!-- Real posts list -->
       <v-list v-else lines="two" class="pa-0">
-        <template v-for="(post, index) in sortedPosts" :key="post.id">
+        <template v-for="(post, index) in paginatedPosts" :key="post.id">
           <v-list-item class="pa-4 pa-md-5 hover-bg-grey cursor-pointer" @click="router.push(`/board/${post.id}`)">
             <div class="d-flex align-center w-100">
               <div class="d-none d-sm-flex flex-column align-center justify-center w-16 text-grey-darken-1 mr-4">
@@ -94,9 +94,21 @@
               </div>
             </div>
           </v-list-item>
-          <v-divider v-if="index !== sortedPosts.length - 1"></v-divider>
+          <v-divider v-if="index !== paginatedPosts.length - 1"></v-divider>
         </template>
       </v-list>
+      
+      <!-- Pagination -->
+      <div v-if="totalPages > 1" class="d-flex justify-center pa-4 bg-white border-t">
+        <v-pagination
+          v-model="page"
+          :length="totalPages"
+          :total-visible="5"
+          rounded="circle"
+          color="blue-darken-1"
+          active-color="blue-darken-1"
+        ></v-pagination>
+      </div>
     </v-card>
   </div>
 </template>
@@ -114,6 +126,10 @@ const boardSort = ref('최신순')
 const posts = ref([])
 const hotPosts = ref([])
 
+// 페이지네이션 상태
+const page = ref(1)
+const itemsPerPage = 10
+
 const loadPosts = async () => {
   posts.value = await fetchPosts(boardTag.value)
 }
@@ -130,7 +146,12 @@ onMounted(() => {
 })
 
 watch(boardTag, () => {
+  page.value = 1 // 탭 변경 시 1페이지로 초기화
   loadPosts()
+})
+
+watch(boardSort, () => {
+  page.value = 1 // 정렬 변경 시 1페이지로 초기화
 })
 
 // 정렬 로직 (클라이언트 사이드 정렬)
@@ -146,6 +167,16 @@ const sortedPosts = computed(() => {
   }
   
   return sorted
+})
+
+const totalPages = computed(() => {
+  return Math.ceil(sortedPosts.value.length / itemsPerPage)
+})
+
+const paginatedPosts = computed(() => {
+  const start = (page.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return sortedPosts.value.slice(start, end)
 })
 
 // UI Helper 함수들
