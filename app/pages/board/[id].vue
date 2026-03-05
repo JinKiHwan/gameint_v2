@@ -71,7 +71,7 @@
           <v-card 
             variant="flat" 
             color="white" 
-            class="rounded-lg border d-flex pa-4 hover-scale transition-fast cursor-pointer"
+            class="rounded-lg border d-flex pa-4 book-hover-effect cursor-pointer"
             :href="post.attachedBook.url"
             target="_blank"
           >

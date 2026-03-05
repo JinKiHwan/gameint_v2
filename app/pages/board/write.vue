@@ -22,11 +22,12 @@
             class="font-weight-bold flex-grow-1"
             hide-details
             rounded="lg"
+            @update:model-value="handleCategoryChange"
           ></v-select>
 
           <!-- 도서 첨부 버튼 -->
           <v-btn 
-            v-if="!attachedBook"
+            v-if="formData.category === '책 리뷰' && !attachedBook"
             color="indigo-darken-2" 
             variant="flat" 
             height="56"
@@ -187,6 +188,12 @@ const extractTextFromHTML = (htmlString) => {
 
 const handleBookSelect = (book) => {
   attachedBook.value = book
+}
+
+const handleCategoryChange = (val) => {
+  if (val !== '책 리뷰') {
+    attachedBook.value = null
+  }
 }
 
 const handleSubmit = async () => {
