@@ -741,7 +741,7 @@ const handleAddMeeting = async () => {
       const { updateDoc, doc } = await import('firebase/firestore')
       const { serverTimestamp } = await import('firebase/firestore')
       const nuxtApp = useNuxtApp()
-      const fb = nuxtApp.$firebase as any
+      const fb = nuxtApp.$firebase
       await updateDoc(doc(fb.firestore, 'cycles', cycle.value.id, 'meetings', existingId), {
         title: meetingTitle.value.trim(),
         content: meetingContent.value.trim(),
@@ -754,7 +754,7 @@ const handleAddMeeting = async () => {
     masterMeetingModal.value = false
     meetings.value = await fetchMeetingRecords(cycle.value.id)
     activeTab.value = 'history'
-  } catch (err) { alert('기록 저장 실패: ' + (err as any).message) }
+  } catch (err) { alert('기록 저장 실패: ' + (err?.message || err)) }
   finally { savingMeeting.value = false }
 }
 
