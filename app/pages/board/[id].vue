@@ -124,7 +124,7 @@
 
         <div v-else class="mb-6">
           <div v-for="comment in comments" :key="comment.id" class="d-flex gap-3 mb-4 pb-4 border-b">
-            <v-avatar size="36" class="border bg-white mt-1">
+            <v-avatar size="36" class="border bg-white mt-1 shrink-0">
               <v-img :src="getProfileImageUrl(comment.author.profileImageId)"></v-img>
             </v-avatar>
             <div class="flex-grow-1">
@@ -132,18 +132,53 @@
                 <div class="d-flex align-center gap-2">
                   <span class="text-subtitle-2 font-weight-bold text-grey-darken-4">{{ comment.author.nickname }}</span>
                   <span class="text-caption text-grey-darken-1">{{ formatDate(comment.createdAt) }}</span>
+                  <span v-if="comment.isEdited" class="text-caption text-grey-darken-1 font-italic">(수정됨)</span>
                 </div>
-                <v-btn 
-                  v-if="authStore.user?.uid === comment.author.uid"
-                  variant="text" 
-                  size="small" 
-                  color="grey-darken-2" 
-                  icon="mdi-close" 
-                  class="rounded-lg"
-                  @click="handleDeleteComment(comment.id)"
-                ></v-btn>
+                
+                <div 
+                  v-if="authStore.user?.uid === comment.author.uid && editingCommentId !== comment.id" 
+                  class="d-flex align-center gap-1"
+                >
+                  <v-btn 
+                    variant="text" 
+                    size="x-small" 
+                    color="grey-darken-2" 
+                    icon="mdi-pencil" 
+                    class="rounded-lg"
+                    @click="startEditComment(comment)"
+                  ></v-btn>
+                  <v-btn 
+                    variant="text" 
+                    size="x-small" 
+                    color="red-lighten-1" 
+                    icon="mdi-close" 
+                    class="rounded-lg"
+                    @click="handleDeleteComment(comment.id)"
+                  ></v-btn>
+                </div>
               </div>
-              <p class="text-body-2 text-grey-darken-3" style="white-space: pre-wrap; word-break: break-all;">{{ comment.content }}</p>
+              
+              <!-- 수정 모드 표시 -->
+              <div v-if="editingCommentId === comment.id" class="mt-2">
+                <v-textarea
+                  v-model="editCommentContent"
+                  variant="outlined"
+                  bg-color="white"
+                  color="blue-darken-1"
+                  rows="2"
+                  auto-grow
+                  hide-details
+                  density="compact"
+                  class="mb-2"
+                ></v-textarea>
+                <div class="d-flex justify-end gap-2">
+                  <v-btn size="small" variant="text" color="grey-darken-2" class="font-weight-bold rounded-lg" @click="cancelEditComment">취소</v-btn>
+                  <v-btn size="small" color="blue-darken-1" variant="flat" class="font-weight-bold rounded-lg" :loading="updatingComment" @click="submitEditComment(comment.id)">수정 완료</v-btn>
+                </div>
+              </div>
+              
+              <!-- 일반 보기 모드 -->
+              <p v-else class="text-body-2 text-grey-darken-3" style="white-space: pre-wrap; word-break: break-all;">{{ comment.content }}</p>
             </div>
           </div>
         </div>
@@ -229,7 +264,7 @@ import { useBoard } from '~/composables/useBoard'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const { fetchPost, incrementViewCount, deletePost, loading, fetchComments, createComment, deleteComment, checkUserLiked, toggleLike } = useBoard()
+const { fetchPost, incrementViewCount, deletePost, loading, fetchComments, createComment, updateComment, deleteComment, checkUserLiked, toggleLike } = useBoard()
 
 const post = ref(null)
 const confirmDelete = ref(false)
@@ -241,6 +276,11 @@ const comments = ref([])
 const newComment = ref('')
 const loadingComments = ref(false)
 const submittingComment = ref(false)
+
+// 댓글 수정 상태
+const editingCommentId = ref(null)
+const editCommentContent = ref('')
+const updatingComment = ref(false)
 
 // 좋아요 상태
 const isLiked = ref(false)
@@ -339,6 +379,38 @@ const submitComment = async () => {
     alert('댓글 등록 중 오류가 발생했습니다.')
   } finally {
     submittingComment.value = false
+  }
+}
+
+const startEditComment = (comment) => {
+  editingCommentId.value = comment.id
+  editCommentContent.value = comment.content
+}
+
+const cancelEditComment = () => {
+  editingCommentId.value = null
+  editCommentContent.value = ''
+}
+
+const submitEditComment = async (commentId) => {
+  if (!editCommentContent.value.trim() || updatingComment.value) return
+  
+  updatingComment.value = true
+  
+  try {
+    await updateComment(post.value.id, commentId, editCommentContent.value.trim())
+    
+    // 성공 시 클라이언트 단 표시 즉각 갱신
+    const target = comments.value.find(c => c.id === commentId)
+    if (target) {
+      target.content = editCommentContent.value.trim()
+      target.isEdited = true
+    }
+    cancelEditComment()
+  } catch (err) {
+    alert('댓글 수정 중 오류가 발생했습니다.')
+  } finally {
+    updatingComment.value = false
   }
 }
 

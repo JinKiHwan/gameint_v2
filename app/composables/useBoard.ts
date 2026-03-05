@@ -174,7 +174,8 @@ export const useBoard = () => {
       // 1) 댓글 서브컬렉션에 추가
       const docRef = await addDoc(commentsRef, {
         ...commentData,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        isEdited: false
       })
       
       // 2) 부모 문서의 commentCount 증가
@@ -187,6 +188,27 @@ export const useBoard = () => {
     } catch (err: any) {
       console.error('Create comment error:', err)
       error.value = '댓글 작성에 실패했습니다.'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 7-1. 댓글 수정
+  const updateComment = async (postId: string, commentId: string, content: string) => {
+    loading.value = true
+    error.value = null
+    try {
+      const commentRef = doc(getDb(), 'posts', postId, 'comments', commentId)
+      await updateDoc(commentRef, {
+        content,
+        isEdited: true,
+        updatedAt: serverTimestamp()
+      })
+      return true
+    } catch (err: any) {
+      console.error('Update comment error:', err)
+      error.value = '댓글 수정에 실패했습니다.'
       throw err
     } finally {
       loading.value = false
