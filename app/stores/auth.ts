@@ -128,8 +128,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
-    // 4. 아이디 찾기 (이메일로 검색)
-    async findIdByEmail(email: string) {
+    // 4. 아이디 찾기 (이메일 + 실명 교차검증)
+    async findIdByEmail(realName: string, email: string) {
       const { $firebase } = useNuxtApp()
       const firestore = ($firebase as any).firestore
       
@@ -137,15 +137,20 @@ export const useAuthStore = defineStore('auth', {
       const q = query(usersRef, where('email', '==', email))
       const querySnapshot = await getDocs(q)
       
-      if (querySnapshot.empty) {
+      if (querySnapshot.empty || !querySnapshot.docs[0]) {
         throw new Error('해당 이메일로 가입된 계정이 없습니다.')
       }
+
+      const userDoc = querySnapshot.docs[0].data()
+      if (userDoc.realName !== realName) {
+        throw new Error('입력하신 본명과 이메일 정보가 일치하지 않습니다.')
+      }
       
-      return querySnapshot.docs[0]?.data()?.username
+      return userDoc.username
     },
 
-    // 5. 비밀번호 재설정 이메일 발송 (아이디+이메일 교차검증 추가)
-    async sendPasswordReset(username: string, email: string) {
+    // 5. 비밀번호 재설정 이메일 발송 (아이디+이메일+실명 3중 교차검증)
+    async sendPasswordReset(username: string, realName: string, email: string) {
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
       const firestore = ($firebase as any).firestore
@@ -156,14 +161,14 @@ export const useAuthStore = defineStore('auth', {
         const q = query(usersRef, where('email', '==', email))
         const querySnapshot = await getDocs(q)
         
-        if (querySnapshot.empty) {
+        if (querySnapshot.empty || !querySnapshot.docs[0]) {
           throw new Error('해당 이메일로 가입된 계정이 없습니다.')
         }
 
-        // 2. 입력한 아이디와 DB 아이디 교차 검증
-        const dbUsername = querySnapshot.docs[0]?.data()?.username
-        if (dbUsername !== username) {
-          throw new Error('입력하신 아이디와 이메일 정보가 일치하지 않습니다.')
+        // 2. 입력한 아이디/본명과 DB 교차 검증
+        const userDoc = querySnapshot.docs[0].data()
+        if (userDoc.username !== username || userDoc.realName !== realName) {
+          throw new Error('입력하신 정보(아이디 또는 본명)가 계정 정보와 일치하지 않습니다.')
         }
 
         // 3. 검증 통과 시 재설정 메일 발송
