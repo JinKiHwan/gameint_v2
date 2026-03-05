@@ -5,7 +5,6 @@ import {
   query, where, orderBy, serverTimestamp, increment 
 } from 'firebase/firestore'
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage'
-import imageCompression from 'browser-image-compression'
 
 export const useBoard = () => {
   const { $firebase } = useNuxtApp()
@@ -138,6 +137,10 @@ export const useBoard = () => {
   // 6. 이미지 업로드 (브라우저 압축 후 스토리지 업로드)
   const uploadImage = async (file: File): Promise<string> => {
     try {
+      // import imageCompression dynamically to avoid SSR crashes since it uses window object
+      const imageLib = await import('browser-image-compression')
+      const imageCompression = imageLib.default || imageLib
+
       // 1. 이미지 압축 (최대 1MB, 권장 가로사이즈 1920)
       const options = {
         maxSizeMB: 1,
