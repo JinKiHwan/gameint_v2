@@ -1,128 +1,916 @@
 <template>
   <div class="fade-in">
-    <!-- 히어로 배너 -->
-    <div class="card overflow-hidden mb-6" style="border-radius:20px;">
-      <div class="cycles-hero">
-        <img src="https://images.unsplash.com/photo-1516979187457-637abb4f9353?q=80&w=2070&auto=format&fit=crop" alt="월간주제" />
-        <div class="cycles-hero__overlay">
-          <div class="cycles-hero__content">
-            <span class="chip chip--primary mb-3" style="display:inline-flex;">24년 4월 ~ 5월</span>
-            <h1 class="text-h4 font-black text-white mb-2">기술의 발전과 인간의 윤리</h1>
-            <div class="flex items-center text-body-2 font-medium mb-4" style="color:#e0e0e0;gap:16px;margin-top:16px;">
-              <span class="flex items-center gap-1"><i class="mdi mdi-calendar" style="font-size:.9em;"></i> 04.01 ~ 05.31</span>
-              <span class="flex items-center gap-1"><i class="mdi mdi-map-marker" style="font-size:.9em;"></i> 온라인/오프라인</span>
+
+    <!-- ① 히어로 배너 -->
+    <div class="cycles-hero mb-6">
+      <img
+        :src="cycle?.heroImageUrl || 'https://images.unsplash.com/photo-1532012197267-da84d127e765?q=80&w=2187&auto=format&fit=crop'"
+        alt="월간 주제 배너"
+        class="cycles-hero__bg"
+      />
+      <div class="cycles-hero__overlay">
+        <div class="cycles-hero__glass">
+
+          <!-- Phase 1 -->
+          <template v-if="!cycle">
+            <div class="text-caption font-bold text-white mb-2 opacity-90">게임인트 독서 모임</div>
+            <div class="text-h5 font-black text-white mb-1">진행 중인 사이클이 없습니다</div>
+            <div class="text-body-2 text-white opacity-80">마스터가 새 사이클을 시작하면 여기에 표시됩니다.</div>
+          </template>
+
+          <template v-else-if="cycle.phase === 'phase1_reading' || cycle.phase === 'voting'">
+            <span class="chip chip--red mb-3" style="display:inline-flex;">
+              <i class="mdi mdi-book-open-variant mr-1"></i>
+              {{ cycle.phase === 'voting' ? '공통 도서 투표 중' : '1회차 · 개별 독서 기간' }}
+            </span>
+            <div class="text-caption font-bold mb-1" style="color:rgba(255,255,255,0.75);">이번 달 주제 키워드</div>
+            <div class="text-h4 font-black text-white mb-3"># {{ cycle.keyword }}</div>
+            <div class="flex items-center gap-4 text-body-2 font-medium" style="color:rgba(255,255,255,0.8);">
+              <span class="flex items-center gap-1"><i class="mdi mdi-calendar"></i> {{ formatDateRange(cycle.phase1Start, cycle.phase1End) }}</span>
+              <span class="flex items-center gap-1"><i class="mdi mdi-map-marker"></i> 온라인/오프라인</span>
             </div>
-          </div>
+          </template>
+
+          <template v-else-if="cycle.phase === 'phase2_reading'">
+            <span class="chip chip--primary mb-3" style="display:inline-flex;">
+              <i class="mdi mdi-trophy mr-1"></i>2회차 · 공통 도서 독서 기간
+            </span>
+            <div class="text-caption font-bold mb-2" style="color:rgba(255,255,255,0.75);">👑 투표 1위! 이달의 공통 도서</div>
+            <div class="flex items-center gap-4 mb-3">
+              <img
+                v-if="cycle.commonBook?.thumbnail"
+                :src="cycle.commonBook.thumbnail"
+                class="common-book-thumb"
+                alt="공통 도서"
+              />
+              <div>
+                <div class="text-h5 font-black text-white mb-1">{{ cycle.commonBook?.title }}</div>
+                <div class="text-body-2 font-medium" style="color:rgba(255,255,255,0.8);">{{ cycle.commonBook?.authors?.join(', ') }}</div>
+                <div v-if="recommenderNickname" class="text-caption mt-1" style="color:rgba(255,255,255,0.65);">
+                  추천인: @{{ recommenderNickname }}
+                </div>
+              </div>
+            </div>
+            <div class="text-body-2 font-medium" style="color:rgba(255,255,255,0.8);">
+              <i class="mdi mdi-calendar"></i> {{ formatDateRange(cycle.phase2Start, cycle.phase2End) }}
+            </div>
+          </template>
+
         </div>
       </div>
     </div>
 
-    <!-- 설명 + 참여 버튼 -->
-    <div class="card mb-8">
-      <div class="card-body cycles-info">
-        <p class="text-body-2 font-medium text-grey-2 flex-grow line-height-relaxed">
-          빠르게 발전하는 AI와 생명공학 기술 속에서 우리는 무엇을 잃고 무엇을 얻게 될까요?
-          관련된 도서를 자유롭게 읽고 인사이트를 나누어 봅시다.
-        </p>
-        <div class="flex items-center cycles-join">
-          <div class="text-right mr-4" style="display:none;@media(min-width:960px){display:block;}">
-            <div class="text-subtitle-2 font-bold text-grey-dark">참여자 42명</div>
-            <div class="text-caption font-bold text-blue-dark">지금 바로 합류하세요!</div>
-          </div>
-          <button class="btn btn--primary btn--lg rounded-sm font-bold cycles-btn">도서 등록하고 참여하기</button>
+    <!-- 로딩 -->
+    <div v-if="loadingCycle" class="text-center pa-10">
+      <div class="spinner" style="margin:0 auto;"></div>
+    </div>
+
+    <template v-else>
+
+      <!-- ② 내 Action Box -->
+      <div v-if="cycle && authStore.user" class="card mb-6">
+        <div class="card-body action-box">
+
+          <!-- Phase 1: 책 미등록 -->
+          <template v-if="(cycle.phase === 'phase1_reading') && !myParticipation">
+            <div class="action-box__text">
+              <i class="mdi mdi-alert-circle-outline action-box__icon text-orange-dark"></i>
+              <div>
+                <div class="text-subtitle-1 font-black text-grey-dark">{{ authStore.userData?.nickname }}님, 아직 이번 주제의 책을 고르지 않으셨네요!</div>
+                <div class="text-caption text-grey-2 font-medium">키워드 <strong>#{{ cycle.keyword }}</strong>에 맞는 책을 검색하고 등록해주세요.</div>
+              </div>
+            </div>
+            <button class="btn btn--primary btn--lg font-black rounded-sm" @click="openBookRegisterModal">
+              <i class="mdi mdi-book-plus-outline"></i> 책 검색/등록
+            </button>
+          </template>
+
+          <!-- Phase 1: 책 등록함 -->
+          <template v-else-if="cycle.phase === 'phase1_reading' && myParticipation">
+            <div class="action-box__text">
+              <i class="mdi mdi-check-circle-outline action-box__icon text-green"></i>
+              <div>
+                <div class="text-subtitle-1 font-black text-grey-dark">이번 달 책을 등록하셨습니다! 🎉</div>
+                <div class="text-caption text-grey-2 font-medium">
+                  <strong>{{ myParticipation.book?.title }}</strong> — 오프라인 모임 후 투표가 진행됩니다.
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- 투표 단계 -->
+          <template v-else-if="cycle.phase === 'voting'">
+            <div class="action-box__text">
+              <i class="mdi mdi-vote action-box__icon text-blue-dark"></i>
+              <div>
+                <div class="text-subtitle-1 font-black text-grey-dark">공통 도서 투표가 진행 중입니다!</div>
+                <div class="text-caption text-grey-2 font-medium">
+                  {{ myVote ? `이미 투표하셨습니다. (선택: 참여자의 책)` : '다음 달 모두 함께 읽고 싶은 책에 투표해주세요.' }}
+                </div>
+              </div>
+            </div>
+            <span v-if="myVote" class="chip chip--primary">투표 완료 ✓</span>
+            <span v-else class="text-caption font-bold text-blue-dark">👇 아래 참여현황 탭에서 투표하세요</span>
+          </template>
+
+          <!-- Phase 2: 리뷰 미작성 -->
+          <template v-else-if="cycle.phase === 'phase2_reading' && !myReview">
+            <div class="action-box__text">
+              <i class="mdi mdi-pencil action-box__icon text-blue-dark"></i>
+              <div>
+                <div class="text-subtitle-1 font-black text-grey-dark">{{ authStore.userData?.nickname }}님, 공통 도서를 다 읽으셨나요?</div>
+                <div class="text-caption text-grey-2 font-medium">모임 전까지 별점과 감상평을 남겨주세요!</div>
+              </div>
+            </div>
+            <button class="btn btn--primary btn--lg font-black rounded-sm" @click="openReviewModal">
+              <i class="mdi mdi-star-outline"></i> 리뷰 쓰기
+            </button>
+          </template>
+
+          <!-- Phase 2: 리뷰 작성함 -->
+          <template v-else-if="cycle.phase === 'phase2_reading' && myReview">
+            <div class="action-box__text">
+              <i class="mdi mdi-check-circle-outline action-box__icon text-green"></i>
+              <div>
+                <div class="text-subtitle-1 font-black text-grey-dark">리뷰를 남겨주셨습니다! 감사합니다 🙏</div>
+                <div class="text-caption text-grey-2 font-medium">다른 멤버들의 리뷰도 확인해보세요.</div>
+              </div>
+            </div>
+            <StarRating :modelValue="myReview.rating" :readonly="true" />
+          </template>
+
         </div>
       </div>
-    </div>
 
-    <!-- 탭 -->
-    <div class="tabs">
-      <button
-        v-for="tab in tabs" :key="tab.value"
-        class="tab-btn"
-        :class="{ 'is-active': monthlyTab === tab.value }"
-        @click="monthlyTab = tab.value"
-      >{{ tab.label }}</button>
-    </div>
-
-    <!-- 탭 패널: 독서 중인 도서 -->
-    <div v-if="monthlyTab === 'books'">
-      <div class="flex justify-between items-center mb-6 mt-2">
-        <h3 class="text-h6 font-black text-grey-dark">📚 멤버들이 읽고 있는 책</h3>
-      </div>
-      <div class="grid-cols-2">
-        <div v-for="i in 6" :key="i" class="card hover-shadow">
-          <div class="book-cover">
-            <img src="https://images.unsplash.com/photo-1550399105-c4db5fb85c18?q=80&w=2071&auto=format&fit=crop" alt="책" />
-            <div class="book-cover__overlay">
-              <div class="text-subtitle-2 font-black text-white line-clamp-1">인공지능의 시대</div>
-              <div class="text-caption font-medium" style="color:#e0e0e0;">제리 카플란</div>
+      <!-- ② 추천인 특권 (Phase 2에서 내 책이 공통도서로 선정됐을 때) -->
+      <div
+        v-if="cycle?.phase === 'phase2_reading' && cycle.commonBookRecommenderUid === authStore.user?.uid"
+        class="card mb-6 recommender-privilege"
+      >
+        <div class="card-body action-box">
+          <div class="action-box__text">
+            <i class="mdi mdi-crown action-box__icon" style="color:#FFB300;"></i>
+            <div>
+              <div class="text-subtitle-1 font-black text-grey-dark">🎉 선정왕 특권!</div>
+              <div class="text-caption text-grey-2 font-medium">내 책이 공통 도서로 선정되었습니다! 나만의 자유 도서를 추가 등록할 수 있어요.</div>
             </div>
           </div>
-          <div class="card-body" style="padding:16px;">
-            <div class="flex items-center mb-3">
-              <div class="avatar avatar--xs avatar--grey mr-2"><span class="text-caption font-bold">U</span></div>
-              <span class="text-caption font-bold text-grey-2">독서왕</span>
+          <button class="btn btn--lg font-black rounded-sm" style="background:#FFF8E1;color:#F57C00;border:1px solid #FFB300;" @click="openBookRegisterModal">
+            <i class="mdi mdi-book-plus"></i> 자유 도서 추가
+          </button>
+        </div>
+      </div>
+
+      <!-- ③ 마스터 관리 패널 -->
+      <div v-if="isMaster && cycle" class="card mb-6 master-panel">
+        <div class="card-body">
+          <div class="flex items-center justify-between mb-4">
+            <div class="text-subtitle-1 font-black flex items-center gap-2">
+              <i class="mdi mdi-shield-crown" style="color:#FFB300;"></i>마스터 관리 패널
             </div>
-            <div class="book-quote text-caption text-grey-2 line-clamp-2">
-              "기술 발전의 속도를 인류가 어떻게 감당해야 할지에 대한 고찰."
-            </div>
+            <span class="chip chip--amber">Phase: {{ phaseLabel }}</span>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button v-if="cycle.phase === 'phase1_reading'" class="btn btn--tonal font-bold rounded-sm" @click="changePhase('voting')">
+              <i class="mdi mdi-vote"></i> 투표 오픈
+            </button>
+            <button v-if="cycle.phase === 'voting'" class="btn btn--primary font-bold rounded-sm" @click="handleConfirmCommonBook">
+              <i class="mdi mdi-check-all"></i> 최다득표 도서 확정 → 2회차 시작
+            </button>
+            <button v-if="cycle.phase === 'phase2_reading'" class="btn btn--dark font-bold rounded-sm" @click="changePhase('closed')">
+              <i class="mdi mdi-flag-checkered"></i> 사이클 종료
+            </button>
+            <button class="btn btn--tonal font-bold rounded-sm" @click="masterMeetingModal = true">
+              <i class="mdi mdi-pencil-box"></i> 모임 기록 작성
+            </button>
           </div>
         </div>
       </div>
-    </div>
 
-    <div v-if="monthlyTab !== 'books'" class="text-center pa-10 text-grey-2 font-bold">
-      {{ tabPlaceholder }}
-    </div>
+      <!-- 마스터: 새 사이클 생성 (사이클 없을 때) -->
+      <div v-if="isMaster && !cycle" class="card mb-6 master-panel">
+        <div class="card-body">
+          <div class="text-subtitle-1 font-black flex items-center gap-2 mb-4">
+            <i class="mdi mdi-shield-crown" style="color:#FFB300;"></i>새 사이클 시작
+          </div>
+          <div class="flex flex-col gap-3">
+            <input v-model="newCycle.keyword" class="input" placeholder="이번 달 키워드 (예: 인간)" />
+            <textarea v-model="newCycle.description" class="textarea" rows="2" placeholder="주제 설명"></textarea>
+            <div class="flex gap-2">
+              <div class="flex flex-col gap-1 flex-grow">
+                <label class="text-caption font-bold text-grey-2">1회차 시작</label>
+                <input v-model="newCycle.phase1Start" class="input" type="date" />
+              </div>
+              <div class="flex flex-col gap-1 flex-grow">
+                <label class="text-caption font-bold text-grey-2">1회차 종료</label>
+                <input v-model="newCycle.phase1End" class="input" type="date" />
+              </div>
+            </div>
+            <div class="flex gap-2">
+              <div class="flex flex-col gap-1 flex-grow">
+                <label class="text-caption font-bold text-grey-2">2회차 시작</label>
+                <input v-model="newCycle.phase2Start" class="input" type="date" />
+              </div>
+              <div class="flex flex-col gap-1 flex-grow">
+                <label class="text-caption font-bold text-grey-2">2회차 종료</label>
+                <input v-model="newCycle.phase2End" class="input" type="date" />
+              </div>
+            </div>
+            <input v-model="newCycle.heroImageUrl" class="input" placeholder="배너 이미지 URL (선택, 기본값 사용 가능)" />
+            <button class="btn btn--primary font-black rounded-sm btn--lg" :class="{'is-loading': creatingCycle}" :disabled="creatingCycle" @click="handleCreateCycle">
+              <i class="mdi mdi-play-circle-outline"></i> 사이클 시작하기
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 사이클 없음 (일반 유저) -->
+      <div v-if="!cycle && !isMaster" class="card mb-6">
+        <div class="card-body text-center pa-10">
+          <i class="mdi mdi-book-off-outline" style="font-size:3rem;color:#BDBDBD;display:block;margin-bottom:12px;"></i>
+          <div class="text-h6 font-black text-grey-dark mb-2">현재 진행 중인 사이클이 없습니다</div>
+          <div class="text-body-2 text-grey-2 font-medium">다음 사이클이 시작되면 알려드릴게요!</div>
+        </div>
+      </div>
+
+      <template v-if="cycle">
+        <!-- ④ 메인 탭 -->
+        <div class="tabs">
+          <button
+            v-for="tab in tabs" :key="tab.value"
+            class="tab-btn"
+            :class="{ 'is-active': activeTab === tab.value }"
+            @click="activeTab = tab.value"
+          >{{ tab.label }}</button>
+        </div>
+
+        <!-- 탭 패널: 참여 현황 -->
+        <div v-if="activeTab === 'members'">
+          <div class="flex justify-between items-center mb-4 mt-4">
+            <h3 class="text-h6 font-black text-grey-dark">📚 참여 현황 <span class="text-blue-dark">{{ participants.length }}명</span></h3>
+          </div>
+          <div v-if="loadingParticipants" class="text-center pa-8"><div class="spinner" style="margin:0 auto;"></div></div>
+          <div v-else-if="participants.length === 0" class="text-center pa-10 text-grey-2 font-bold">
+            아직 책을 등록한 멤버가 없습니다. 가장 먼저 등록해보세요!
+          </div>
+          <div v-else class="participants-grid">
+            <div
+              v-for="p in participants"
+              :key="p.id"
+              class="participant-card card"
+              :class="{ 'is-winner': cycle.phase === 'phase2_reading' && p.uid === cycle.commonBookRecommenderUid }"
+            >
+              <!-- 책 표지 배경 -->
+              <div class="participant-book-cover">
+                <img
+                  v-if="p.book?.thumbnail"
+                  :src="p.book.thumbnail"
+                  class="participant-book-img"
+                  alt="책 표지"
+                />
+                <div v-else class="participant-book-placeholder">
+                  <i class="mdi mdi-book-open-variant"></i>
+                </div>
+                <div v-if="cycle.phase === 'phase2_reading' && p.uid === cycle.commonBookRecommenderUid" class="winner-badge">
+                  👑 선정!
+                </div>
+              </div>
+              <!-- 정보 -->
+              <div class="participant-info">
+                <div class="text-subtitle-2 font-black text-grey-dark line-clamp-2 mb-1">{{ p.book?.title }}</div>
+                <div class="text-caption text-grey-2 font-medium mb-2">{{ p.book?.authors?.join(', ') }}</div>
+                <div class="flex items-center gap-2 mb-3">
+                  <div class="avatar avatar--xs">
+                    <img :src="getProfileImagePath(p.profileImageId)" alt="프로필" />
+                  </div>
+                  <span class="text-caption font-bold text-grey-dark">{{ p.nickname }}</span>
+                </div>
+                <div v-if="p.reason" class="participant-reason text-caption text-grey-2 line-clamp-2">
+                  "{{ p.reason }}"
+                </div>
+                <!-- 투표 -->
+                <div v-if="cycle.phase === 'voting'" class="mt-3">
+                  <div class="flex items-center justify-between">
+                    <span class="text-caption font-bold text-grey-2">
+                      <i class="mdi mdi-thumb-up-outline"></i> {{ p.voteCount || 0 }}표
+                    </span>
+                    <button
+                      v-if="p.uid !== authStore.user?.uid && !myVote"
+                      class="btn btn--tonal-primary btn--sm rounded-sm font-bold"
+                      @click="handleVote(p.uid)"
+                    >투표</button>
+                    <span v-if="myVote?.targetUid === p.uid" class="chip chip--primary chip--sm">내 선택 ✓</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 패널: 리뷰 모아보기 -->
+        <div v-if="activeTab === 'reviews'">
+          <div class="mt-4 mb-4 flex justify-between items-center">
+            <h3 class="text-h6 font-black text-grey-dark">⭐ 리뷰 모아보기</h3>
+            <div v-if="avgRating > 0" class="flex items-center gap-2">
+              <StarRating :modelValue="avgRating" :readonly="true" />
+              <span class="text-subtitle-1 font-black text-amber">{{ avgRating.toFixed(1) }}</span>
+              <span class="text-caption text-grey-2">({{ reviews.length }}명)</span>
+            </div>
+          </div>
+          <div v-if="loadingReviews" class="text-center pa-8"><div class="spinner" style="margin:0 auto;"></div></div>
+          <div v-else-if="reviews.length === 0" class="card">
+            <div class="card-body text-center pa-8 text-grey-2 font-bold">
+              아직 리뷰가 없습니다. 가장 먼저 감상을 남겨보세요!
+            </div>
+          </div>
+          <div v-else class="flex flex-col gap-3">
+            <div v-for="r in reviews" :key="r.id" class="card">
+              <div class="card-body">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="avatar avatar--sm">
+                    <img :src="getProfileImagePath(r.profileImageId)" alt="프로필" />
+                  </div>
+                  <div>
+                    <div class="text-subtitle-2 font-bold text-grey-dark">{{ r.nickname }}</div>
+                    <div class="text-caption text-grey-2">{{ formatDate(r.createdAt) }}</div>
+                  </div>
+                  <div class="ml-auto">
+                    <StarRating :modelValue="r.rating" :readonly="true" />
+                  </div>
+                </div>
+                <p class="text-body-2 text-grey-3" style="white-space:pre-wrap;">{{ r.content }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 패널: 모임 기록 -->
+        <div v-if="activeTab === 'history'">
+          <div class="mt-4 mb-4">
+            <h3 class="text-h6 font-black text-grey-dark">📸 모임 기록</h3>
+          </div>
+          <div v-if="loadingMeetings" class="text-center pa-8"><div class="spinner" style="margin:0 auto;"></div></div>
+          <div v-else-if="meetings.length === 0" class="card">
+            <div class="card-body text-center pa-8 text-grey-2 font-bold">
+              <i class="mdi mdi-camera-off-outline" style="font-size:2.5rem;color:#BDBDBD;display:block;margin-bottom:12px;"></i>
+              아직 모임 기록이 없습니다. 오프라인 모임 후에 기록이 올라올 예정이에요!
+            </div>
+          </div>
+          <div v-else class="flex flex-col gap-4">
+            <div v-for="m in meetings" :key="m.id" class="card">
+              <div class="card-body">
+                <div class="flex items-center justify-between mb-3">
+                  <h4 class="text-subtitle-1 font-black text-grey-dark">{{ m.title }}</h4>
+                  <span class="text-caption text-grey-2">{{ formatDate(m.createdAt) }}</span>
+                </div>
+                <p class="text-body-2 text-grey-3 line-height-relaxed" style="white-space:pre-wrap;">{{ m.content }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </template>
+    </template>
+
+    <!-- ===== 책 등록 모달 ===== -->
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="bookRegisterModal" class="modal-overlay" @click.self="bookRegisterModal = false">
+          <div class="modal" style="max-width:500px;">
+            <div class="modal__header">
+              <span class="modal__title">📚 책 등록하기</span>
+              <button class="btn btn--text btn--icon" @click="bookRegisterModal = false"><i class="mdi mdi-close"></i></button>
+            </div>
+            <div class="modal__body">
+              <div v-if="!selectedBook" class="mb-4">
+                <div class="input-with-suffix mb-3">
+                  <i class="mdi mdi-magnify" style="padding:0 8px 0 12px;color:#757575;"></i>
+                  <input v-model="bookSearchQuery" type="text" placeholder="책 제목으로 검색..." @keyup.enter="searchBook" />
+                  <button class="btn btn--primary btn--sm append-btn" :class="{'is-loading':searchingBook}" @click="searchBook">검색</button>
+                </div>
+                <div v-if="bookSearchResults.length > 0" class="book-search-list">
+                  <div
+                    v-for="b in bookSearchResults" :key="b.isbn"
+                    class="book-search-item cursor-pointer"
+                    @click="selectedBook = b"
+                  >
+                    <img :src="b.thumbnail || 'https://via.placeholder.com/50x70?text=No'" class="book-search-thumb" alt="표지" />
+                    <div class="min-w-0">
+                      <div class="text-subtitle-2 font-bold text-grey-dark line-clamp-1">{{ b.title }}</div>
+                      <div class="text-caption text-grey-2">{{ b.authors?.join(', ') }} | {{ b.publisher }}</div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else-if="hasSearched" class="text-center pa-6 text-grey-2 font-bold text-caption">검색 결과가 없습니다.</div>
+              </div>
+              <div v-if="selectedBook" class="selected-book-preview mb-4">
+                <img :src="selectedBook.thumbnail" class="selected-book-thumb" alt="선택한 책" />
+                <div class="flex-grow min-w-0">
+                  <div class="text-subtitle-1 font-black text-grey-dark">{{ selectedBook.title }}</div>
+                  <div class="text-caption text-grey-2">{{ selectedBook.authors?.join(', ') }}</div>
+                </div>
+                <button class="btn btn--text btn--icon" @click="selectedBook = null"><i class="mdi mdi-close"></i></button>
+              </div>
+              <textarea v-model="bookRegisterReason" class="textarea" rows="3" placeholder="이 책을 선택한 이유를 간단히 적어주세요 (선택)"></textarea>
+            </div>
+            <div class="modal__footer">
+              <div v-if="registerError" class="alert alert--error mb-3 text-caption"><i class="mdi mdi-alert-circle-outline"></i>{{ registerError }}</div>
+              <button
+                class="btn btn--primary btn--lg btn--block font-black rounded-sm"
+                :class="{'is-loading':registeringBook}"
+                :disabled="!selectedBook || registeringBook"
+                @click="handleRegisterBook"
+              >등록하기</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+    </ClientOnly>
+
+    <!-- ===== 리뷰 작성 모달 ===== -->
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="reviewModal" class="modal-overlay" @click.self="reviewModal = false">
+          <div class="modal" style="max-width:460px;">
+            <div class="modal__header">
+              <span class="modal__title">리뷰 & 별점 남기기</span>
+              <button class="btn btn--text btn--icon" @click="reviewModal = false"><i class="mdi mdi-close"></i></button>
+            </div>
+            <div class="modal__body">
+              <div class="text-center mb-4">
+                <div class="text-subtitle-2 font-bold text-grey-dark mb-3">별점을 선택해주세요</div>
+                <StarRating v-model="reviewRating" style="justify-content:center;font-size:2rem;" />
+              </div>
+              <textarea v-model="reviewContent" class="textarea" rows="4" placeholder="이 책에 대한 감상을 자유롭게 작성해주세요..."></textarea>
+            </div>
+            <div class="modal__footer">
+              <div v-if="reviewError" class="alert alert--error mb-3 text-caption"><i class="mdi mdi-alert-circle-outline"></i>{{ reviewError }}</div>
+              <button
+                class="btn btn--primary btn--lg btn--block font-black rounded-sm"
+                :class="{'is-loading':submittingReview}"
+                :disabled="!reviewRating || !reviewContent.trim() || submittingReview"
+                @click="handleSubmitReview"
+              >리뷰 등록하기</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+    </ClientOnly>
+
+    <!-- ===== 마스터: 모임 기록 작성 모달 ===== -->
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="masterMeetingModal" class="modal-overlay" @click.self="masterMeetingModal = false">
+          <div class="modal" style="max-width:480px;">
+            <div class="modal__header">
+              <span class="modal__title">모임 기록 작성</span>
+              <button class="btn btn--text btn--icon" @click="masterMeetingModal = false"><i class="mdi mdi-close"></i></button>
+            </div>
+            <div class="modal__body">
+              <input v-model="meetingTitle" class="input mb-3" placeholder="모임 제목 (예: 4월 오프라인 모임 후기)" />
+              <textarea v-model="meetingContent" class="textarea" rows="5" placeholder="모임 내용, 분위기, 주요 논의 등을 자유롭게 기록해주세요."></textarea>
+            </div>
+            <div class="modal__footer">
+              <button
+                class="btn btn--primary btn--lg btn--block font-black rounded-sm"
+                :class="{'is-loading':savingMeeting}"
+                :disabled="!meetingTitle.trim() || !meetingContent.trim() || savingMeeting"
+                @click="handleAddMeeting"
+              >저장하기</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+    </ClientOnly>
+
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useAuthStore } from '~/stores/auth'
+import { useCycle } from '~/composables/useCycle'
+import { getProfileImagePath } from '~/composables/useProfileImages'
+import { useRuntimeConfig } from '#app'
+import StarRating from '~/components/StarRating.vue'
 
-const monthlyTab = ref('books')
-const tabs = [
-  { value: 'books', label: '독서 중인 도서' },
-  { value: 'reviews', label: '주제 리뷰' },
-  { value: 'stats', label: '참여 통계' },
-  { value: 'meeting', label: '모임 기록' },
-]
-const tabPlaceholder = computed(() => {
-  const map = { reviews: '주제 리뷰가', stats: '참여 통계가', meeting: '모임 기록이' }
-  return `${map[monthlyTab.value] || ''} 곧 업데이트 됩니다.`
+const authStore = useAuthStore()
+const config = useRuntimeConfig()
+const {
+  fetchActiveCycle, createCycle, updateCyclePhase,
+  fetchParticipants, registerBook, fetchMyParticipation,
+  castVote, fetchMyVote, confirmCommonBook,
+  fetchReviews, submitReview, fetchMyReview,
+  fetchMeetingRecords, addMeetingRecord,
+} = useCycle()
+
+// ── 기본 상태 ────────────────────────────────────────────────────
+const cycle = ref(null)
+const loadingCycle = ref(true)
+const isMaster = computed(() => authStore.userData?.role === 'master')
+
+const activeTab = ref('members')
+const tabs = computed(() => {
+  const base = [
+    { value: 'members', label: `참여 현황 (${participants.value.length}명)` },
+    { value: 'reviews', label: '리뷰 모아보기' },
+    { value: 'history', label: '모임 기록' },
+  ]
+  return base
 })
+
+const phaseLabel = computed(() => {
+  const map = { phase1_reading: '1회차 독서 중', voting: '공통도서 투표 중', phase2_reading: '2회차 독서 중', closed: '종료' }
+  return map[cycle.value?.phase] || ''
+})
+
+// ── 참여자 ────────────────────────────────────────────────────────
+const participants = ref([])
+const loadingParticipants = ref(false)
+const myParticipation = ref(null)
+const myVote = ref(null)
+
+// ── 리뷰 ──────────────────────────────────────────────────────────
+const reviews = ref([])
+const loadingReviews = ref(false)
+const myReview = ref(null)
+const avgRating = computed(() => {
+  if (!reviews.value.length) return 0
+  return reviews.value.reduce((sum, r) => sum + (r.rating || 0), 0) / reviews.value.length
+})
+
+// ── 모임 기록 ─────────────────────────────────────────────────────
+const meetings = ref([])
+const loadingMeetings = ref(false)
+
+// ── 추천인 닉네임 ──────────────────────────────────────────────────
+const recommenderNickname = computed(() => {
+  if (!cycle.value?.commonBookRecommenderUid) return null
+  const p = participants.value.find(p => p.uid === cycle.value.commonBookRecommenderUid)
+  return p?.nickname || null
+})
+
+// ── 탭 별 데이터 로딩 ─────────────────────────────────────────────
+const loadTabData = async () => {
+  if (!cycle.value) return
+
+  loadingParticipants.value = true
+  participants.value = await fetchParticipants(cycle.value.id)
+  loadingParticipants.value = false
+
+  loadingReviews.value = true
+  reviews.value = await fetchReviews(cycle.value.id)
+  loadingReviews.value = false
+
+  loadingMeetings.value = true
+  meetings.value = await fetchMeetingRecords(cycle.value.id)
+  loadingMeetings.value = false
+
+  if (authStore.user) {
+    myParticipation.value = await fetchMyParticipation(cycle.value.id)
+    myVote.value = await fetchMyVote(cycle.value.id)
+    myReview.value = await fetchMyReview(cycle.value.id)
+  }
+}
+
+onMounted(async () => {
+  cycle.value = await fetchActiveCycle()
+  loadingCycle.value = false
+  await loadTabData()
+})
+
+// ── 마스터: 사이클 생성 ───────────────────────────────────────────
+const newCycle = ref({ keyword: '', description: '', heroImageUrl: '', phase1Start: '', phase1End: '', phase2Start: '', phase2End: '' })
+const creatingCycle = ref(false)
+const handleCreateCycle = async () => {
+  if (!newCycle.value.keyword.trim()) { alert('키워드를 입력해주세요.'); return }
+  creatingCycle.value = true
+  try {
+    await createCycle(newCycle.value)
+    cycle.value = await fetchActiveCycle()
+    await loadTabData()
+  } catch (err) { alert('사이클 생성 실패: ' + err.message) }
+  finally { creatingCycle.value = false }
+}
+
+// ── 마스터: Phase 변경 ────────────────────────────────────────────
+const changePhase = async (phase) => {
+  if (!confirm(`Phase를 "${phase}"로 변경하시겠습니까?`)) return
+  await updateCyclePhase(cycle.value.id, phase)
+  cycle.value = await fetchActiveCycle()
+}
+
+const handleConfirmCommonBook = async () => {
+  if (!confirm('최다득표 도서를 공통 도서로 확정하고 2회차를 시작하시겠습니까?')) return
+  await confirmCommonBook(cycle.value.id, participants.value)
+  cycle.value = await fetchActiveCycle()
+  await loadTabData()
+}
+
+// ── 책 등록 ───────────────────────────────────────────────────────
+const bookRegisterModal = ref(false)
+const bookSearchQuery = ref('')
+const bookSearchResults = ref([])
+const hasSearched = ref(false)
+const searchingBook = ref(false)
+const selectedBook = ref(null)
+const bookRegisterReason = ref('')
+const registeringBook = ref(false)
+const registerError = ref('')
+
+const openBookRegisterModal = () => {
+  bookRegisterModal.value = true
+  bookSearchQuery.value = ''
+  bookSearchResults.value = []
+  hasSearched.value = false
+  selectedBook.value = null
+  bookRegisterReason.value = ''
+  registerError.value = ''
+}
+
+const searchBook = async () => {
+  if (!bookSearchQuery.value.trim()) return
+  searchingBook.value = true
+  hasSearched.value = true
+  try {
+    const res = await fetch(`https://dapi.kakao.com/v3/search/book?query=${encodeURIComponent(bookSearchQuery.value)}&size=8`, {
+      headers: { Authorization: `KakaoAK ${config.public.kakaoRestApiKey}` }
+    })
+    const data = await res.json()
+    bookSearchResults.value = data.documents || []
+  } catch (err) { console.error(err) }
+  finally { searchingBook.value = false }
+}
+
+const handleRegisterBook = async () => {
+  if (!selectedBook.value) return
+  registerError.value = ''
+  registeringBook.value = true
+  try {
+    await registerBook(cycle.value.id, {
+      title: selectedBook.value.title,
+      authors: selectedBook.value.authors,
+      publisher: selectedBook.value.publisher,
+      thumbnail: selectedBook.value.thumbnail,
+      url: selectedBook.value.url,
+      isbn: selectedBook.value.isbn,
+    }, bookRegisterReason.value.trim())
+    bookRegisterModal.value = false
+    myParticipation.value = await fetchMyParticipation(cycle.value.id)
+    participants.value = await fetchParticipants(cycle.value.id)
+  } catch (err) { registerError.value = err.message || '등록 실패' }
+  finally { registeringBook.value = false }
+}
+
+// ── 투표 ──────────────────────────────────────────────────────────
+const handleVote = async (targetUid) => {
+  if (!authStore.user) { alert('로그인이 필요합니다.'); return }
+  if (!confirm('이 책에 투표하시겠습니까? 투표는 한 번만 가능합니다.')) return
+  try {
+    await castVote(cycle.value.id, targetUid)
+    myVote.value = { targetUid }
+    participants.value = await fetchParticipants(cycle.value.id)
+  } catch (err) { alert('투표 실패: ' + err.message) }
+}
+
+// ── 리뷰 작성 ─────────────────────────────────────────────────────
+const reviewModal = ref(false)
+const reviewRating = ref(0)
+const reviewContent = ref('')
+const submittingReview = ref(false)
+const reviewError = ref('')
+
+const openReviewModal = () => {
+  reviewModal.value = true
+  reviewRating.value = 0
+  reviewContent.value = ''
+  reviewError.value = ''
+}
+
+const handleSubmitReview = async () => {
+  if (!reviewRating.value) { reviewError.value = '별점을 선택해주세요.'; return }
+  if (!reviewContent.value.trim()) { reviewError.value = '리뷰 내용을 입력해주세요.'; return }
+  reviewError.value = ''
+  submittingReview.value = true
+  try {
+    const phase = cycle.value.phase === 'phase2_reading' ? 'phase2' : 'phase1'
+    await submitReview(cycle.value.id, reviewRating.value, reviewContent.value.trim(), phase)
+    reviewModal.value = false
+    myReview.value = { rating: reviewRating.value, content: reviewContent.value }
+    reviews.value = await fetchReviews(cycle.value.id)
+  } catch (err) { reviewError.value = err.message || '리뷰 등록 실패' }
+  finally { submittingReview.value = false }
+}
+
+// ── 모임 기록 ─────────────────────────────────────────────────────
+const masterMeetingModal = ref(false)
+const meetingTitle = ref('')
+const meetingContent = ref('')
+const savingMeeting = ref(false)
+
+const handleAddMeeting = async () => {
+  savingMeeting.value = true
+  try {
+    await addMeetingRecord(cycle.value.id, meetingTitle.value.trim(), meetingContent.value.trim())
+    masterMeetingModal.value = false
+    meetingTitle.value = ''
+    meetingContent.value = ''
+    meetings.value = await fetchMeetingRecords(cycle.value.id)
+    activeTab.value = 'history'
+  } catch (err) { alert('기록 저장 실패: ' + err.message) }
+  finally { savingMeeting.value = false }
+}
+
+// ── 날짜 유틸 ─────────────────────────────────────────────────────
+const formatDateRange = (start, end) => {
+  if (!start && !end) return ''
+  const fmt = (v) => {
+    if (!v) return ''
+    const d = v?.toDate ? v.toDate() : new Date(v)
+    const m = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    return `${d.getFullYear()}.${m}.${day}`
+  }
+  return `${fmt(start)} ~ ${fmt(end)}`
+}
+
+const formatDate = (dateValue) => {
+  if (!dateValue) return ''
+  const date = dateValue.toDate ? dateValue.toDate() : new Date(dateValue)
+  const now = new Date()
+  const diffMin = Math.floor((now - date) / 60000)
+  const diffHour = Math.floor(diffMin / 60)
+  const diffDay = Math.floor(diffHour / 24)
+  if (diffMin < 1) return '방금 전'
+  if (diffMin < 60) return `${diffMin}분 전`
+  if (diffHour < 24) return `${diffHour}시간 전`
+  if (diffDay < 7) return `${diffDay}일 전`
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${date.getFullYear()}.${m}.${d}`
+}
 </script>
 
 <style scoped>
+/* ── 히어로 배너 ──────────────────────────── */
 .cycles-hero {
   position: relative;
-  img { width:100%; height:300px; object-fit:cover; display:block; }
+  border-radius: 20px;
+  overflow: hidden;
+}
+.cycles-hero__bg {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  display: block;
 }
 .cycles-hero__overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(to top, rgba(15,23,42,0.9), rgba(15,23,42,0.2));
-  display: flex; align-items: flex-end;
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 25, 41, 0.85) 0%, rgba(10, 25, 41, 0.3) 60%, transparent 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: 32px;
+  @media (max-width: 600px) { padding: 20px; }
 }
-.cycles-hero__content { padding: 40px; @media(max-width:600px){ padding: 24px; } }
-.cycles-info { display:flex; flex-direction:column; gap:16px; @media(min-width:960px){ flex-direction:row; align-items:center; justify-content:space-between; } }
-.cycles-join { flex-shrink:0; width:100%; @media(min-width:960px){ width:auto; } }
-.cycles-btn { flex-grow:1; @media(min-width:960px){ flex-grow:0; } }
+.cycles-hero__glass {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 20px 24px;
+  width: 100%;
+}
+.common-book-thumb {
+  width: 60px;
+  height: 88px;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
 
-.book-cover {
+/* ── Action Box ────────────────────────────── */
+.action-box {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  @media (min-width: 600px) { flex-direction: row; align-items: center; justify-content: space-between; }
+}
+.action-box__text { display: flex; align-items: flex-start; gap: 12px; }
+.action-box__icon { font-size: 1.6rem; flex-shrink: 0; margin-top: 2px; }
+
+/* ── 추천인 특권 ─────────────────────────── */
+.recommender-privilege {
+  border: 2px solid #FFB300 !important;
+  background: linear-gradient(135deg, #FFF8E1, #FFFDE7) !important;
+}
+
+/* ── 마스터 패널 ─────────────────────────── */
+.master-panel {
+  border: 2px solid #FFD54F !important;
+  background: #FFFDE7 !important;
+}
+
+/* ── 참여 현황 그리드 ────────────────────── */
+.participants-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  @media (min-width: 600px) { grid-template-columns: repeat(3, 1fr); }
+  @media (min-width: 960px) { grid-template-columns: repeat(4, 1fr); }
+}
+.participant-card {
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  &:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.12); }
+  &.is-winner { border: 2px solid #FFB300 !important; }
+}
+.participant-book-cover {
   position: relative;
-  img { width:100%; height:180px; object-fit:cover; display:block; }
-  &__overlay { position:absolute; bottom:0; left:0; right:0; padding:8px 12px; background:linear-gradient(to top, rgba(0,0,0,0.8), transparent); }
+  height: 160px;
+  background: #EEEEEE;
+  overflow: hidden;
+}
+.participant-book-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.participant-book-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  color: #BDBDBD;
+}
+.winner-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: #FFB300;
+  color: #212121;
+  font-size: 0.7rem;
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+.participant-info { padding: 12px; }
+.participant-reason {
+  background: #F5F5F5;
+  padding: 8px;
+  border-radius: 8px;
+  font-style: italic;
 }
 
-.book-quote { background:#f5f5f5; padding:12px; border-radius:8px; }
+/* ── 책 등록 모달 ────────────────────────── */
+.book-search-list { max-height: 260px; overflow-y: auto; }
+.book-search-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  &:hover { background: #F5F5F5; }
+}
+.book-search-thumb { width: 40px; height: 56px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.selected-book-preview {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #E8EAF6;
+  border: 1px solid #9FA8DA;
+  border-radius: 10px;
+  padding: 12px;
+}
+.selected-book-thumb { width: 50px; height: 70px; object-fit: cover; border-radius: 4px; flex-shrink: 0; }
+.append-btn { margin: 6px 8px 6px 0; height: 36px; }
+.input-with-suffix {
+  display: flex; align-items: center;
+  border: 1.5px solid #E0E0E0; border-radius: 8px; background: #FAFAFA; overflow: hidden;
+  &:focus-within { border-color: #1E88E5; box-shadow: 0 0 0 3px rgba(30,136,229,0.12); }
+  input { flex:1; border:none; background:transparent; padding:10px 12px 10px 4px; font-size:0.9375rem; font-weight:500; outline:none; &::placeholder{ color:#BDBDBD; } }
+}
 
+/* ── util ───────────────────────────────── */
+.pa-6  { padding: 24px; }
+.pa-8  { padding: 32px; }
 .pa-10 { padding: 40px; }
-.mr-4 { margin-right: 16px; }
+.mr-1  { margin-right: 4px; }
+.mt-3  { margin-top: 12px; }
+.ml-auto { margin-left: auto; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.mb-1 { margin-bottom: 4px; }
+.mb-2 { margin-bottom: 8px; }
 .mb-3 { margin-bottom: 12px; }
 .mb-4 { margin-bottom: 16px; }
 .mb-6 { margin-bottom: 24px; }
-.mb-8 { margin-bottom: 32px; }
-.mt-2 { margin-top: 8px; }
-.mt-4 { margin-top: 16px; }
-.gap-1 { gap: 4px; }
+.text-amber { color: #FFB300; }
 </style>
