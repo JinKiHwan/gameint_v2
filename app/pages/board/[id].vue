@@ -62,7 +62,97 @@
         게시글을 불러올 수 없습니다. 삭제되었거나 권한이 없을 수 있습니다.
       </v-alert>
 
-      <!-- TODO: 댓글 영역 컴포넌트 마운트 될 자리 -->
+      <!-- 댓글 영역 -->
+      <v-card v-if="post" class="rounded-xl border bg-white pa-6 mt-4" elevation="0">
+        <h3 class="text-h6 font-weight-black text-grey-darken-4 mb-4">
+          댓글 <span class="text-blue-darken-1">{{ comments.length }}</span>
+        </h3>
+
+        <!-- 댓글 목록 -->
+        <div v-if="loadingComments" class="text-center pa-4">
+          <v-progress-circular indeterminate color="blue-darken-1"></v-progress-circular>
+        </div>
+        
+        <div v-else-if="comments.length === 0" class="text-center pa-8 text-grey-darken-1 bg-grey-lighten-5 rounded-lg mb-6">
+          <v-icon size="40" class="mb-2 text-grey-lighten-1">mdi-comment-outline</v-icon>
+          <p class="text-body-2 font-weight-bold">아직 댓글이 없습니다. 가장 먼저 댓글을 남겨보세요!</p>
+        </div>
+
+        <div v-else class="mb-6">
+          <div v-for="comment in comments" :key="comment.id" class="d-flex gap-3 mb-4 pb-4 border-b">
+            <v-avatar size="36" class="border bg-white mt-1">
+              <v-img :src="getProfileImageUrl(comment.author.profileImageId)"></v-img>
+            </v-avatar>
+            <div class="flex-grow-1">
+              <div class="d-flex justify-space-between align-center mb-1">
+                <div class="d-flex align-center gap-2">
+                  <span class="text-subtitle-2 font-weight-bold text-grey-darken-4">{{ comment.author.nickname }}</span>
+                  <span class="text-caption text-grey-darken-1">{{ formatDate(comment.createdAt) }}</span>
+                </div>
+                <v-btn 
+                  v-if="authStore.user?.uid === comment.author.uid"
+                  variant="text" 
+                  size="small" 
+                  color="grey-darken-2" 
+                  icon="mdi-close" 
+                  class="rounded-lg"
+                  @click="handleDeleteComment(comment.id)"
+                ></v-btn>
+              </div>
+              <p class="text-body-2 text-grey-darken-3" style="white-space: pre-wrap; word-break: break-all;">{{ comment.content }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 댓글 입력창 -->
+        <div class="d-flex gap-3 align-start">
+          <v-avatar size="40" class="border bg-white mt-1">
+            <v-img :src="getProfileImageUrl(authStore.userData?.profileImageId || 'avatar_bronze_01')"></v-img>
+          </v-avatar>
+          <div class="flex-grow-1">
+            <v-textarea
+              v-model="newComment"
+              placeholder="댓글을 남겨보세요..."
+              variant="outlined"
+              color="blue-darken-1"
+              bg-color="grey-lighten-5"
+              rounded="lg"
+              auto-grow
+              rows="2"
+              max-rows="5"
+              hide-details
+              class="font-weight-medium mb-2"
+              :disabled="!isLoggedIn || submittingComment"
+            ></v-textarea>
+            
+            <div class="d-flex justify-end">
+              <v-btn
+                v-if="isLoggedIn"
+                color="blue-darken-1"
+                variant="flat"
+                class="font-weight-bold rounded-lg px-6"
+                elevation="0"
+                :loading="submittingComment"
+                :disabled="!newComment.trim()"
+                @click="submitComment"
+              >
+                등록
+              </v-btn>
+              <v-btn
+                v-else
+                color="grey-darken-2"
+                variant="tonal"
+                class="font-weight-bold rounded-lg px-6"
+                elevation="0"
+                @click="router.push('/login')"
+              >
+                로그인 후 작성
+              </v-btn>
+            </div>
+          </div>
+        </div>
+
+      </v-card>
       
     </v-container>
 
@@ -95,28 +185,91 @@ import { useBoard } from '~/composables/useBoard'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const { fetchPost, incrementViewCount, deletePost, loading } = useBoard()
+const { fetchPost, incrementViewCount, deletePost, loading, fetchComments, createComment, deleteComment } = useBoard()
 
 const post = ref(null)
 const confirmDelete = ref(false)
 const deleting = ref(false)
 const deleteError = ref('')
 
-onMounted(async () => {
-  const postId = route.params.id
-  if (postId) {
-    post.value = await fetchPost(postId)
-    
-    // 조회수 증가 로직 (작성자 본인이 아닐 때만 올릴수도 있지만, 일단 단순 호출)
-    if (post.value) {
-      incrementViewCount(postId)
-    }
-  }
+// 댓글 상태
+const comments = ref([])
+const newComment = ref('')
+const loadingComments = ref(false)
+const submittingComment = ref(false)
+
+const isLoggedIn = computed(() => {
+  return authStore.user && authStore.userData?.status === 'active'
 })
 
 const isAuthor = computed(() => {
   return authStore.user && post.value && post.value.author.uid === authStore.user.uid
 })
+
+onMounted(async () => {
+  const postId = route.params.id
+  if (postId) {
+    post.value = await fetchPost(postId)
+    
+    if (post.value) {
+      incrementViewCount(postId)
+      loadComments(postId)
+    }
+  }
+})
+
+const loadComments = async (postId) => {
+  loadingComments.value = true
+  try {
+    comments.value = await fetchComments(postId)
+  } catch (err) {
+    console.error(err)
+  } finally {
+    loadingComments.value = false
+  }
+}
+
+const submitComment = async () => {
+  if (!newComment.value.trim() || !post.value) return
+  
+  submittingComment.value = true
+  const postId = post.value.id
+  
+  try {
+    const commentData = {
+      content: newComment.value.trim(),
+      author: {
+        uid: authStore.user.uid,
+        nickname: authStore.userData.nickname,
+        profileImageId: authStore.userData.profileImageId || 'avatar_bronze_01'
+      }
+    }
+    
+    await createComment(postId, commentData)
+    
+    // 성공 후 UI 상태 갱신
+    newComment.value = ''
+    post.value.commentCount = (post.value.commentCount || 0) + 1
+    await loadComments(postId) // 최신 목록 다시 불러오기
+    
+  } catch (err) {
+    alert('댓글 등록 중 오류가 발생했습니다.')
+  } finally {
+    submittingComment.value = false
+  }
+}
+
+const handleDeleteComment = async (commentId) => {
+  if (!confirm('정말로 이 댓글을 삭제하시겠습니까?')) return
+  
+  try {
+    await deleteComment(post.value.id, commentId)
+    post.value.commentCount = Math.max(0, (post.value.commentCount || 0) - 1)
+    comments.value = comments.value.filter(c => c.id !== commentId)
+  } catch (err) {
+    alert('댓글 삭제에 실패했습니다.')
+  }
+}
 
 const editPost = () => {
   // TODO: 수정 페이지 라우팅 로직 (현재는 미구현)

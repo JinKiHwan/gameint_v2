@@ -45,15 +45,22 @@ service cloud.firestore {
       allow create: if isActiveUser() && request.resource.data.author.uid == request.auth.uid;
       
       // Post authors (or masters) can update or delete
-      // Notice: viewCount increases bypass the author.uid check so any active user can update viewCount
+      // Notice: viewCount and commentCount increases bypass the author.uid check so any active user can update them
       allow update: if isActiveUser() && (
                       resource.data.author.uid == request.auth.uid || 
                       isMaster() ||
-                      // Exception for viewCount increments
-                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount']))
+                      // Exception for viewCount and commentCount increments
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'commentCount']))
                     );
                     
       allow delete: if isActiveUser() && (resource.data.author.uid == request.auth.uid || isMaster());
+
+      // Comments sub-collection permissions
+      match /comments/{commentId} {
+        allow read: if isActiveUser();
+        allow create: if isActiveUser() && request.resource.data.author.uid == request.auth.uid;
+        allow update, delete: if isActiveUser() && (resource.data.author.uid == request.auth.uid || isMaster());
+      }
     }
 
     match /{document=**} {

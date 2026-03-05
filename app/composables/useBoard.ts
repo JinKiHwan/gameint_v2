@@ -137,6 +137,78 @@ export const useBoard = () => {
     }
   }
 
+  // 6. 댓글 목록 조회
+  const fetchComments = async (postId: string) => {
+    try {
+      const commentsRef = collection(getDb(), 'posts', postId, 'comments')
+      const q = query(commentsRef, orderBy('createdAt', 'asc'))
+      const snapshot = await getDocs(q)
+      
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+    } catch (err: any) {
+      console.error('Fetch comments error:', err)
+      throw new Error('댓글을 불러오는데 실패했습니다.')
+    }
+  }
+
+  // 7. 댓글 작성
+  const createComment = async (postId: string, commentData: any) => {
+    loading.value = true
+    error.value = null
+    try {
+      const commentsRef = collection(getDb(), 'posts', postId, 'comments')
+      
+      // 1) 댓글 서브컬렉션에 추가
+      const docRef = await addDoc(commentsRef, {
+        ...commentData,
+        createdAt: serverTimestamp()
+      })
+      
+      // 2) 부모 문서의 commentCount 증가
+      const postRef = doc(getDb(), 'posts', postId)
+      await updateDoc(postRef, {
+        commentCount: increment(1)
+      })
+      
+      return docRef.id
+    } catch (err: any) {
+      console.error('Create comment error:', err)
+      error.value = '댓글 작성에 실패했습니다.'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
+  // 8. 댓글 삭제
+  const deleteComment = async (postId: string, commentId: string) => {
+    loading.value = true
+    error.value = null
+    try {
+      const commentRef = doc(getDb(), 'posts', postId, 'comments', commentId)
+      
+      // 1) 댓글 삭제
+      await deleteDoc(commentRef)
+      
+      // 2) 부모 문서의 commentCount 감소 (0 미만이 되지 않게 조심해야하지만, 로직상 맞출 수 있음. -1 처리)
+      const postRef = doc(getDb(), 'posts', postId)
+      await updateDoc(postRef, {
+        commentCount: increment(-1)
+      })
+      
+      return true
+    } catch (err: any) {
+      console.error('Delete comment error:', err)
+      error.value = '댓글 삭제에 실패했습니다.'
+      throw err
+    } finally {
+      loading.value = false
+    }
+  }
+
   return {
     loading,
     error,
@@ -145,6 +217,9 @@ export const useBoard = () => {
     incrementViewCount,
     createPost,
     updatePost,
-    deletePost
+    deletePost,
+    fetchComments,
+    createComment,
+    deleteComment
   }
 }
