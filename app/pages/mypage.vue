@@ -87,7 +87,7 @@
           <p class="text-body-2 font-bold text-grey-2">아직 작성한 글이 없습니다.</p>
         </div>
         <ul v-else class="list pa-0">
-          <template v-for="(post, index) in userPosts.slice(0, 5)" :key="post.id">
+          <template v-for="(post, index) in paginatedUserPosts" :key="post.id">
             <li class="list-item cursor-pointer rounded-sm" @click="router.push(`/board/${post.id}`)">
               <span :class="`chip chip--${getCategoryChipClass(post.category)} chip--xs mr-3`">{{ post.category }}</span>
               <div class="flex-grow min-w-0">
@@ -101,9 +101,21 @@
                 </div>
               </div>
             </li>
-            <hr v-if="index !== Math.min(userPosts.length, 5) - 1" class="divider" />
+            <hr v-if="index !== paginatedUserPosts.length - 1" class="divider" />
           </template>
         </ul>
+
+        <!-- 페이지네이션 -->
+        <div v-if="totalPostPages > 1" class="pagination mt-4">
+          <button class="pagination__btn" :disabled="postPage <= 1" @click="postPage--"><i class="mdi mdi-chevron-left"></i></button>
+          <button
+            v-for="p in totalPostPages" :key="p"
+            class="pagination__btn"
+            :class="{ 'is-active': postPage === p }"
+            @click="postPage = p"
+          >{{ p }}</button>
+          <button class="pagination__btn" :disabled="postPage >= totalPostPages" @click="postPage++"><i class="mdi mdi-chevron-right"></i></button>
+        </div>
       </div>
     </div>
 
@@ -248,6 +260,15 @@ const currentProfileImagePath = computed(() =>
 // ── 게시글 목록 ─────────────────────────────────────────────────
 const userPosts = ref([])
 const loadingPosts = ref(false)
+
+const postPage = ref(1)
+const postsPerPage = 10
+
+const totalPostPages = computed(() => Math.ceil(userPosts.value.length / postsPerPage))
+const paginatedUserPosts = computed(() => {
+  const start = (postPage.value - 1) * postsPerPage
+  return userPosts.value.slice(start, start + postsPerPage)
+})
 
 const loadUserPosts = async () => {
   if (authStore.userData?.uid) {
@@ -538,7 +559,19 @@ const handleUpdateProfile = async () => {
 .pa-2 { padding: 8px; } .pa-8 { padding: 32px; } .pa-10 { padding: 40px; }
 .mb-1 { margin-bottom: 4px; } .mb-2 { margin-bottom: 8px; } .mb-3 { margin-bottom: 12px; }
 .mb-4 { margin-bottom: 16px; } .mb-6 { margin-bottom: 24px; }
-.mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-6 { margin-top: 24px; }
+.mt-2 { margin-top: 8px; } .mt-3 { margin-top: 12px; } .mt-4 { margin-top: 16px; } .mt-6 { margin-top: 24px; }
 .mr-3 { margin-right: 12px; } .px-6 { padding-left: 24px; padding-right: 24px; }
 .gap-1 { gap: 4px; } .gap-2 { gap: 8px; }
+
+/* pagination styling copied from board */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.pagination__btn {
+  width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e0e0e0;
+  background: #fff; color: #757575; font-size: 0.8125rem; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: all 0.2s;
+  &:hover:not(:disabled) { background: #f5f5f5; color: #212121; }
+  &.is-active { background: #1E88E5; color: #fff; border-color: #1E88E5; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
 </style>
