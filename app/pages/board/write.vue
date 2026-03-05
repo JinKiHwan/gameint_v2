@@ -39,7 +39,9 @@
         ></v-text-field>
 
         <!-- 팁탭 에디터 컴포넌트 -->
-        <p class="text-subtitle-2 font-weight-bold mb-2 text-grey-darken-3">내용 작성 (이미지 복사/붙여넣기 가능)</p>
+        <p class="text-subtitle-2 font-weight-bold mb-2 text-grey-darken-3">
+          내용 작성 <span class="text-caption text-orange-darken-3 ml-2">* 무료로 운영되는 공간이므로 서버 용량상 이미지 첨부는 불가합니다.</span>
+        </p>
         <TiptapEditor v-model="formData.content" class="mb-6" />
 
         <v-alert v-if="errorMsg" type="error" variant="tonal" class="mb-6 rounded-lg font-weight-bold text-caption text-left">
