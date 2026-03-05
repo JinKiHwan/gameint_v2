@@ -85,17 +85,35 @@
             </button>
           </template>
 
-          <!-- Phase 1: 책 등록함 -->
-          <template v-else-if="cycle.phase === 'phase1_reading' && myParticipation">
+          <!-- Phase 1: 책 등록함 + 리뷰 미작성 -->
+          <template v-else-if="cycle.phase === 'phase1_reading' && myParticipation && !myReview">
             <div class="action-box__text">
-              <i class="mdi mdi-check-circle-outline action-box__icon text-green"></i>
+              <i class="mdi mdi-book-check-outline action-box__icon text-green"></i>
               <div>
-                <div class="text-subtitle-1 font-black text-grey-dark">이번 달 책을 등록하셨습니다! 🎉</div>
+                <div class="text-subtitle-1 font-black text-grey-dark">책을 등록하셨습니다! 이제 리뷰를 남겨주세요 ✍️</div>
                 <div class="text-caption text-grey-2 font-medium">
-                  <strong>{{ myParticipation.book?.title }}</strong> — 오프라인 모임 후 투표가 진행됩니다.
+                  <strong>{{ myParticipation.book?.title }}</strong>
+                  &nbsp;— 독서 후 별점과 감상을 남겨주세요. 오프라인 모임 후 투표도 진행됩니다.
                 </div>
               </div>
             </div>
+            <button class="btn btn--primary btn--lg font-black rounded-sm" @click="openReviewModal">
+              <i class="mdi mdi-star-outline"></i> 내 책 리뷰 쓰기
+            </button>
+          </template>
+
+          <!-- Phase 1: 책 등록 + 리뷰 완료 -->
+          <template v-else-if="cycle.phase === 'phase1_reading' && myParticipation && myReview">
+            <div class="action-box__text">
+              <i class="mdi mdi-check-circle action-box__icon text-green"></i>
+              <div>
+                <div class="text-subtitle-1 font-black text-grey-dark">책 등록과 리뷰를 모두 완료하셨습니다! 🎖️</div>
+                <div class="text-caption text-grey-2 font-medium">
+                  <strong>{{ myParticipation.book?.title }}</strong> — 오프라인 모임 후 투표가 진행될 예정입니다.
+                </div>
+              </div>
+            </div>
+            <StarRating :modelValue="myReview.rating" :readonly="true" />
           </template>
 
           <!-- 투표 단계 -->
