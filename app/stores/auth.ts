@@ -5,6 +5,7 @@ import {
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   updatePassword,
+  confirmPasswordReset,
   signOut,
   type User 
 } from 'firebase/auth'
@@ -149,7 +150,12 @@ export const useAuthStore = defineStore('auth', {
       const auth = ($firebase as any).auth
       
       try {
-        await sendPasswordResetEmail(auth, email)
+        const actionCodeSettings = {
+          // url: window.location.origin + '/reset-password',
+          url: 'https://gameint2.netlify.app/reset-password', // 배포 기본 주소
+          handleCodeInApp: false
+        }
+        await sendPasswordResetEmail(auth, email, actionCodeSettings)
         return true
       } catch (error: any) {
         console.error('Password reset error:', error)
@@ -157,6 +163,26 @@ export const useAuthStore = defineStore('auth', {
           throw new Error('해당 이메일로 가입된 계정이 없습니다.')
         }
         throw new Error('비밀번호 재설정 메일 발송 중 오류가 발생했습니다.')
+      }
+    },
+
+    // 5-1. 비밀번호 재설정 확인 (이메일 링크 클릭 후 코드와 새 비밀번호로 업데이트)
+    async confirmResetPassword(oobCode: string, newPassword: string) {
+      const { $firebase } = useNuxtApp()
+      const auth = ($firebase as any).auth
+      
+      try {
+        await confirmPasswordReset(auth, oobCode, newPassword)
+        return true
+      } catch (error: any) {
+        console.error('Confirm reset password error:', error)
+        if (error.code === 'auth/expired-action-code') {
+          throw new Error('만료된 링크입니다. 비밀번호 찾기를 다시 진행해주세요.')
+        }
+        if (error.code === 'auth/invalid-action-code') {
+          throw new Error('유효하지 않은 링크입니다.')
+        }
+        throw new Error('비밀번호 변경 중 오류가 발생했습니다.')
       }
     },
 

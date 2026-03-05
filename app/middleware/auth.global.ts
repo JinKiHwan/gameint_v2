@@ -13,7 +13,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     })
   })
 
-  const publicPages = ['/', '/login', '/signup']
+  const publicPages = ['/', '/login', '/signup', '/reset-password']
 
   // Check if current path matches any public page (allowing trailing slashes)
   const isPublicPage = publicPages.some(page => to.path === page || to.path === `${page}/`)
