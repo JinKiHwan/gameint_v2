@@ -3,6 +3,8 @@ import {
   onAuthStateChanged, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
+  updatePassword,
   signOut,
   type User 
 } from 'firebase/auth'
@@ -122,6 +124,59 @@ export const useAuthStore = defineStore('auth', {
            throw new Error('이미 가입된 회사 이메일입니다.')
         }
         throw new Error('회원가입 처리 중 오류가 발생했습니다.')
+      }
+    },
+
+    // 4. 아이디 찾기 (이메일로 검색)
+    async findIdByEmail(email: string) {
+      const { $firebase } = useNuxtApp()
+      const firestore = ($firebase as any).firestore
+      
+      const usersRef = collection(firestore, 'users')
+      const q = query(usersRef, where('email', '==', email))
+      const querySnapshot = await getDocs(q)
+      
+      if (querySnapshot.empty) {
+        throw new Error('해당 이메일로 가입된 계정이 없습니다.')
+      }
+      
+      return querySnapshot.docs[0]?.data()?.username
+    },
+
+    // 5. 비밀번호 재설정 이메일 발송
+    async sendPasswordReset(email: string) {
+      const { $firebase } = useNuxtApp()
+      const auth = ($firebase as any).auth
+      
+      try {
+        await sendPasswordResetEmail(auth, email)
+        return true
+      } catch (error: any) {
+        console.error('Password reset error:', error)
+        if (error.code === 'auth/user-not-found') {
+          throw new Error('해당 이메일로 가입된 계정이 없습니다.')
+        }
+        throw new Error('비밀번호 재설정 메일 발송 중 오류가 발생했습니다.')
+      }
+    },
+
+    // 6. 마이페이지에서 비밀번호 변경 (로그인 된 상태)
+    async changePassword(newPassword: string) {
+      const { $firebase } = useNuxtApp()
+      const auth = ($firebase as any).auth
+      
+      const user = auth.currentUser
+      if (!user) throw new Error('로그아웃 상태입니다.')
+
+      try {
+        await updatePassword(user, newPassword)
+        return true
+      } catch (error: any) {
+        console.error('Change password error:', error)
+        if (error.code === 'auth/requires-recent-login') {
+          throw new Error('보안을 위해 다시 로그인한 후 변경해주세요.')
+        }
+        throw new Error('비밀번호 변경 중 오류가 발생했습니다.')
       }
     },
 
