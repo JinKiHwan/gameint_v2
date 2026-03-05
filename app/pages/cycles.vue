@@ -304,32 +304,32 @@
 
         <!-- 탭 패널: 수 -->
         <div v-if="activeTab === 'members'">
-          <!-- Phase 2: 공통도서 + 당쳊자 자율유 특집 표시 -->
+          <!-- Phase 2: 공통도서 + 당첨자 자율책 특집 표시 -->
           <template v-if="cycle.phase === 'phase2_reading'">
             <div class="mt-4 mb-4">
               <h3 class="text-h6 font-black text-grey-dark">📚 2회차 공통 도서</h3>
             </div>
-            <!-- 공통 돈 -->
+            <!-- 공통책 -->
             <div v-if="cycle.commonBook" class="phase2-book-featured mb-4">
-              <div class="phase2-book-badge">👑 이달의 공통 돈</div>
+              <div class="phase2-book-badge">👑 이달의 공통책</div>
               <img v-if="cycle.commonBook.thumbnail" :src="cycle.commonBook.thumbnail" class="phase2-book-thumb" alt="표지" />
               <div class="phase2-book-info">
                 <div class="text-subtitle-1 font-black text-grey-dark">{{ cycle.commonBook.title }}</div>
                 <div class="text-caption text-grey-2 mt-1">{{ cycle.commonBook.authors?.join(', ') }}</div>
                 <div class="text-caption text-grey-2">{{ cycle.commonBook.publisher }}</div>
                 <div class="text-caption font-bold mt-2" style="color:#1E88E5;">
-                  추체인: @{{ recommenderNickname }}
+                  추천인: @{{ recommenderNickname }}
                 </div>
               </div>
             </div>
-            <!-- 당쳊자 자율유 -->
+            <!-- 당첨자 자율책 -->
             <template v-if="participants.find(p => p.uid === cycle.commonBookRecommenderUid)">
               <div class="mt-2 mb-3">
-                <h3 class="text-h6 font-black text-grey-dark">🌟 선정왕 자율 돈</h3>
+                <h3 class="text-h6 font-black text-grey-dark">🌟 선정자 자율책</h3>
               </div>
               <template v-if="participants.find(p => p.uid === cycle.commonBookRecommenderUid)?.freeBookRegistered">
                 <div class="phase2-book-featured">
-                  <div class="phase2-book-badge" style="background:#E8F5E9;color:#2E7D32;">✍️ 자율 돈</div>
+                  <div class="phase2-book-badge" style="background:#E8F5E9;color:#2E7D32;">✍️ 자율책</div>
                   <img
                     v-if="participants.find(p => p.uid === cycle.commonBookRecommenderUid)?.book?.thumbnail"
                     :src="participants.find(p => p.uid === cycle.commonBookRecommenderUid).book.thumbnail"
@@ -345,7 +345,7 @@
               <div v-else class="card">
                 <div class="card-body text-center text-grey-2 font-bold pa-6">
                   <i class="mdi mdi-book-clock-outline" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-                  추체인 @{{ recommenderNickname }}님이 자율 돈를 선정 중입니다...
+                  추천인 @{{ recommenderNickname }}님이 자율책을 선정 중입니다...
                 </div>
               </div>
             </template>
