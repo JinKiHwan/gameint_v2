@@ -55,13 +55,7 @@ const handleResetPassword = async () => {
   
   try {
     await authStore.confirmResetPassword(oobCode.value, newPassword.value)
-    successMsg.value = '비밀번호가 성공적으로 변경되었습니다. 잠시 후 로그인 페이지로 이동합니다.'
-    
-    // 2초 후 로그인 페이지로 리다이렉트
-    setTimeout(() => {
-      router.push('/login')
-    }, 2000)
-    
+    successMsg.value = '비밀번호가 성공적으로 변경되었습니다.'
   } catch (error) {
     errorMsg.value = error.message || '비밀번호 변경 중 오류가 발생했습니다.'
   } finally {
@@ -126,6 +120,19 @@ const handleResetPassword = async () => {
           비밀번호 변경하기
         </v-btn>
       </v-form>
+
+      <div v-if="successMsg" class="mt-4">
+        <v-btn
+          to="/login"
+          color="blue-darken-1"
+          size="x-large"
+          block
+          class="font-weight-bold rounded-xl mb-2"
+          elevation="0"
+        >
+          <v-icon start>mdi-login</v-icon> 로그인 하러 가기
+        </v-btn>
+      </div>
 
       <div class="text-center mt-6">
         <v-btn to="/login" variant="text" size="small" color="grey-darken-1" class="font-weight-bold px-2">
