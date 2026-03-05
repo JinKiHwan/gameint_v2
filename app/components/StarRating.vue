@@ -1,28 +1,34 @@
 <template>
-  <!-- 각 별을 두 영역(왼쪽 절반=0.5, 오른쪽 절반=1.0)으로 나눠서 0.5 단위 선택 -->
   <div class="star-rating" :class="{ 'star-rating--readonly': readonly }">
-    <span
+    <div
       v-for="n in 5"
       :key="n"
-      class="star-wrap"
+      class="star-pos"
       @mouseleave="!readonly && (hovered = 0)"
     >
-      <!-- 왼쪽 절반 (n - 0.5) -->
-      <span
-        class="star star-left"
-        :class="getStarClass(n - 0.5)"
-        @mouseenter="!readonly && (hovered = n - 0.5)"
-        @click="!readonly && emit('update:modelValue', n - 0.5)"
-      >★</span>
-      <!-- 오른쪽 절반 (n) -->
-      <span
-        class="star star-right"
-        :class="getStarClass(n)"
-        @mouseenter="!readonly && (hovered = n)"
-        @click="!readonly && emit('update:modelValue', n)"
-      >★</span>
+      <!-- 배경 (회색) 별 -->
+      <span class="star star--base">★</span>
+      <!-- 채움 (금색) 별 — width %로 0%, 50%, 100% 중 하나 -->
+      <span class="star star--fill" :style="{ width: starFill(n) + '%' }">★</span>
+
+      <!-- 인터랙션 영역 (readonly가 아닐 때만) -->
+      <template v-if="!readonly">
+        <span
+          class="zone zone--left"
+          @mouseenter="hovered = n - 0.5"
+          @click="emit('update:modelValue', n - 0.5)"
+        ></span>
+        <span
+          class="zone zone--right"
+          @mouseenter="hovered = n"
+          @click="emit('update:modelValue', n)"
+        ></span>
+      </template>
+    </div>
+
+    <span v-if="showScore && modelValue > 0" class="star-score">
+      {{ modelValue.toFixed(1) }}
     </span>
-    <span v-if="showScore && modelValue > 0" class="star-score">{{ modelValue.toFixed(1) }}</span>
   </div>
 </template>
 
@@ -37,14 +43,17 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 const hovered = ref(0)
-const displayRating = computed(() => hovered.value || props.modelValue)
+const display = computed(() => hovered.value || props.modelValue)
 
-// 각 반별 위치에 따른 채움 상태 계산
-const getStarClass = (value) => {
-  const d = displayRating.value
-  if (d >= value) return 'is-filled'         // 완전히 채워짐
-  if (d >= value - 0.5 && value % 1 !== 0) return 'is-half'  // 왼쪽 절반(half)
-  return ''
+// 각 별 위치(n)에 대해 채움 너비 계산
+// - rating >= n     → 100% (full)
+// - rating >= n-0.5 → 50%  (half)
+// - otherwise       → 0%   (empty)
+const starFill = (n) => {
+  const r = display.value
+  if (r >= n) return 100
+  if (r >= n - 0.5) return 50
+  return 0
 }
 </script>
 
@@ -52,75 +61,66 @@ const getStarClass = (value) => {
 .star-rating {
   display: inline-flex;
   align-items: center;
-  gap: 0;
+  gap: 3px;
+  line-height: 1;
 }
 
-/* 각 별 컨테이너: 두 half-span을 합쳐서 온전한 별 하나처럼 보임 */
-.star-wrap {
+/* 각 별 하나의 컨테이너 */
+.star-pos {
   position: relative;
-  display: inline-flex;
   width: 1.5rem;
   height: 1.5rem;
+  cursor: pointer;
 }
 
-.star-rating--readonly .star-wrap {
+.star-rating--readonly .star-pos {
   width: 1.2rem;
   height: 1.2rem;
+  cursor: default;
 }
 
+/* 공통 별 스타일 */
 .star {
   position: absolute;
   top: 0;
+  left: 0;
   font-size: 1.5rem;
   line-height: 1;
-  color: #E0E0E0;
   user-select: none;
-  transition: color 0.1s;
-  overflow: hidden;
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .star-rating--readonly .star {
   font-size: 1.2rem;
-  cursor: default;
 }
 
-/* 왼쪽 절반: 별의 왼쪽 50%만 보임 */
-.star-left {
-  left: 0;
-  width: 50%;
-  cursor: pointer;
-}
-
-/* 오른쪽 절반: 별의 오른쪽 50%만 보임 (clip으로 오른쪽만 노출) */
-.star-right {
-  left: 0;
-  width: 100%;
-  cursor: pointer;
-  clip-path: inset(0 0 0 50%); /* 오른쪽 절반만 노출 */
-}
-
-/* 채워진 별 */
-.star.is-filled {
-  color: #FFB300;
-}
-
-/* 왼쪽 절반만 채워진 별 (half) */
-.star-left.is-half {
-  color: #FFB300;
-}
-.star-right.is-half {
+/* 회색 배경 별 */
+.star--base {
   color: #E0E0E0;
+  width: 100%;
 }
 
-/* 인터랙션 힌트 */
-.star-rating:not(.star-rating--readonly) .star:hover {
-  transform: scale(1.12);
+/* 금색 채움 별 — width로 0%/50%/100% 클리핑 */
+.star--fill {
+  color: #FFB300;
+  width: 0%;
+  transition: width 0.1s;
 }
+
+/* 클릭·호버 투명 영역 */
+.zone {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 50%;
+}
+.zone--left  { left: 0; }
+.zone--right { right: 0; }
 
 .star-score {
-  margin-left: 10px;
-  font-size: 0.95rem;
+  margin-left: 6px;
+  font-size: 0.9rem;
   font-weight: 800;
   color: #FFB300;
 }
