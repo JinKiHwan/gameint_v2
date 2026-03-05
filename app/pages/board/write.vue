@@ -11,18 +11,66 @@
       
       <v-card class="rounded-xl border bg-white pa-6" elevation="0">
         
-        <!-- 카테고리 선택 -->
-        <v-select
-          v-model="formData.category"
-          :items="categories"
-          label="카테고리 선택"
-          variant="outlined"
-          color="blue-darken-1"
-          bg-color="grey-lighten-5"
-          class="font-weight-bold mb-4"
-          hide-details
-          rounded="lg"
-        ></v-select>
+        <div class="d-flex align-center gap-3 mb-4">
+          <v-select
+            v-model="formData.category"
+            :items="categories"
+            label="카테고리 선택"
+            variant="outlined"
+            color="blue-darken-1"
+            bg-color="grey-lighten-5"
+            class="font-weight-bold flex-grow-1"
+            hide-details
+            rounded="lg"
+          ></v-select>
+
+          <!-- 도서 첨부 버튼 -->
+          <v-btn 
+            v-if="!attachedBook"
+            color="indigo-darken-2" 
+            variant="flat" 
+            height="56"
+            class="rounded-lg font-weight-bold px-6 shrink-0"
+            prepend-icon="mdi-book-search-outline"
+            @click="showBookSearchModal = true"
+          >
+            책 찾기
+          </v-btn>
+        </div>
+
+        <!-- 첨부된 도서 정보 카드 (있을 경우만 표시) -->
+        <v-card 
+          v-if="attachedBook" 
+          variant="outlined" 
+          color="indigo-lighten-4" 
+          class="mb-6 rounded-lg bg-indigo-lighten-5 position-relative"
+        >
+          <div class="d-flex pa-3 align-center">
+            <v-img 
+              :src="attachedBook.thumbnail || 'https://via.placeholder.com/60x85?text=No+Cover'" 
+              width="45" 
+              height="65" 
+              cover 
+              class="rounded border mr-4 flex-grow-0 shrink-0"
+            ></v-img>
+            <div class="flex-grow-1 overflow-hidden">
+              <div class="text-caption text-indigo-darken-2 font-weight-bold mb-1">첨부된 도서</div>
+              <div class="text-subtitle-2 font-weight-black text-grey-darken-4 text-truncate">{{ attachedBook.title }}</div>
+              <div class="text-caption text-grey-darken-2 text-truncate">{{ attachedBook.authors?.join(', ') || '알수없음' }} | {{ attachedBook.publisher }}</div>
+            </div>
+            
+            <!-- 삭제 버튼 (우측 상단 절대배치) -->
+            <v-btn 
+              icon="mdi-close-circle" 
+              variant="text" 
+              color="grey-darken-1" 
+              size="small" 
+              class="position-absolute" 
+              style="top: 4px; right: 4px;"
+              @click="attachedBook = null"
+            ></v-btn>
+          </div>
+        </v-card>
 
         <!-- 제목 입력 -->
         <v-text-field
@@ -89,6 +137,11 @@
         </div>
       </v-card>
     </v-dialog>
+
+    <BookSearchModal 
+      v-model="showBookSearchModal" 
+      @select="handleBookSelect" 
+    />
   </div>
 </template>
 
@@ -98,12 +151,15 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
 import TiptapEditor from '~/components/TiptapEditor.vue'
+import BookSearchModal from '~/components/BookSearchModal.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const { createPost } = useBoard()
 
 const showLoginDialog = ref(false)
+const showBookSearchModal = ref(false)
+const attachedBook = ref(null)
 const loading = ref(false)
 const errorMsg = ref('')
 
@@ -129,6 +185,10 @@ const extractTextFromHTML = (htmlString) => {
   return text.substring(0, 150) + (text.length > 150 ? '...' : '')
 }
 
+const handleBookSelect = (book) => {
+  attachedBook.value = book
+}
+
 const handleSubmit = async () => {
   errorMsg.value = ''
   
@@ -150,6 +210,7 @@ const handleSubmit = async () => {
       title: formData.value.title.trim(),
       content: formData.value.content,
       contentPreview: extractTextFromHTML(formData.value.content),
+      attachedBook: attachedBook.value,
       author: {
         uid: authStore.user.uid,
         nickname: authStore.userData.nickname,

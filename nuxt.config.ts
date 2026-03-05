@@ -15,7 +15,8 @@ export default defineNuxtConfig({
       firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET,
       firebaseMessagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
       firebaseAppId: process.env.FIREBASE_APP_ID,
-      firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID
+      firebaseMeasurementId: process.env.FIREBASE_MEASUREMENT_ID,
+      kakaoRestApiKey: process.env.NUXT_PUBLIC_KAKAO_REST_API_KEY
     }
   },
   modules: [

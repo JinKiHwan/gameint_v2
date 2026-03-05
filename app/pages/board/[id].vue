@@ -63,6 +63,39 @@
           </div>
         </div>
 
+        <!-- 첨부된 도서 정보 영역 -->
+        <div v-if="post.attachedBook" class="pa-6 border-b bg-indigo-lighten-5">
+          <div class="text-caption text-indigo-darken-2 font-weight-black mb-3">
+            <v-icon size="small" class="mr-1">mdi-book-open-page-variant</v-icon> 함께 읽고 있는 책
+          </div>
+          <v-card 
+            variant="flat" 
+            color="white" 
+            class="rounded-lg border d-flex pa-4 hover-scale transition-fast cursor-pointer"
+            :href="post.attachedBook.url"
+            target="_blank"
+          >
+            <v-img 
+              :src="post.attachedBook.thumbnail || 'https://via.placeholder.com/80x115?text=No+Cover'" 
+              width="70" 
+              height="100" 
+              cover 
+              class="rounded border mr-5 flex-grow-0 shrink-0 shadow-sm"
+            ></v-img>
+            <div class="d-flex flex-column justify-center flex-grow-1 overflow-hidden">
+              <div class="text-subtitle-1 font-weight-black text-grey-darken-4 text-truncate mb-1">{{ post.attachedBook.title }}</div>
+              <div class="text-body-2 text-grey-darken-2 text-truncate mb-2">
+                {{ post.attachedBook.authors?.join(', ') || '알수없음' }} 저 | {{ post.attachedBook.publisher }}
+              </div>
+              <div class="d-flex align-center mt-auto">
+                <v-chip size="x-small" color="indigo-darken-1" variant="tonal" class="font-weight-bold">
+                  자세히 보기 <v-icon size="x-small" class="ml-1">mdi-open-in-new</v-icon>
+                </v-chip>
+              </div>
+            </div>
+          </v-card>
+        </div>
+
         <!-- 에디터로 작성된 본문 내용 렌더링 -->
         <div class="pa-6 tiptap-content text-body-1 text-grey-darken-4" v-html="post.content"></div>
         
