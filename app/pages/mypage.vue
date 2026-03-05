@@ -379,7 +379,7 @@ const formatDate = (dateValue) => {
   const d = String(date.getDate()).padStart(2,'0')
   return `${date.getFullYear()}.${m}.${d}`
 }
-const handleLogout = async () => { await authStore.logout() }
+const handleLogout = async () => { await authStore.logout(); router.push('/'); }
 
 // ── 비밀번호 변경 ─────────────────────────────────────────────────
 const changePwModal = ref(false)

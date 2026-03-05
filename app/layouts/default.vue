@@ -2,10 +2,12 @@
   <div>
     <!-- 사이드바 (데스크톱) -->
     <aside class="sidebar">
-      <div class="sidebar__logo">
+    <div class="sidebar__logo">
+      <NuxtLink to="/" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;">
         <i class="mdi mdi-book-open-page-variant logo-icon"></i>
         <span class="logo-text">Game Int</span>
-      </div>
+      </NuxtLink>
+    </div>
 
       <nav class="sidebar__nav">
         <NuxtLink
@@ -23,7 +25,7 @@
 
       <div class="sidebar__footer">
         <div v-if="authStore.user" class="sidebar__user">
-          <div class="user-info">
+          <NuxtLink to="/mypage" class="user-info" style="text-decoration:none; color:inherit;">
             <div class="avatar avatar--md">
               <img :src="getProfileImagePath(authStore.userData?.profileImageId)" alt="프로필" />
             </div>
@@ -31,7 +33,7 @@
               <span class="user-name">{{ authStore.userData?.nickname || '신규회원' }}</span>
               <span class="user-tier">{{ authStore.userData?.tier || 'Bronze' }}</span>
             </div>
-          </div>
+          </NuxtLink>
           <button class="btn btn--text btn--icon" @click="handleLogout" title="로그아웃">
             <i class="mdi mdi-logout"></i>
           </button>
@@ -46,8 +48,10 @@
     <header class="app-bar">
       <!-- 모바일 -->
       <div class="app-bar__mobile">
-        <i class="mdi mdi-book-open-page-variant logo-icon"></i>
-        <span class="logo-text">Game Int</span>
+        <NuxtLink to="/" style="text-decoration:none; color:inherit; display:flex; align-items:center;">
+          <i class="mdi mdi-book-open-page-variant logo-icon"></i>
+          <span class="logo-text">Game Int</span>
+        </NuxtLink>
         <div class="spacer"></div>
         <button class="btn btn--text btn--icon mr-2">
           <i class="mdi mdi-bell-outline"></i>
@@ -120,11 +124,14 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { getProfileImagePath } from '~/composables/useProfileImages'
+import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
+const router = useRouter()
 
 const handleLogout = async () => {
   await authStore.logout()
+  router.push('/')
 }
 
 const isPendingUser = computed(() => {
