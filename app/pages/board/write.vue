@@ -75,19 +75,23 @@
     </div>
 
     <!-- 비인가 모달 -->
-    <div v-if="showLoginDialog" class="modal-overlay">
-      <div class="modal" style="text-align:center;">
-        <div class="card-body">
-          <i class="mdi mdi-lock-alert-outline" style="font-size:3rem;color:#F57C00;display:block;margin-bottom:16px;"></i>
-          <h3 class="text-h6 font-black mb-2">권한이 없습니다</h3>
-          <p class="text-body-2 text-grey-2 mb-6">게시글 작성은 로그인 후 이용 가능합니다.</p>
-          <div class="flex gap-2 justify-center">
-            <button class="btn btn--tonal font-bold rounded-sm" @click="router.push('/')">돌아가기</button>
-            <button class="btn btn--primary font-bold rounded-sm" @click="router.push('/login')">로그인</button>
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="showLoginDialog" class="modal-overlay">
+          <div class="modal" style="text-align:center;">
+            <div class="card-body">
+              <i class="mdi mdi-lock-alert-outline" style="font-size:3rem;color:#F57C00;display:block;margin-bottom:16px;"></i>
+              <h3 class="text-h6 font-black mb-2">권한이 없습니다</h3>
+              <p class="text-body-2 text-grey-2 mb-6">게시글 작성은 로그인 후 이용 가능합니다.</p>
+              <div class="flex gap-2 justify-center">
+                <button class="btn btn--tonal font-bold rounded-sm" @click="router.push('/')">돌아가기</button>
+                <button class="btn btn--primary font-bold rounded-sm" @click="router.push('/login')">로그인</button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </Teleport>
+    </ClientOnly>
 
     <BookSearchModal v-model="showBookSearchModal" @select="handleBookSelect" />
   </div>

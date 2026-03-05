@@ -50,69 +50,73 @@
     </div>
 
     <!-- 아이디/비밀번호 찾기 모달 -->
-    <div v-if="findModal" class="modal-overlay" @click.self="findModal = false">
-      <div class="modal">
-        <div class="modal__header">
-          <span class="modal__title">{{ findType === 'id' ? '아이디 찾기' : '비밀번호 재설정' }}</span>
-          <button class="btn btn--text btn--icon" @click="findModal = false"><i class="mdi mdi-close"></i></button>
-        </div>
-        <div class="modal__body">
-          <p class="text-caption font-medium text-grey-2 mb-4">
-            가입 시 등록한 <strong>본명</strong>과 <strong>사내 이메일(@gamedex.co.kr)</strong>을 입력해주세요.
-            <template v-if="findType === 'pw'">
-              <br/>안전한 비밀번호 재설정을 위해 <strong>아이디</strong>도 함께 입력해주세요.
-            </template>
-          </p>
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="findModal" class="modal-overlay" @click.self="findModal = false">
+          <div class="modal">
+            <div class="modal__header">
+              <span class="modal__title">{{ findType === 'id' ? '아이디 찾기' : '비밀번호 재설정' }}</span>
+              <button class="btn btn--text btn--icon" @click="findModal = false"><i class="mdi mdi-close"></i></button>
+            </div>
+            <div class="modal__body">
+              <p class="text-caption font-medium text-grey-2 mb-4">
+                가입 시 등록한 <strong>본명</strong>과 <strong>사내 이메일(@gamedex.co.kr)</strong>을 입력해주세요.
+                <template v-if="findType === 'pw'">
+                  <br/>안전한 비밀번호 재설정을 위해 <strong>아이디</strong>도 함께 입력해주세요.
+                </template>
+              </p>
 
-          <div v-if="findErrorMsg" class="alert alert--error mb-4">
-            <i class="mdi mdi-alert-circle-outline"></i>
-            <span>{{ findErrorMsg }}</span>
-            <button class="alert__close" @click="findErrorMsg = ''"><i class="mdi mdi-close"></i></button>
-          </div>
-          <div v-if="findSuccessMsg" class="alert alert--success mb-4">
-            <i class="mdi mdi-check-circle-outline"></i>
-            <span>{{ findSuccessMsg }}</span>
-          </div>
+              <div v-if="findErrorMsg" class="alert alert--error mb-4">
+                <i class="mdi mdi-alert-circle-outline"></i>
+                <span>{{ findErrorMsg }}</span>
+                <button class="alert__close" @click="findErrorMsg = ''"><i class="mdi mdi-close"></i></button>
+              </div>
+              <div v-if="findSuccessMsg" class="alert alert--success mb-4">
+                <i class="mdi mdi-check-circle-outline"></i>
+                <span>{{ findSuccessMsg }}</span>
+              </div>
 
-          <div v-if="findType === 'pw'" class="field mb-3">
-            <input v-model="findPwId" class="input" type="text" placeholder="사내 커스텀 아이디" @keyup.enter="handleFind" />
-          </div>
+              <div v-if="findType === 'pw'" class="field mb-3">
+                <input v-model="findPwId" class="input" type="text" placeholder="사내 커스텀 아이디" @keyup.enter="handleFind" />
+              </div>
 
-          <div class="field mb-3">
-            <select v-model="findSecurityQuestion" class="select">
-              <option value="" disabled>본인 확인 질문 선택</option>
-              <option v-for="q in securityQuestions" :key="q" :value="q">{{ q }}</option>
-            </select>
-          </div>
+              <div class="field mb-3">
+                <select v-model="findSecurityQuestion" class="select">
+                  <option value="" disabled>본인 확인 질문 선택</option>
+                  <option v-for="q in securityQuestions" :key="q" :value="q">{{ q }}</option>
+                </select>
+              </div>
 
-          <div class="field mb-3">
-            <input v-model="findSecurityAnswer" class="input" type="text" placeholder="질문에 대한 답변" @keyup.enter="handleFind" />
-          </div>
+              <div class="field mb-3">
+                <input v-model="findSecurityAnswer" class="input" type="text" placeholder="질문에 대한 답변" @keyup.enter="handleFind" />
+              </div>
 
-          <div class="field mb-3">
-            <div class="input-with-suffix">
-              <input v-model="findEmailPrefix" type="text" placeholder="이메일 주소" @keyup.enter="handleFind" />
-              <span class="suffix">{{ emailDomain }}</span>
+              <div class="field mb-3">
+                <div class="input-with-suffix">
+                  <input v-model="findEmailPrefix" type="text" placeholder="이메일 주소" @keyup.enter="handleFind" />
+                  <span class="suffix">{{ emailDomain }}</span>
+                </div>
+              </div>
+
+              <div v-if="findType === 'pw'" class="text-caption text-red font-bold mt-2 px-1">
+                * 발송된 메일이 보이지 않는다면 스팸/정크 메일함을 꼭 확인해 주세요!
+              </div>
+            </div>
+
+            <div class="modal__footer">
+              <button
+                class="btn btn--dark btn--lg btn--block font-black rounded-lg"
+                :class="{ 'is-loading': findLoading }"
+                :disabled="findLoading"
+                @click="handleFind"
+              >
+                {{ findType === 'id' ? '내 아이디 확인하기' : '재설정 링크 받기' }}
+              </button>
             </div>
           </div>
-
-          <div v-if="findType === 'pw'" class="text-caption text-red font-bold mt-2 px-1">
-            * 발송된 메일이 보이지 않는다면 스팸/정크 메일함을 꼭 확인해 주세요!
-          </div>
         </div>
-
-        <div class="modal__footer">
-          <button
-            class="btn btn--dark btn--lg btn--block font-black rounded-lg"
-            :class="{ 'is-loading': findLoading }"
-            :disabled="findLoading"
-            @click="handleFind"
-          >
-            {{ findType === 'id' ? '내 아이디 확인하기' : '재설정 링크 받기' }}
-          </button>
-        </div>
-      </div>
-    </div>
+      </Teleport>
+    </ClientOnly>
   </div>
 </template>
 

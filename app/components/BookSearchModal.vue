@@ -1,5 +1,7 @@
 <template>
-  <div v-if="modelValue" class="modal-overlay" @click.self="closeModal">
+  <ClientOnly>
+    <Teleport to="body">
+      <div v-if="modelValue" class="modal-overlay" @click.self="closeModal">
     <div class="modal modal--book-search">
       <!-- 헤더 -->
       <div class="modal__header">
@@ -72,7 +74,9 @@
         </ul>
       </div>
     </div>
-  </div>
+      </div>
+    </Teleport>
+  </ClientOnly>
 </template>
 
 <script setup>

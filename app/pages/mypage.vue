@@ -120,123 +120,135 @@
     </div>
 
     <!-- ===== 비밀번호 변경 모달 ===== -->
-    <div v-if="changePwModal" class="modal-overlay" @click.self="changePwModal = false">
-      <div class="modal">
-        <div class="modal__header">
-          <span class="modal__title">비밀번호 변경</span>
-          <button class="btn btn--text btn--icon" @click="changePwModal = false"><i class="mdi mdi-close"></i></button>
-        </div>
-        <div class="modal__body">
-          <div v-if="pwErrorMsg" class="alert alert--error mb-4">
-            <i class="mdi mdi-alert-circle-outline"></i><span>{{ pwErrorMsg }}</span>
-            <button class="alert__close" @click="pwErrorMsg = ''"><i class="mdi mdi-close"></i></button>
-          </div>
-          <div v-if="pwSuccessMsg" class="alert alert--success mb-4">
-            <i class="mdi mdi-check-circle-outline"></i><span>{{ pwSuccessMsg }}</span>
-          </div>
-          <input v-model="newPassword" class="input mb-2" type="password" placeholder="새 비밀번호" />
-          <input v-model="newPasswordConfirm" class="input mb-4" type="password" placeholder="새 비밀번호 확인" @keyup.enter="handleChangePassword" />
-        </div>
-        <div class="modal__footer">
-          <button class="btn btn--primary btn--lg btn--block font-black rounded-sm"
-            :class="{'is-loading':pwLoading}" :disabled="pwLoading"
-            @click="handleChangePassword">변경하기</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== 프로필 수정 모달 (닉네임) ===== -->
-    <div v-if="changeProfileModal" class="modal-overlay" @click.self="changeProfileModal = false">
-      <div class="modal">
-        <div class="modal__header">
-          <span class="modal__title">프로필 수정</span>
-          <button class="btn btn--text btn--icon" @click="changeProfileModal = false"><i class="mdi mdi-close"></i></button>
-        </div>
-        <div class="modal__body">
-          <div class="input-with-icon mb-3">
-            <i class="mdi mdi-account icon"></i>
-            <input v-model="editNickname" type="text" placeholder="새로운 닉네임" />
-          </div>
-          <div v-if="profileErrorMsg" class="alert alert--error mt-2 text-caption">{{ profileErrorMsg }}</div>
-          <div v-if="profileSuccessMsg" class="alert alert--success mt-2 text-caption">{{ profileSuccessMsg }}</div>
-        </div>
-        <div class="modal__footer" style="flex-direction:row;justify-content:flex-end;">
-          <button class="btn btn--primary font-black px-6 rounded-sm"
-            :class="{'is-loading':profileLoading}" :disabled="profileLoading"
-            @click="handleUpdateProfile">저장하기</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== 프로필 이미지 선택 모달 ===== -->
-    <div v-if="imageModal" class="modal-overlay img-modal-overlay" @click.self="imageModal = false">
-      <div class="modal img-select-modal">
-        <div class="modal__header">
-          <span class="modal__title">프로필 이미지 선택</span>
-          <button class="btn btn--text btn--icon" @click="imageModal = false"><i class="mdi mdi-close"></i></button>
-        </div>
-
-        <div class="modal__body img-modal-body">
-          <!-- 해금 조건 안내 -->
-          <div class="unlock-legend mb-4">
-            <span class="legend-item"><span class="legend-dot dot-default"></span>기본 제공</span>
-            <span class="legend-item"><span class="legend-dot dot-tier"></span>티어 해금</span>
-            <span class="legend-item"><span class="legend-dot dot-quest"></span>퀘스트 해금</span>
-          </div>
-
-          <!-- 탭 필터 -->
-          <div class="img-tab-bar mb-4">
-            <button
-              v-for="tab in imageTabs"
-              :key="tab.value"
-              class="img-tab-btn"
-              :class="{ 'is-active': imageTab === tab.value }"
-              @click="imageTab = tab.value"
-            >{{ tab.label }}</button>
-          </div>
-
-          <!-- 이미지 그리드 -->
-          <div class="img-grid">
-            <div
-              v-for="img in filteredImages"
-              :key="img.id"
-              class="img-item"
-              :class="{
-                'is-selected': selectedImageId === img.id,
-                'is-locked': !isUnlocked(img),
-              }"
-              @click="isUnlocked(img) && (selectedImageId = img.id)"
-            >
-              <img :src="img.path" :alt="img.label" />
-
-              <!-- 선택됨 표시 -->
-              <div v-if="selectedImageId === img.id" class="img-item__check">
-                <i class="mdi mdi-check"></i>
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="changePwModal" class="modal-overlay" @click.self="changePwModal = false">
+          <div class="modal">
+            <div class="modal__header">
+              <span class="modal__title">비밀번호 변경</span>
+              <button class="btn btn--text btn--icon" @click="changePwModal = false"><i class="mdi mdi-close"></i></button>
+            </div>
+            <div class="modal__body">
+              <div v-if="pwErrorMsg" class="alert alert--error mb-4">
+                <i class="mdi mdi-alert-circle-outline"></i><span>{{ pwErrorMsg }}</span>
+                <button class="alert__close" @click="pwErrorMsg = ''"><i class="mdi mdi-close"></i></button>
               </div>
-
-              <!-- 잠금 오버레이 -->
-              <div v-if="!isUnlocked(img)" class="img-item__lock">
-                <i class="mdi mdi-lock"></i>
-                <span class="lock-label">{{ getLockLabel(img) }}</span>
+              <div v-if="pwSuccessMsg" class="alert alert--success mb-4">
+                <i class="mdi mdi-check-circle-outline"></i><span>{{ pwSuccessMsg }}</span>
               </div>
-
-              <!-- 현재 사용 중 badge -->
-              <div v-if="img.id === authStore.userData?.profileImageId && selectedImageId !== img.id" class="img-item__current">사용중</div>
+              <input v-model="newPassword" class="input mb-2" type="password" placeholder="새 비밀번호" />
+              <input v-model="newPasswordConfirm" class="input mb-4" type="password" placeholder="새 비밀번호 확인" @keyup.enter="handleChangePassword" />
+            </div>
+            <div class="modal__footer">
+              <button class="btn btn--primary btn--lg btn--block font-black rounded-sm"
+                :class="{'is-loading':pwLoading}" :disabled="pwLoading"
+                @click="handleChangePassword">변경하기</button>
             </div>
           </div>
         </div>
+      </Teleport>
+    </ClientOnly>
 
-        <div class="modal__footer" style="flex-direction:row;gap:8px;">
-          <button class="btn btn--grey flex-grow font-bold rounded-sm" @click="imageModal = false">취소</button>
-          <button
-            class="btn btn--primary flex-grow font-black rounded-sm"
-            :class="{'is-loading': imageLoading}"
-            :disabled="imageLoading || selectedImageId === authStore.userData?.profileImageId"
-            @click="handleSaveImage"
-          >적용하기</button>
+    <!-- ===== 프로필 수정 모달 (닉네임) ===== -->
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="changeProfileModal" class="modal-overlay" @click.self="changeProfileModal = false">
+          <div class="modal">
+            <div class="modal__header">
+              <span class="modal__title">프로필 수정</span>
+              <button class="btn btn--text btn--icon" @click="changeProfileModal = false"><i class="mdi mdi-close"></i></button>
+            </div>
+            <div class="modal__body">
+              <div class="input-with-icon mb-3">
+                <i class="mdi mdi-account icon"></i>
+                <input v-model="editNickname" type="text" placeholder="새로운 닉네임" />
+              </div>
+              <div v-if="profileErrorMsg" class="alert alert--error mt-2 text-caption">{{ profileErrorMsg }}</div>
+              <div v-if="profileSuccessMsg" class="alert alert--success mt-2 text-caption">{{ profileSuccessMsg }}</div>
+            </div>
+            <div class="modal__footer" style="flex-direction:row;justify-content:flex-end;">
+              <button class="btn btn--primary font-black px-6 rounded-sm"
+                :class="{'is-loading':profileLoading}" :disabled="profileLoading"
+                @click="handleUpdateProfile">저장하기</button>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </Teleport>
+    </ClientOnly>
+
+    <!-- ===== 프로필 이미지 선택 모달 ===== -->
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="imageModal" class="modal-overlay img-modal-overlay" @click.self="imageModal = false">
+          <div class="modal img-select-modal">
+            <div class="modal__header">
+              <span class="modal__title">프로필 이미지 선택</span>
+              <button class="btn btn--text btn--icon" @click="imageModal = false"><i class="mdi mdi-close"></i></button>
+            </div>
+
+            <div class="modal__body img-modal-body">
+              <!-- 해금 조건 안내 -->
+              <div class="unlock-legend mb-4">
+                <span class="legend-item"><span class="legend-dot dot-default"></span>기본 제공</span>
+                <span class="legend-item"><span class="legend-dot dot-tier"></span>티어 해금</span>
+                <span class="legend-item"><span class="legend-dot dot-quest"></span>퀘스트 해금</span>
+              </div>
+
+              <!-- 탭 필터 -->
+              <div class="img-tab-bar mb-4">
+                <button
+                  v-for="tab in imageTabs"
+                  :key="tab.value"
+                  class="img-tab-btn"
+                  :class="{ 'is-active': imageTab === tab.value }"
+                  @click="imageTab = tab.value"
+                >{{ tab.label }}</button>
+              </div>
+
+              <!-- 이미지 그리드 -->
+              <div class="img-grid">
+                <div
+                  v-for="img in filteredImages"
+                  :key="img.id"
+                  class="img-item"
+                  :class="{
+                    'is-selected': selectedImageId === img.id,
+                    'is-locked': !isUnlocked(img),
+                  }"
+                  @click="isUnlocked(img) && (selectedImageId = img.id)"
+                >
+                  <img :src="img.path" :alt="img.label" />
+
+                  <!-- 선택됨 표시 -->
+                  <div v-if="selectedImageId === img.id" class="img-item__check">
+                    <i class="mdi mdi-check"></i>
+                  </div>
+
+                  <!-- 잠금 오버레이 -->
+                  <div v-if="!isUnlocked(img)" class="img-item__lock">
+                    <i class="mdi mdi-lock"></i>
+                    <span class="lock-label">{{ getLockLabel(img) }}</span>
+                  </div>
+
+                  <!-- 현재 사용 중 badge -->
+                  <div v-if="img.id === authStore.userData?.profileImageId && selectedImageId !== img.id" class="img-item__current">사용중</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal__footer" style="flex-direction:row;gap:8px;">
+              <button class="btn btn--grey flex-grow font-bold rounded-sm" @click="imageModal = false">취소</button>
+              <button
+                class="btn btn--primary flex-grow font-black rounded-sm"
+                :class="{'is-loading': imageLoading}"
+                :disabled="imageLoading || selectedImageId === authStore.userData?.profileImageId"
+                @click="handleSaveImage"
+              >적용하기</button>
+            </div>
+          </div>
+        </div>
+      </Teleport>
+    </ClientOnly>
 
   </div>
 </template>

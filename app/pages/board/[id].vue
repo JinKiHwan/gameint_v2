@@ -152,20 +152,24 @@
     </div>
 
     <!-- 삭제 확인 모달 -->
-    <div v-if="confirmDelete" class="modal-overlay" @click.self="confirmDelete = false">
-      <div class="modal" style="text-align:center;">
-        <div class="card-body">
-          <i class="mdi mdi-alert-circle-outline" style="font-size:3rem;color:#C62828;display:block;margin-bottom:16px;"></i>
-          <h3 class="text-h6 font-black mb-2 text-grey-dark">게시글을 삭제하시겠습니까?</h3>
-          <p class="text-body-2 text-grey-2 mb-6">삭제된 글은 복구할 수 없습니다.</p>
-          <div v-if="deleteError" class="alert alert--error mb-4 text-caption font-bold">{{ deleteError }}</div>
-          <div class="flex gap-2 justify-center">
-            <button class="btn btn--tonal font-bold rounded-sm flex-grow" @click="confirmDelete = false">취소</button>
-            <button class="btn btn--danger font-bold rounded-sm flex-grow" :class="{'is-loading':deleting}" :disabled="deleting" @click="handleDelete">삭제</button>
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="confirmDelete" class="modal-overlay" @click.self="confirmDelete = false">
+          <div class="modal" style="text-align:center;">
+            <div class="card-body">
+              <i class="mdi mdi-alert-circle-outline" style="font-size:3rem;color:#C62828;display:block;margin-bottom:16px;"></i>
+              <h3 class="text-h6 font-black mb-2 text-grey-dark">게시글을 삭제하시겠습니까?</h3>
+              <p class="text-body-2 text-grey-2 mb-6">삭제된 글은 복구할 수 없습니다.</p>
+              <div v-if="deleteError" class="alert alert--error mb-4 text-caption font-bold">{{ deleteError }}</div>
+              <div class="flex gap-2 justify-center">
+                <button class="btn btn--tonal font-bold rounded-sm flex-grow" @click="confirmDelete = false">취소</button>
+                <button class="btn btn--danger font-bold rounded-sm flex-grow" :class="{'is-loading':deleting}" :disabled="deleting" @click="handleDelete">삭제</button>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
-    </div>
+      </Teleport>
+    </ClientOnly>
   </div>
 </template>
 
