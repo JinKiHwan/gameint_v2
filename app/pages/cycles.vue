@@ -116,19 +116,18 @@
             <StarRating :modelValue="myReview.rating" :readonly="true" />
           </template>
 
-          <!-- 투표 단계 -->
+          <!-- 투표 단계 (일반 유저) -->
           <template v-else-if="cycle.phase === 'voting'">
             <div class="action-box__text">
-              <i class="mdi mdi-vote action-box__icon text-blue-dark"></i>
+              <i class="mdi mdi-account-group action-box__icon text-blue-dark"></i>
               <div>
-                <div class="text-subtitle-1 font-black text-grey-dark">공통 도서 투표가 진행 중입니다!</div>
+                <div class="text-subtitle-1 font-black text-grey-dark">오프라인 모임에서 투표가 진행 중입니다!</div>
                 <div class="text-caption text-grey-2 font-medium">
-                  {{ myVote ? `이미 투표하셨습니다. (선택: 참여자의 책)` : '다음 달 모두 함께 읽고 싶은 책에 투표해주세요.' }}
+                  마스터가 오프라인 현장 투표 결과를 반영하여 공통 도서를 확정합니다.
                 </div>
               </div>
             </div>
-            <span v-if="myVote" class="chip chip--primary">투표 완료 ✓</span>
-            <span v-else class="text-caption font-bold text-blue-dark">👇 아래 참여현황 탭에서 투표하세요</span>
+            <span class="chip chip--grey">투표 진행중</span>
           </template>
 
           <!-- Phase 2: 리뷰 미작성 -->
@@ -190,11 +189,40 @@
           </div>
           <div class="flex flex-wrap gap-2">
             <button v-if="cycle.phase === 'phase1_reading'" class="btn btn--tonal font-bold rounded-sm" @click="changePhase('voting')">
-              <i class="mdi mdi-vote"></i> 투표 오픈
+              <i class="mdi mdi-vote"></i> 투표 단계 시작
             </button>
-            <button v-if="cycle.phase === 'voting'" class="btn btn--primary font-bold rounded-sm" @click="handleConfirmCommonBook">
-              <i class="mdi mdi-check-all"></i> 공통 도서 확정 → 2회차 시작
-            </button>
+            <!-- 투표 단계: 마스터가 직접 책 선택 -->
+            <template v-if="cycle.phase === 'voting'">
+              <div class="w-100 mt-2">
+                <div class="text-caption font-bold text-grey-2 mb-2">
+                  <i class="mdi mdi-cursor-pointer"></i> 오프라인 투표 결과 — 공통 도서로 확정할 책을 선택하세요:
+                </div>
+                <div class="master-book-select">
+                  <div
+                    v-for="p in participants"
+                    :key="p.uid"
+                    class="master-book-option"
+                    :class="{ 'is-selected': masterSelectedUid === p.uid }"
+                    @click="masterSelectedUid = p.uid"
+                  >
+                    <img v-if="p.book?.thumbnail" :src="p.book.thumbnail" class="master-book-thumb" alt="표지" />
+                    <div v-else class="master-book-thumb-placeholder"><i class="mdi mdi-book"></i></div>
+                    <div class="min-w-0">
+                      <div class="text-subtitle-2 font-black text-grey-dark line-clamp-1">{{ p.book?.title }}</div>
+                      <div class="text-caption text-grey-2">@{{ p.nickname }}</div>
+                    </div>
+                    <i v-if="masterSelectedUid === p.uid" class="mdi mdi-check-circle" style="color:#1E88E5;flex-shrink:0;"></i>
+                  </div>
+                </div>
+                <button
+                  class="btn btn--primary font-black rounded-sm mt-3 w-100"
+                  :disabled="!masterSelectedUid"
+                  @click="handleConfirmCommonBook"
+                >
+                  <i class="mdi mdi-trophy"></i> 선택한 책으로 공통 도서 확정 → 2회차 시작
+                </button>
+              </div>
+            </template>
             <button v-if="cycle.phase === 'phase2_reading'" class="btn btn--dark font-bold rounded-sm" @click="changePhase('closed')">
               <i class="mdi mdi-flag-checkered"></i> 사이클 종료
             </button>
@@ -287,19 +315,9 @@
                 <div v-if="p.reason" class="participant-reason text-caption text-grey-2 line-clamp-2">
                   "{{ p.reason }}"
                 </div>
-                <!-- 투표 -->
-                <div v-if="cycle.phase === 'voting'" class="mt-3">
-                  <div class="flex items-center justify-between">
-                    <span class="text-caption font-bold text-grey-2">
-                      <i class="mdi mdi-thumb-up-outline"></i> {{ p.voteCount || 0 }}표
-                    </span>
-                    <button
-                      v-if="p.uid !== authStore.user?.uid && !myVote"
-                      class="btn btn--tonal-primary btn--sm rounded-sm font-bold"
-                      @click="handleVote(p.uid)"
-                    >투표</button>
-                    <span v-if="myVote?.targetUid === p.uid" class="chip chip--primary chip--sm">내 선택 ✓</span>
-                  </div>
+                <!-- 투표 중: 선정된 이로표시 (Phase 2에서) -->
+                <div v-if="cycle.phase === 'phase2_reading' && p.uid === cycle.commonBookRecommenderUid" class="mt-3">
+                  <span class="chip chip--amber chip--sm">투표 1위 확정 ✓</span>
                 </div>
               </div>
             </div>
@@ -611,9 +629,19 @@ const changePhase = async (phase) => {
   cycle.value = await fetchActiveCycle()
 }
 
+// 마스터가 직접 선택한 uid
+const masterSelectedUid = ref('')
+
 const handleConfirmCommonBook = async () => {
-  if (!confirm('최다득표 도서를 공통 도서로 확정하고 2회차를 시작하시겠습니까?')) return
-  await confirmCommonBook(cycle.value.id, participants.value)
+  if (!masterSelectedUid.value) { alert('공통 도서로 확정할 책을 선택해주세요.'); return }
+  const selected = participants.value.find(p => p.uid === masterSelectedUid.value)
+  if (!selected) return
+  if (!confirm(`[ 공통 도서 확정 ]\n\n"${selected.book?.title}"\n(추천인: @${selected.nickname})을 이달의 공통 돈로 확정하고 2회차를 시작하시겠습니까?`)) return
+  await updateCyclePhase(cycle.value.id, 'phase2_reading', {
+    commonBook: selected.book,
+    commonBookRecommenderUid: selected.uid,
+  })
+  masterSelectedUid.value = ''
   cycle.value = await fetchActiveCycle()
   await loadTabData()
 }
@@ -950,4 +978,48 @@ const formatDate = (dateValue) => {
 .mb-4 { margin-bottom: 16px; }
 .mb-6 { margin-bottom: 24px; }
 .text-amber { color: #FFB300; }
+
+/* ── 마스터 책 선택 리스트 ──────────────────── */
+.master-book-select {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 280px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+.master-book-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 2px solid #E0E0E0;
+  background: #fff;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { border-color: #90CAF9; background: #F5F5F5; }
+  &.is-selected { border-color: #1E88E5; background: #E3F2FD; }
+}
+.master-book-thumb {
+  width: 36px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.master-book-thumb-placeholder {
+  width: 36px;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #EEEEEE;
+  border-radius: 4px;
+  flex-shrink: 0;
+  color: #9E9E9E;
+  font-size: 1.2rem;
+}
+.w-100 { width: 100%; }
+
 </style>
