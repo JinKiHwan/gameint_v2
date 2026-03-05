@@ -207,10 +207,11 @@ export const useCycle = () => {
     }
 
     // ── 모임 기록 작성 (마스터 전용) ───────────────────────────────────
-    const addMeetingRecord = async (cycleId: string, title: string, content: string) => {
+    const addMeetingRecord = async (cycleId: string, title: string, content: string, phase: string) => {
         await addDoc(collection(getDb(), 'cycles', cycleId, 'meetings'), {
             title,
             content,
+            phase,
             authorUid: authStore.user?.uid,
             authorNickname: authStore.userData?.nickname || '마스터',
             createdAt: serverTimestamp(),
