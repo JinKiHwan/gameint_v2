@@ -41,16 +41,15 @@ service cloud.firestore {
       // Anyone logged in and active can read posts
       allow read: if isActiveUser();
       
-      // Active users can create new posts (preventing spoofing of uid)
+      // Active users can create new posts
       allow create: if isActiveUser() && request.resource.data.author.uid == request.auth.uid;
       
-      // Post authors (or masters) can update or delete
-      // Notice: viewCount and commentCount increases bypass the author.uid check so any active user can update them
+      // Notice: viewCount, commentCount, and likeCount increases bypass the author.uid check
       allow update: if isActiveUser() && (
                       resource.data.author.uid == request.auth.uid || 
                       isMaster() ||
-                      // Exception for viewCount and commentCount increments
-                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'commentCount']))
+                      // Exception for viewCount, commentCount, and likeCount increments
+                      (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['viewCount', 'commentCount', 'likeCount']))
                     );
                     
       allow delete: if isActiveUser() && (resource.data.author.uid == request.auth.uid || isMaster());
@@ -60,6 +59,12 @@ service cloud.firestore {
         allow read: if isActiveUser();
         allow create: if isActiveUser() && request.resource.data.author.uid == request.auth.uid;
         allow update, delete: if isActiveUser() && (resource.data.author.uid == request.auth.uid || isMaster());
+      }
+      
+      // Likes sub-collection permissions (Used for optimistic deduplication)
+      match /likes/{userId} {
+        allow read: if isActiveUser();
+        allow write: if isActiveUser() && request.auth.uid == userId;
       }
     }
 

@@ -46,7 +46,18 @@
 
             <div class="d-flex gap-4 text-body-2 text-grey-darken-1 font-weight-bold">
               <span class="d-flex align-center"><v-icon size="small" class="mr-1">mdi-eye-outline</v-icon> {{ post.viewCount || 0 }}</span>
-              <span class="d-flex align-center text-pink-darken-1 cursor-pointer hover-scale"><v-icon size="small" class="mr-1">mdi-heart-outline</v-icon> {{ post.likeCount || 0 }}</span>
+              
+              <!-- 좋아요 트랜잭션 영역 -->
+              <span 
+                class="d-flex align-center cursor-pointer hover-scale transition-fast"
+                :class="isLiked ? 'text-pink-darken-1' : 'text-grey-darken-1'"
+                @click="handleToggleLike"
+                :style="likeLoading ? 'opacity: 0.5; pointer-events: none;' : ''"
+              >
+                <v-icon size="small" class="mr-1">{{ isLiked ? 'mdi-heart' : 'mdi-heart-outline' }}</v-icon> 
+                {{ post.likeCount || 0 }}
+              </span>
+              
               <span class="d-flex align-center text-blue-darken-1"><v-icon size="small" class="mr-1">mdi-comment-outline</v-icon> {{ post.commentCount || 0 }}</span>
             </div>
           </div>
@@ -185,7 +196,7 @@ import { useBoard } from '~/composables/useBoard'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const { fetchPost, incrementViewCount, deletePost, loading, fetchComments, createComment, deleteComment } = useBoard()
+const { fetchPost, incrementViewCount, deletePost, loading, fetchComments, createComment, deleteComment, checkUserLiked, toggleLike } = useBoard()
 
 const post = ref(null)
 const confirmDelete = ref(false)
@@ -197,6 +208,10 @@ const comments = ref([])
 const newComment = ref('')
 const loadingComments = ref(false)
 const submittingComment = ref(false)
+
+// 좋아요 상태
+const isLiked = ref(false)
+const likeLoading = ref(false)
 
 const isLoggedIn = computed(() => {
   return authStore.user && authStore.userData?.status === 'active'
@@ -214,9 +229,44 @@ onMounted(async () => {
     if (post.value) {
       incrementViewCount(postId)
       loadComments(postId)
+      
+      // 로그인한 유저의 좋아요 상태 체크
+      if (isLoggedIn.value) {
+        isLiked.value = await checkUserLiked(postId, authStore.user.uid)
+      }
     }
   }
 })
+
+// 좋아요 처리 로직
+const handleToggleLike = async () => {
+  if (!isLoggedIn.value) {
+    alert('로그인한 회원만 좋아요를 누를 수 있습니다.')
+    router.push('/login')
+    return
+  }
+  
+  if (!post.value || likeLoading.value) return
+  
+  likeLoading.value = true
+  const postId = post.value.id
+  const currentLikeState = isLiked.value
+  
+  // 낙관적 UI 업데이트 (Optimistic Update)
+  isLiked.value = !currentLikeState
+  post.value.likeCount = Math.max(0, (post.value.likeCount || 0) + (currentLikeState ? -1 : 1))
+
+  try {
+    await toggleLike(postId, authStore.user.uid, currentLikeState)
+  } catch (err) {
+    // 실패 시 롤백
+    isLiked.value = currentLikeState
+    post.value.likeCount = Math.max(0, (post.value.likeCount || 0) + (currentLikeState ? 1 : -1))
+    alert('좋아요 처리 중 오류가 발생했습니다.')
+  } finally {
+    likeLoading.value = false
+  }
+}
 
 const loadComments = async (postId) => {
   loadingComments.value = true
@@ -272,7 +322,6 @@ const handleDeleteComment = async (commentId) => {
 }
 
 const editPost = () => {
-  // TODO: 수정 페이지 라우팅 로직 (현재는 미구현)
   alert('수정 기능은 곧 추가됩니다!')
 }
 

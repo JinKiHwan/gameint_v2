@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { useNuxtApp } from '#app'
 import { 
   collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, 
-  query, where, orderBy, serverTimestamp, increment 
+  query, where, orderBy, serverTimestamp, increment, writeBatch, limit
 } from 'firebase/firestore'
 
 export const useBoard = () => {
@@ -209,6 +209,62 @@ export const useBoard = () => {
     }
   }
 
+  // 9. 좋아요 상태 확인
+  const checkUserLiked = async (postId: string, userId: string) => {
+    try {
+      const likeRef = doc(getDb(), 'posts', postId, 'likes', userId)
+      const likeSnap = await getDoc(likeRef)
+      return likeSnap.exists()
+    } catch (err) {
+      console.error('Check like error:', err)
+      return false
+    }
+  }
+
+  // 10. 좋아요 토글 (Batch Write)
+  const toggleLike = async (postId: string, userId: string, isCurrentlyLiked: boolean) => {
+    try {
+      const db = getDb()
+      const batch = writeBatch(db)
+      
+      const likeRef = doc(db, 'posts', postId, 'likes', userId)
+      const postRef = doc(db, 'posts', postId)
+
+      if (isCurrentlyLiked) {
+        // 좋아요 취소: 문서 삭제 및 좋아요 수 1 감소
+        batch.delete(likeRef)
+        batch.update(postRef, { likeCount: increment(-1) })
+      } else {
+        // 좋아요 추가: 문서 생성 및 좋아요 수 1 증가
+        batch.set(likeRef, { createdAt: serverTimestamp() })
+        batch.update(postRef, { likeCount: increment(1) })
+      }
+
+      await batch.commit()
+      return !isCurrentlyLiked // 변경된 상태 반환
+    } catch (err: any) {
+      console.error('Toggle like error:', err)
+      throw new Error('좋아요 처리에 실패했습니다.')
+    }
+  }
+
+  // 11. HOT 게시글 조회 (좋아요 높은 순, 최대 3개)
+  const fetchHotPosts = async () => {
+    try {
+      const postsRef = collection(getDb(), 'posts')
+      const q = query(postsRef, orderBy('likeCount', 'desc'), limit(3))
+      const snapshot = await getDocs(q)
+      
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+    } catch (err: any) {
+      console.error('Fetch hot posts error:', err)
+      return []
+    }
+  }
+
   return {
     loading,
     error,
@@ -220,6 +276,9 @@ export const useBoard = () => {
     deletePost,
     fetchComments,
     createComment,
-    deleteComment
+    deleteComment,
+    checkUserLiked,
+    toggleLike,
+    fetchHotPosts
   }
 }

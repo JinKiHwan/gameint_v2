@@ -8,22 +8,27 @@
       <v-btn color="blue-darken-1" prepend-icon="mdi-pencil" class="rounded-xl font-weight-bold" variant="flat" to="/board/write">글쓰기</v-btn>
     </v-card>
 
-    <div class="mb-8">
+    <div v-if="hotPosts.length > 0" class="mb-8">
       <h3 class="text-h6 font-weight-black text-grey-darken-4 mb-4 d-flex align-center">
         <v-icon color="red-lighten-1" class="mr-2">mdi-fire</v-icon> 주간 HOT 인기글
       </h3>
       <v-row>
-        <v-col v-for="i in 2" :key="i" cols="12" md="6">
-          <v-card class="rounded-xl pa-5 border-red-lighten-4 bg-red-lighten-5 hover-shadow cursor-pointer" elevation="0" border>
+        <v-col v-for="post in hotPosts" :key="post.id" cols="12" md="4" sm="6">
+          <v-card 
+            class="rounded-xl pa-5 border-red-lighten-4 bg-red-lighten-5 hover-shadow cursor-pointer h-100 d-flex flex-column" 
+            elevation="0" 
+            border
+            @click="router.push(`/board/${post.id}`)"
+          >
             <div class="d-flex justify-space-between align-start mb-3">
               <v-chip color="red-lighten-1" size="small" variant="flat" class="font-weight-bold px-2">HOT</v-chip>
               <div class="d-flex gap-2 text-caption font-weight-bold text-grey-darken-1">
-                <span class="d-flex align-center text-red-lighten-1"><v-icon size="small" class="mr-1">mdi-heart</v-icon> 42</span>
-                <span class="d-flex align-center"><v-icon size="small" class="mr-1">mdi-forum</v-icon> 18</span>
+                <span class="d-flex align-center text-red-lighten-1"><v-icon size="small" class="mr-1">mdi-heart</v-icon> {{ post.likeCount || 0 }}</span>
+                <span class="d-flex align-center"><v-icon size="small" class="mr-1">mdi-forum</v-icon> {{ post.commentCount || 0 }}</span>
               </div>
             </div>
-            <h4 class="text-subtitle-1 font-weight-black text-grey-darken-4 mb-1 line-clamp-1">전자책 vs 종이책, 여러분의 선택은?</h4>
-            <p class="text-body-2 text-grey-darken-2 line-clamp-1">저는 개인적으로 종이책 넘기는 맛을 포기할 수가 없네요...</p>
+            <h4 class="text-subtitle-1 font-weight-black text-grey-darken-4 mb-2 line-clamp-1">{{ post.title }}</h4>
+            <p class="text-body-2 text-grey-darken-2 line-clamp-2 mt-auto">{{ post.contentPreview || '내용이 없습니다.' }}</p>
           </v-card>
         </v-col>
       </v-row>
@@ -54,14 +59,14 @@
       <v-skeleton-loader v-if="loading" type="list-item-avatar-two-line" v-for="i in 5" :key="`skel-${i}`" class="border-b"></v-skeleton-loader>
 
       <!-- Empty state -->
-      <div v-else-if="posts.length === 0" class="text-center pa-10">
+      <div v-else-if="sortedPosts.length === 0" class="text-center pa-10">
         <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-text-box-search-outline</v-icon>
         <h3 class="text-h6 font-weight-bold text-grey-darken-2 mb-2">등록된 게시글이 없습니다.</h3>
       </div>
 
       <!-- Real posts list -->
       <v-list v-else lines="two" class="pa-0">
-        <template v-for="(post, index) in posts" :key="post.id">
+        <template v-for="(post, index) in sortedPosts" :key="post.id">
           <v-list-item class="pa-4 pa-md-5 hover-bg-grey cursor-pointer" @click="router.push(`/board/${post.id}`)">
             <div class="d-flex align-center w-100">
               <div class="d-none d-sm-flex flex-column align-center justify-center w-16 text-grey-darken-1 mr-4">
@@ -89,7 +94,7 @@
               </div>
             </div>
           </v-list-item>
-          <v-divider v-if="index !== posts.length - 1"></v-divider>
+          <v-divider v-if="index !== sortedPosts.length - 1"></v-divider>
         </template>
       </v-list>
     </v-card>
@@ -97,27 +102,50 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBoard } from '~/composables/useBoard'
 
 const router = useRouter()
-const { fetchPosts, loading } = useBoard()
+const { fetchPosts, fetchHotPosts, loading } = useBoard()
 
 const boardTag = ref('전체')
 const boardSort = ref('최신순')
 const posts = ref([])
+const hotPosts = ref([])
 
 const loadPosts = async () => {
   posts.value = await fetchPosts(boardTag.value)
 }
 
+const loadHotPosts = async () => {
+  const fetchedHot = await fetchHotPosts()
+  // 좋아요가 1개라도 있는 게시글만 HOT으로 취급
+  hotPosts.value = fetchedHot.filter(p => p.likeCount > 0)
+}
+
 onMounted(() => {
   loadPosts()
+  loadHotPosts()
 })
 
 watch(boardTag, () => {
   loadPosts()
+})
+
+// 정렬 로직 (클라이언트 사이드 정렬)
+const sortedPosts = computed(() => {
+  let sorted = [...posts.value]
+  
+  if (boardSort.value === '최신순') {
+    // 기본 fetchPosts 정렬 유지 (createdAt desc)
+  } else if (boardSort.value === '인기순') {
+    sorted.sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+  } else if (boardSort.value === '댓글순') {
+    sorted.sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0))
+  }
+  
+  return sorted
 })
 
 // UI Helper 함수들
