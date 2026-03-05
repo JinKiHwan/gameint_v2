@@ -1,147 +1,98 @@
 <template>
-  <div class="pa-4 bg-grey-lighten-4 min-vh-100 fade-in">
-    <v-container max-width="900" class="px-0">
-      
-      <!-- 헤더 영역 -->
-      <div class="d-flex align-end justify-space-between mb-6">
-        <div>
-          <h1 class="text-h4 font-weight-black text-grey-darken-4 mb-2">통합 게시판</h1>
-          <p class="text-body-2 text-grey-darken-1">자유롭게 이야기를 나누고 책 리뷰를 남겨주세요.</p>
-        </div>
-        <v-btn 
-          color="blue-darken-1" 
-          variant="flat" 
-          prepend-icon="mdi-pencil" 
-          class="font-weight-bold rounded-lg"
-          to="/board/write"
-          elevation="0"
-        >
-          글쓰기
-        </v-btn>
+  <div class="fade-in">
+    <v-card class="rounded-xl pa-6 mb-8 border bg-white d-flex justify-space-between align-center" elevation="0">
+      <div>
+        <h1 class="text-h5 font-weight-black text-grey-darken-4 mb-1">자유 게시판 💬</h1>
+        <p class="text-body-2 font-weight-medium text-grey-darken-1">멤버들과 자유롭게 소통하는 공간입니다.</p>
       </div>
+      <v-btn color="blue-darken-1" prepend-icon="mdi-pencil" class="rounded-xl font-weight-bold" variant="flat" to="/board/write">글쓰기</v-btn>
+    </v-card>
 
-      <!-- 플로팅 필터 메뉴 -->
-      <v-card class="mb-6 rounded-xl border d-flex align-center px-4 py-2 bg-white" elevation="0">
-        <v-chip-group
-          v-model="selectedCategory"
-          selected-class="text-blue-darken-1 bg-blue-lighten-5 font-weight-black"
-          mandatory
-        >
-          <v-chip v-for="cat in categories" :key="cat" :value="cat" variant="text" class="font-weight-bold">
-            {{ cat }}
-          </v-chip>
-        </v-chip-group>
-        <v-spacer></v-spacer>
-        <v-btn-toggle v-model="viewMode" mandatory variant="text" color="blue-darken-1" density="compact">
-          <v-btn value="list" icon="mdi-format-list-bulleted"></v-btn>
-          <v-btn value="grid" icon="mdi-view-grid-outline"></v-btn>
-        </v-btn-toggle>
-      </v-card>
-
-      <!-- 게시글 로딩 상태 -->
-      <template v-if="loading">
-        <v-row v-if="viewMode === 'grid'">
-          <v-col cols="12" sm="6" md="4" v-for="i in 6" :key="i">
-            <v-skeleton-loader type="card" class="rounded-xl border"></v-skeleton-loader>
-          </v-col>
-        </v-row>
-        <div v-else>
-          <v-skeleton-loader type="list-item-avatar-two-line" v-for="i in 5" :key="i" class="mb-4 rounded-xl border"></v-skeleton-loader>
-        </div>
-      </template>
-
-      <!-- 게시물 없음 -->
-      <template v-else-if="posts.length === 0">
-        <v-card class="text-center pa-10 rounded-xl border bg-white" elevation="0">
-          <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-text-box-search-outline</v-icon>
-          <h3 class="text-h6 font-weight-bold text-grey-darken-2 mb-2">등록된 게시글이 없습니다.</h3>
-          <p class="text-body-2 text-grey-darken-1">첫 번째 게시글의 주인공이 되어보세요!</p>
-        </v-card>
-      </template>
-
-      <!-- 게시글 목록 렌더링 -->
-      <template v-else>
-        <!-- 리스트 뷰 -->
-        <div v-if="viewMode === 'list'" class="d-flex flex-column gap-4">
-          <v-card 
-            v-for="post in posts" 
-            :key="post.id" 
-            class="rounded-xl border bg-white cursor-pointer hover-card transition-swing" 
-            elevation="0"
-            @click="goToDetail(post.id)"
-          >
-            <div class="d-flex pa-4 align-center">
-              <!-- 카테고리 칩 -->
-              <v-chip size="small" :color="getCategoryColor(post.category)" variant="flat" class="mr-4 font-weight-bold px-3">
-                {{ post.category }}
-              </v-chip>
-
-              <!-- 글 제목 및 미리보기 -->
-              <div class="flex-grow-1 mr-4 overflow-hidden">
-                <div class="text-subtitle-1 font-weight-black text-truncate mb-1 text-grey-darken-4">{{ post.title }}</div>
-                <div class="text-body-2 text-grey-darken-1 text-truncate" style="max-height: 20px;">
-                  {{ post.contentPreview }}
-                </div>
-              </div>
-              
-              <!-- 메타 정보 (작성자, 시간, 조회수, 좋아요) -->
-              <div class="d-flex flex-column align-end flex-shrink-0" style="width: 120px;">
-                <div class="d-flex align-center mb-1">
-                  <v-avatar size="20" class="mr-2">
-                    <v-img :src="getProfileImageUrl(post.author.profileImageId)"></v-img>
-                  </v-avatar>
-                  <span class="text-caption font-weight-bold text-grey-darken-3 text-truncate">{{ post.author.nickname }}</span>
-                </div>
-                <div class="text-caption text-grey-darken-1 mb-2">{{ formatDate(post.createdAt) }}</div>
-                <div class="d-flex text-caption text-grey-darken-1 gap-3">
-                  <span class="d-flex align-center"><v-icon size="small" class="mr-1">mdi-eye-outline</v-icon> {{ post.viewCount || 0 }}</span>
-                  <span class="d-flex align-center text-pink-darken-1"><v-icon size="small" class="mr-1">mdi-heart-outline</v-icon> {{ post.likeCount || 0 }}</span>
-                  <span class="d-flex align-center text-blue-darken-1" v-if="post.commentCount > 0"><v-icon size="small" class="mr-1">mdi-comment-outline</v-icon> {{ post.commentCount }}</span>
-                </div>
+    <div class="mb-8">
+      <h3 class="text-h6 font-weight-black text-grey-darken-4 mb-4 d-flex align-center">
+        <v-icon color="red-lighten-1" class="mr-2">mdi-fire</v-icon> 주간 HOT 인기글
+      </h3>
+      <v-row>
+        <v-col v-for="i in 2" :key="i" cols="12" md="6">
+          <v-card class="rounded-xl pa-5 border-red-lighten-4 bg-red-lighten-5 hover-shadow cursor-pointer" elevation="0" border>
+            <div class="d-flex justify-space-between align-start mb-3">
+              <v-chip color="red-lighten-1" size="small" variant="flat" class="font-weight-bold px-2">HOT</v-chip>
+              <div class="d-flex gap-2 text-caption font-weight-bold text-grey-darken-1">
+                <span class="d-flex align-center text-red-lighten-1"><v-icon size="small" class="mr-1">mdi-heart</v-icon> 42</span>
+                <span class="d-flex align-center"><v-icon size="small" class="mr-1">mdi-forum</v-icon> 18</span>
               </div>
             </div>
+            <h4 class="text-subtitle-1 font-weight-black text-grey-darken-4 mb-1 line-clamp-1">전자책 vs 종이책, 여러분의 선택은?</h4>
+            <p class="text-body-2 text-grey-darken-2 line-clamp-1">저는 개인적으로 종이책 넘기는 맛을 포기할 수가 없네요...</p>
           </v-card>
-        </div>
+        </v-col>
+      </v-row>
+    </div>
 
-        <!-- 그리드 뷰 (리뷰 중심의 UI일 경우 유용) -->
-        <v-row v-if="viewMode === 'grid'">
-          <v-col cols="12" sm="6" md="4" v-for="post in posts" :key="post.id">
-            <v-card 
-              class="rounded-xl border bg-white h-100 d-flex flex-column hover-card transition-swing cursor-pointer" 
-              elevation="0"
-              @click="goToDetail(post.id)"
-            >
-              <div class="pa-4 flex-grow-1">
-                <div class="d-flex justify-space-between align-center mb-3">
-                  <v-chip size="small" :color="getCategoryColor(post.category)" variant="flat" class="font-weight-bold">
+    <v-card class="rounded-xl border bg-white overflow-hidden" elevation="0">
+      <div class="d-flex flex-column flex-sm-row justify-space-between align-sm-center pa-4 bg-grey-lighten-5 border-b">
+        <v-chip-group v-model="boardTag" selected-class="bg-grey-darken-4 text-white" mandatory class="mb-2 mb-sm-0">
+          <v-chip value="전체" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">전체</v-chip>
+          <v-chip value="책 리뷰" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">책 리뷰</v-chip>
+          <v-chip value="자유글" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">자유글</v-chip>
+          <v-chip value="정보/팁" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">정보/팁</v-chip>
+          <v-chip value="건의사항" variant="outlined" class="bg-white font-weight-bold border-grey-lighten-2">건의</v-chip>
+        </v-chip-group>
+        <v-select
+          v-model="boardSort"
+          :items="['최신순', '인기순', '댓글순']"
+          variant="outlined"
+          density="compact"
+          hide-details
+          bg-color="white"
+          class="font-weight-bold rounded-lg"
+          style="max-width: 150px;"
+        ></v-select>
+      </div>
+      
+      <!-- Loding state -->
+      <v-skeleton-loader v-if="loading" type="list-item-avatar-two-line" v-for="i in 5" :key="`skel-${i}`" class="border-b"></v-skeleton-loader>
+
+      <!-- Empty state -->
+      <div v-else-if="posts.length === 0" class="text-center pa-10">
+        <v-icon size="64" color="grey-lighten-1" class="mb-4">mdi-text-box-search-outline</v-icon>
+        <h3 class="text-h6 font-weight-bold text-grey-darken-2 mb-2">등록된 게시글이 없습니다.</h3>
+      </div>
+
+      <!-- Real posts list -->
+      <v-list v-else lines="two" class="pa-0">
+        <template v-for="(post, index) in posts" :key="post.id">
+          <v-list-item class="pa-4 pa-md-5 hover-bg-grey cursor-pointer" @click="router.push(`/board/${post.id}`)">
+            <div class="d-flex align-center w-100">
+              <div class="d-none d-sm-flex flex-column align-center justify-center w-16 text-grey-darken-1 mr-4">
+                <v-icon size="small" class="mb-1">mdi-heart</v-icon>
+                <span class="text-caption font-weight-bold">{{ post.likeCount || 0 }}</span>
+              </div>
+              
+              <div class="flex-grow-1 min-w-0">
+                <div class="d-flex align-center mb-1">
+                  <v-chip size="x-small" :color="getCategoryColor(post.category)" variant="flat" class="font-weight-bold px-2 mr-2 rounded">
                     {{ post.category }}
                   </v-chip>
-                  <span class="text-caption text-grey-darken-1">{{ formatDate(post.createdAt) }}</span>
+                  <h4 class="text-subtitle-1 font-weight-bold text-grey-darken-4 text-truncate">{{ post.title }}</h4>
                 </div>
-                <h3 class="text-subtitle-1 font-weight-black mb-2 text-grey-darken-4 line-clamp-2">{{ post.title }}</h3>
-                <p class="text-body-2 text-grey-darken-1 line-clamp-3">{{ post.contentPreview }}</p>
-              </div>
-              
-              <v-divider></v-divider>
-              
-              <div class="pa-3 d-flex justify-space-between align-center bg-grey-lighten-5 rounded-b-xl">
-                <div class="d-flex align-center">
-                  <v-avatar size="24" class="mr-2 border">
-                    <v-img :src="getProfileImageUrl(post.author.profileImageId)"></v-img>
-                  </v-avatar>
-                  <span class="text-caption font-weight-bold text-grey-darken-3 text-truncate max-w-100">{{ post.author.nickname }}</span>
-                </div>
-                <div class="d-flex text-caption text-grey-darken-1 gap-2">
+                <div class="d-flex align-center gap-3 text-caption font-weight-medium text-grey-darken-1">
+                  <span class="font-weight-bold text-grey-darken-3">{{ post.author?.nickname || '알수없음' }}</span>
+                  <span>{{ formatDate(post.createdAt) }}</span>
                   <span class="d-flex align-center"><v-icon size="x-small" class="mr-1">mdi-eye</v-icon> {{ post.viewCount || 0 }}</span>
-                  <span class="d-flex align-center text-pink-darken-1"><v-icon size="x-small" class="mr-1">mdi-heart</v-icon> {{ post.likeCount || 0 }}</span>
                 </div>
               </div>
-            </v-card>
-          </v-col>
-        </v-row>
-      </template>
-
-    </v-container>
+              
+              <div class="d-flex flex-column align-center justify-center w-16 ml-2">
+                <v-icon color="blue-lighten-2" class="mb-1">mdi-comment-processing-outline</v-icon>
+                <span class="text-caption font-weight-bold text-blue-darken-1">{{ post.commentCount || 0 }}</span>
+              </div>
+            </div>
+          </v-list-item>
+          <v-divider v-if="index !== posts.length - 1"></v-divider>
+        </template>
+      </v-list>
+    </v-card>
   </div>
 </template>
 
@@ -153,21 +104,19 @@ import { useBoard } from '~/composables/useBoard'
 const router = useRouter()
 const { fetchPosts, loading } = useBoard()
 
-const viewMode = ref('list') // list or grid
-const categories = ['전체', '책 리뷰', '자유글', '정보/팁', '건의사항']
-const selectedCategory = ref('전체')
-
+const boardTag = ref('전체')
+const boardSort = ref('최신순')
 const posts = ref([])
 
 const loadPosts = async () => {
-  posts.value = await fetchPosts(selectedCategory.value)
+  posts.value = await fetchPosts(boardTag.value)
 }
 
 onMounted(() => {
   loadPosts()
 })
 
-watch(selectedCategory, () => {
+watch(boardTag, () => {
   loadPosts()
 })
 
@@ -183,9 +132,7 @@ const getCategoryColor = (cat) => {
 }
 
 const getProfileImageUrl = (imageId) => {
-  // 실제로는 로컬 에셋 경로를 반환
-  // return `/images/avatars/${imageId}.png`
-  return `https://api.dicebear.com/7.x/bottts/svg?seed=${imageId}` // 임시 더미 이미지
+  return `https://api.dicebear.com/7.x/bottts/svg?seed=${imageId}`
 }
 
 const formatDate = (dateValue) => {
@@ -207,44 +154,23 @@ const formatDate = (dateValue) => {
   const d = String(date.getDate()).padStart(2, '0')
   return `${date.getFullYear()}.${m}.${d}`
 }
-
-const goToDetail = (id) => {
-  router.push(`/board/${id}`)
-}
 </script>
 
 <style scoped>
-.min-vh-100 {
-  min-height: 100vh;
-}
-.gap-4 {
-  gap: 16px;
-}
-.gap-3 {
-  gap: 12px;
-}
-.gap-2 {
-  gap: 8px;
-}
-.hover-card:hover {
-  transform: translateY(-2px);
+.hover-shadow:hover {
   box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+  transform: translateY(-2px);
+  transition: all 0.2s ease;
 }
-.line-clamp-2 {
+.hover-bg-grey:hover {
+  background-color: #f8f9fa !important;
+}
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.line-clamp-1 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
+  -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
   overflow: hidden;
-}
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-.max-w-100 {
-  max-width: 100px;
 }
 </style>
