@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 
 admin.initializeApp();
@@ -7,7 +7,7 @@ const db = admin.firestore();
 export const onUserProfileUpdate = functions
   .region("asia-northeast3") // Use Seoul region, or let it default to us-central1 if preferred. I'll stick to default or the one used.
   .firestore.document("users/{userId}")
-  .onUpdate(async (change, context) => {
+  .onUpdate(async (change: functions.Change<functions.firestore.QueryDocumentSnapshot>, context: functions.EventContext) => {
     const userId = context.params.userId;
     const beforeData = change.before.data();
     const afterData = change.after.data();

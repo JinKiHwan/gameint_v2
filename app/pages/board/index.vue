@@ -82,7 +82,12 @@
                   <h4 class="text-subtitle-1 font-weight-bold text-grey-darken-4 text-truncate">{{ post.title }}</h4>
                 </div>
                 <div class="d-flex align-center gap-3 text-caption font-weight-medium text-grey-darken-1">
-                  <span class="font-weight-bold text-grey-darken-3">{{ post.author?.nickname || '알수없음' }}</span>
+                  <div class="d-flex align-center font-weight-bold text-grey-darken-3">
+                    <v-avatar size="20" class="mr-1 border bg-white">
+                      <v-img :src="getProfileImageUrl(post.author?.profileImageId)"></v-img>
+                    </v-avatar>
+                    {{ post.author?.nickname || '알수없음' }}
+                  </div>
                   <span>{{ formatDate(post.createdAt) }}</span>
                   <span class="d-flex align-center"><v-icon size="x-small" class="mr-1">mdi-eye</v-icon> {{ post.viewCount || 0 }}</span>
                 </div>
@@ -117,6 +122,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBoard } from '~/composables/useBoard'
+import { AVATARS } from '~/constants/avatars'
 
 const router = useRouter()
 const { fetchPosts, fetchHotPosts, loading } = useBoard()
