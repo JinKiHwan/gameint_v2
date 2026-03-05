@@ -24,8 +24,8 @@
       <div class="sidebar__footer">
         <div v-if="authStore.user" class="sidebar__user">
           <div class="user-info">
-            <div class="avatar avatar--md avatar--blue">
-              <span>{{ authStore.userData?.nickname?.charAt(0) || 'U' }}</span>
+            <div class="avatar avatar--md">
+              <img :src="getProfileImagePath(authStore.userData?.profileImageId)" alt="프로필" />
             </div>
             <div class="user-text">
               <span class="user-name">{{ authStore.userData?.nickname || '신규회원' }}</span>
@@ -54,8 +54,8 @@
         </button>
 
         <div v-if="authStore.user" class="mobile-menu" ref="mobileMenuRef">
-          <div class="avatar avatar--sm avatar--blue cursor-pointer" @click="mobileMenuOpen = !mobileMenuOpen">
-            <span>{{ authStore.userData?.nickname?.charAt(0) || 'U' }}</span>
+          <div class="avatar avatar--sm cursor-pointer" @click="mobileMenuOpen = !mobileMenuOpen">
+            <img :src="getProfileImagePath(authStore.userData?.profileImageId)" alt="프로필" />
           </div>
           <div v-if="mobileMenuOpen" class="mobile-dropdown">
             <button class="mobile-dropdown__item" @click="handleLogout; mobileMenuOpen = false">
@@ -119,6 +119,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useAuthStore } from '~/stores/auth'
+import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const authStore = useAuthStore()
 

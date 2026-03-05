@@ -9,7 +9,7 @@ import {
   signOut,
   type User 
 } from 'firebase/auth'
-import { getDoc, doc, setDoc, serverTimestamp, collection, query, where, getDocs } from 'firebase/firestore'
+import { getDoc, doc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch } from 'firebase/firestore'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -239,15 +239,116 @@ export const useAuthStore = defineStore('auth', {
       const firestore = ($firebase as any).firestore
 
       try {
-        const userDocRef = doc(firestore, 'users', this.user.uid)
+        const uid = this.user.uid
+
+        // ── 1. users 문서 업데이트 ──────────────────────────────
+        const userDocRef = doc(firestore, 'users', uid)
         await setDoc(userDocRef, { nickname: newNickname }, { merge: true })
-        
-        // 로컬 상태 업데이트
+
+        // ── 2. 해당 유저의 게시글 목록 조회 ─────────────────────
+        const postsRef = collection(firestore, 'posts')
+        const postsQuery = query(postsRef, where('author.uid', '==', uid))
+        const postsSnapshot = await getDocs(postsQuery)
+
+        // ── 3. 게시글별로 author.nickname 업데이트 + 댓글 업데이트 ─
+        for (const postDoc of postsSnapshot.docs) {
+          const postId = postDoc.id
+
+          // 3-2. 해당 게시글의 댓글 중 본인 작성 댓글 조회
+          const commentsRef = collection(firestore, 'posts', postId, 'comments')
+          const commentsQuery = query(commentsRef, where('author.uid', '==', uid))
+          const commentsSnapshot = await getDocs(commentsQuery)
+
+          // 배치에 담을 업데이트 목록 구성
+          const writes: Array<{ ref: any; data: any }> = []
+
+          // 게시글 자체
+          writes.push({
+            ref: doc(firestore, 'posts', postId),
+            data: { 'author.nickname': newNickname }
+          })
+
+          // 해당 게시글의 내 댓글들
+          for (const commentDoc of commentsSnapshot.docs) {
+            writes.push({
+              ref: doc(firestore, 'posts', postId, 'comments', commentDoc.id),
+              data: { 'author.nickname': newNickname }
+            })
+          }
+
+          // 500건 단위로 나눠 배치 커밋
+          const CHUNK_SIZE = 490
+          for (let i = 0; i < writes.length; i += CHUNK_SIZE) {
+            const chunk = writes.slice(i, i + CHUNK_SIZE)
+            const batch = writeBatch(firestore)
+            for (const w of chunk) {
+              batch.update(w.ref, w.data)
+            }
+            await batch.commit()
+          }
+        }
+
+        // ── 4. 로컬 상태 업데이트 ───────────────────────────────
         this.userData.nickname = newNickname
         return true
       } catch (error: any) {
         console.error('Update nickname error:', error)
         throw new Error('닉네임 변경 중 오류가 발생했습니다.')
+      }
+    },
+
+    async updateProfileImage(newImageId: string) {
+      if (!this.user || !this.userData) throw new Error('로그아웃 상태입니다.')
+
+      const { $firebase } = useNuxtApp()
+      const firestore = ($firebase as any).firestore
+
+      try {
+        const uid = this.user.uid
+
+        // 1. users 문서 profileImageId 업데이트
+        const userDocRef = doc(firestore, 'users', uid)
+        await setDoc(userDocRef, { profileImageId: newImageId }, { merge: true })
+
+        // 2. 해당 유저 게시글의 author.profileImageId 일괄 업데이트
+        const postsRef = collection(firestore, 'posts')
+        const postsQuery = query(postsRef, where('author.uid', '==', uid))
+        const postsSnapshot = await getDocs(postsQuery)
+
+        for (const postDoc of postsSnapshot.docs) {
+          const postId = postDoc.id
+
+          // 댓글 조회
+          const commentsRef = collection(firestore, 'posts', postId, 'comments')
+          const commentsQuery = query(commentsRef, where('author.uid', '==', uid))
+          const commentsSnapshot = await getDocs(commentsQuery)
+
+          // 배치 목록 구성
+          const writes: Array<{ ref: any; data: any }> = [
+            { ref: doc(firestore, 'posts', postId), data: { 'author.profileImageId': newImageId } }
+          ]
+          for (const commentDoc of commentsSnapshot.docs) {
+            writes.push({
+              ref: doc(firestore, 'posts', postId, 'comments', commentDoc.id),
+              data: { 'author.profileImageId': newImageId }
+            })
+          }
+
+          // 490건 단위 청크 커밋
+          const CHUNK = 490
+          for (let i = 0; i < writes.length; i += CHUNK) {
+            const batch = writeBatch(firestore)
+            for (const w of writes.slice(i, i + CHUNK)) batch.update(w.ref, w.data)
+            await batch.commit()
+          }
+        }
+
+        // 3. 로컬 상태 업데이트
+        this.userData.profileImageId = newImageId
+        return true
+      } catch (error: any) {
+        console.error('Update profile image error:', error)
+        throw new Error('프로필 이미지 변경 중 오류가 발생했습니다.')
       }
     },
 

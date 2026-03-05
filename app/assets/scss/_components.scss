@@ -344,14 +344,17 @@
 // ============================
 .modal-overlay {
   position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.5);
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%,-50%);
+  //inset: 0;
+  //background: rgba(0,0,0,0.5);
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: sp(4);
-  animation: fadeIn 0.2s ease;
+  //animation: fadeIn 0.2s ease;
 }
 
 .modal {
@@ -361,6 +364,8 @@
   max-width: 400px;
   padding: sp(2);
   box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  animation: fadeIn 0.2s ease;
+
   
   &__header {
     display: flex;
