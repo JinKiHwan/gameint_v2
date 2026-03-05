@@ -4,6 +4,7 @@ import {
   collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc, 
   query, where, orderBy, serverTimestamp, increment, writeBatch, limit
 } from 'firebase/firestore'
+import { useAuthStore } from '~/stores/auth'
 
 export const useBoard = () => {
   const nuxtApp = useNuxtApp()
@@ -131,6 +132,17 @@ export const useBoard = () => {
         createdAt: serverTimestamp(),
         isEdited: false
       })
+
+      // 유저 문서의 postCount 증가 및 로컬 상태 업데이트
+      const authStore = useAuthStore()
+      if (authStore.user?.uid === postData.author?.uid) {
+        const userRef = doc(getDb(), 'users', authStore.user.uid)
+        await updateDoc(userRef, { postCount: increment(1) })
+        if (authStore.userData) {
+          authStore.userData.postCount = (authStore.userData.postCount || 0) + 1
+        }
+      }
+
       return docRef.id
     } catch (err: any) {
       console.error('Create post error:', err)
@@ -167,7 +179,24 @@ export const useBoard = () => {
     error.value = null
     try {
       const docRef = doc(getDb(), 'posts', id)
+      
+      const docSnap = await getDoc(docRef)
+      let authorUid = null
+      if (docSnap.exists()) {
+        authorUid = docSnap.data().author?.uid
+      }
+
       await deleteDoc(docRef)
+
+      if (authorUid) {
+        const userRef = doc(getDb(), 'users', authorUid)
+        await updateDoc(userRef, { postCount: increment(-1) })
+        const authStore = useAuthStore()
+        if (authStore.user?.uid === authorUid && authStore.userData) {
+          authStore.userData.postCount = Math.max(0, (authStore.userData.postCount || 0) - 1)
+        }
+      }
+
       return true
     } catch (err: any) {
       console.error('Delete post error:', err)
@@ -214,6 +243,16 @@ export const useBoard = () => {
       await updateDoc(postRef, {
         commentCount: increment(1)
       })
+
+      // 3) 유저 문서의 commentCount 증가
+      const authStore = useAuthStore()
+      if (authStore.user?.uid === commentData.author?.uid) {
+        const userRef = doc(getDb(), 'users', authStore.user.uid)
+        await updateDoc(userRef, { commentCount: increment(1) })
+        if (authStore.userData) {
+          authStore.userData.commentCount = (authStore.userData.commentCount || 0) + 1
+        }
+      }
       
       return docRef.id
     } catch (err: any) {
@@ -253,6 +292,12 @@ export const useBoard = () => {
     try {
       const commentRef = doc(getDb(), 'posts', postId, 'comments', commentId)
       
+      const commentSnap = await getDoc(commentRef)
+      let authorUid = null
+      if (commentSnap.exists()) {
+        authorUid = commentSnap.data().author?.uid
+      }
+
       // 1) 댓글 삭제
       await deleteDoc(commentRef)
       
@@ -261,6 +306,16 @@ export const useBoard = () => {
       await updateDoc(postRef, {
         commentCount: increment(-1)
       })
+
+      // 3) 유저 문서의 commentCount 감소
+      if (authorUid) {
+        const userRef = doc(getDb(), 'users', authorUid)
+        await updateDoc(userRef, { commentCount: increment(-1) })
+        const authStore = useAuthStore()
+        if (authStore.user?.uid === authorUid && authStore.userData) {
+          authStore.userData.commentCount = Math.max(0, (authStore.userData.commentCount || 0) - 1)
+        }
+      }
       
       return true
     } catch (err: any) {

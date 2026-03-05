@@ -34,7 +34,7 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <div class="avatar avatar--sm border bg-white">
-                <img :src="getProfileImageUrl(post.author.profileImageId)" alt="프로필" />
+                <img :src="getProfileImagePath(post.author.profileImageId)" alt="프로필" />
               </div>
               <span class="text-subtitle-2 font-bold text-grey-dark">{{ post.author.nickname }}</span>
             </div>
@@ -102,7 +102,7 @@
         <div v-else class="mb-6">
           <div v-for="comment in comments" :key="comment.id" class="comment-row mb-4 pb-4 border-b">
             <div class="avatar avatar--sm border bg-white" style="margin-top:4px;">
-              <img :src="getProfileImageUrl(comment.author.profileImageId)" alt="프로필" />
+              <img :src="getProfileImagePath(comment.author.profileImageId)" alt="프로필" />
             </div>
             <div class="flex-grow">
               <div class="flex justify-between items-center mb-1">
@@ -135,7 +135,7 @@
         <!-- 댓글 입력창 -->
         <div class="flex gap-3 items-start">
           <div class="avatar avatar--md border bg-white" style="margin-top:4px;flex-shrink:0;">
-            <img :src="getProfileImageUrl(authStore.userData?.profileImageId || 'avatar_bronze_01')" alt="내 프로필" />
+            <img :src="getProfileImagePath(authStore.userData?.profileImageId || 'avatar_bronze_01')" alt="내 프로필" />
           </div>
           <div class="flex-grow">
             <textarea
@@ -174,6 +174,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
+import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const route = useRoute()
 const router = useRouter()
@@ -282,7 +283,6 @@ const getCategoryChipClass = (cat) => {
   const map = { '책 리뷰': 'green', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
   return map[cat] || 'grey'
 }
-const getProfileImageUrl = (imageId) => `https://api.dicebear.com/7.x/bottts/svg?seed=${imageId}`
 const formatDate = (dateValue) => {
   if (!dateValue) return ''
   const date = dateValue.toDate ? dateValue.toDate() : new Date(dateValue)

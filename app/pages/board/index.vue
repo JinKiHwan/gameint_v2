@@ -86,7 +86,10 @@
                 <h4 class="text-subtitle-1 font-bold text-grey-dark text-truncate">{{ post.title }}</h4>
               </div>
               <div class="flex items-center gap-3 text-caption font-medium text-grey-2">
-                <span class="font-bold text-grey-3">{{ post.author?.nickname || '알수없음' }}</span>
+                <div class="flex items-center gap-1 font-bold text-grey-3">
+                  <img :src="getProfileImagePath(post.author?.profileImageId)" alt="프로필" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;" />
+                  <span>{{ post.author?.nickname || '알수없음' }}</span>
+                </div>
                 <span>{{ formatDate(post.createdAt) }}</span>
                 <span class="flex items-center gap-1"><i class="mdi mdi-eye" style="font-size:.8em;"></i>{{ post.viewCount || 0 }}</span>
               </div>
@@ -121,6 +124,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBoard } from '~/composables/useBoard'
+import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const router = useRouter()
 const { fetchPosts, fetchHotPosts, loading } = useBoard()
