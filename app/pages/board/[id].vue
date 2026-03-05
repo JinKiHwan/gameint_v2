@@ -408,7 +408,8 @@ const submitEditComment = async (commentId) => {
     }
     cancelEditComment()
   } catch (err) {
-    alert('댓글 수정 중 오류가 발생했습니다.')
+    console.error('submitEditComment err:', err)
+    alert('댓글 수정 에러 상세: ' + (err.message || err))
   } finally {
     updatingComment.value = false
   }

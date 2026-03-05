@@ -308,6 +308,7 @@ export const useBoard = () => {
     deletePost,
     fetchComments,
     createComment,
+    updateComment,
     deleteComment,
     checkUserLiked,
     toggleLike,
