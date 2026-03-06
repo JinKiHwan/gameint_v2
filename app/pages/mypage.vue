@@ -70,8 +70,26 @@
       </div>
     </div>
 
-    <!-- 내가 쓴 글 -->
-    <div class="card mb-6">
+    <!-- 탭 메뉴 -->
+    <div class="tabs mb-6">
+      <button 
+        class="tab-btn" 
+        :class="{ 'is-active': activeTab === 'posts' }" 
+        @click="activeTab = 'posts'"
+      >
+        <i class="mdi mdi-pencil-box-multiple mr-1"></i>내가 쓴 글
+      </button>
+      <button 
+        class="tab-btn" 
+        :class="{ 'is-active': activeTab === 'members' }" 
+        @click="activeTab = 'members'"
+      >
+        <i class="mdi mdi-account-group mr-1"></i>멤버
+      </button>
+    </div>
+
+    <!-- 탭 콘텐츠: 내가 쓴 글 -->
+    <div v-if="activeTab === 'posts'" class="card mb-6">
       <div class="card-body">
         <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2">
           <i class="mdi mdi-pencil-box-multiple text-blue-dark"></i> 내가 쓴 글
@@ -116,6 +134,63 @@
           >{{ p }}</button>
           <button class="pagination__btn" :disabled="postPage >= totalPostPages" @click="postPage++"><i class="mdi mdi-chevron-right"></i></button>
         </div>
+      </div>
+    </div>
+
+
+    <!-- 탭 콘텐츠: 멤버 관리 -->
+    <div v-if="activeTab === 'members'" class="card mb-6">
+      <div class="card-body">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-h6 font-black text-grey-dark flex items-center gap-2">
+            <i class="mdi mdi-account-group text-blue-dark"></i> 멤버 목록
+          </h3>
+          <span class="text-caption font-bold text-grey-2">{{ filteredUsers.length }}명</span>
+        </div>
+
+        <div v-if="loadingUsers" class="text-center pa-8">
+          <div class="spinner" style="margin:0 auto;"></div>
+        </div>
+
+        <div v-else-if="filteredUsers.length === 0" class="text-center pa-8">
+          <p class="text-body-2 font-bold text-grey-2">표시할 멤버가 없습니다.</p>
+        </div>
+
+        <ul v-else class="list pa-0">
+          <template v-for="(u, index) in filteredUsers" :key="u.uid">
+            <li class="list-item flex items-center gap-3 py-3">
+              <div class="avatar avatar--sm">
+                <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
+              </div>
+              <div class="flex-grow min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="text-subtitle-2 font-bold text-grey-dark">{{ u.nickname }}</span>
+                  <span v-if="u.role === 'master'" class="chip chip--amber chip--xs">MASTER</span>
+                  <span v-if="u.status === 'pending'" class="chip chip--orange chip--xs">승인 대기</span>
+                </div>
+                <div class="text-caption text-grey-2">{{ u.realName || '이름 미등록' }} · {{ u.tier }}</div>
+              </div>
+
+              <!-- 마스터 전용 작업 버튼 -->
+              <div v-if="isMaster && u.uid !== authStore.user?.uid" class="flex gap-1">
+                <button 
+                  v-if="u.status === 'pending'"
+                  class="btn btn--primary btn--sm py-1 px-3 text-xs font-black rounded-sm"
+                  @click="handleApproveUser(u)"
+                >
+                  승인
+                </button>
+                <button 
+                  class="btn btn--red-lt btn--sm py-1 px-3 text-xs font-black rounded-sm"
+                  @click="handleRemoveUser(u)"
+                >
+                  탈퇴
+                </button>
+              </div>
+            </li>
+            <hr v-if="index !== filteredUsers.length - 1" class="divider" />
+          </template>
+        </ul>
       </div>
     </div>
 
@@ -264,6 +339,9 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { fetchUserPosts } = useBoard()
 
+const isMaster = computed(() => authStore.userData?.role === 'master')
+const activeTab = ref('posts') // 'posts' | 'members'
+
 // ── 프로필 이미지 경로 ───────────────────────────────────────────
 const currentProfileImagePath = computed(() =>
   getProfileImagePath(authStore.userData?.profileImageId)
@@ -289,10 +367,65 @@ const loadUserPosts = async () => {
     loadingPosts.value = false
   }
 }
+
+// ── 멤버 목록 ────────────────────────────────────────────────────
+const allUsers = ref([])
+const loadingUsers = ref(false)
+
+const filteredUsers = computed(() => {
+  if (isMaster.value) return allUsers.value
+  return allUsers.value.filter(u => u.status === 'active')
+})
+
+const loadAllUsers = async () => {
+  loadingUsers.value = true
+  try {
+    allUsers.value = await authStore.fetchAllUsers()
+  } catch (err) {
+    console.error(err)
+  } finally {
+    loadingUsers.value = false
+  }
+}
+
+const handleApproveUser = async (user) => {
+  if (!confirm(`[가입 승인]\n\n'${user.nickname}'님의 가입을 승인하시겠습니까?`)) return
+  try {
+    await authStore.updateUserStatus(user.uid, 'active')
+    alert('승인이 완료되었습니다.')
+    await loadAllUsers()
+  } catch (err) {
+    alert(err.message)
+  }
+}
+
+const handleRemoveUser = async (user) => {
+  const msg = user.status === 'pending' 
+    ? `'${user.nickname}'님의 가입 신청을 거절하고 삭제하시겠습니까?`
+    : `'${user.nickname}'님을 정말 탈퇴 처리하시겠습니까?`
+    
+  if (!confirm(`[멤버 관리]\n\n${msg}`)) return
+  try {
+    await authStore.removeUser(user.uid)
+    alert('처리가 완료되었습니다.')
+    await loadAllUsers()
+  } catch (err) {
+    alert(err.message)
+  }
+}
+
 onMounted(() => {
-  if (authStore.userData?.uid) loadUserPosts()
-  else {
-    const stop = watch(() => authStore.userData, (v) => { if (v?.uid) { loadUserPosts(); stop() } }, { immediate: true })
+  if (authStore.userData?.uid) {
+    loadUserPosts()
+    loadAllUsers()
+  } else {
+    const stop = watch(() => authStore.userData, (v) => { 
+      if (v?.uid) { 
+        loadUserPosts()
+        loadAllUsers()
+        stop() 
+      } 
+    }, { immediate: true })
   }
 })
 

@@ -9,7 +9,7 @@ import {
   signOut,
   type User 
 } from 'firebase/auth'
-import { getDoc, doc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch } from 'firebase/firestore'
+import { getDoc, doc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, updateDoc, deleteDoc } from 'firebase/firestore'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -363,7 +363,54 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Logout error:', error)
       }
+    },
+
+    // ── 멤버 관리 ────────────────────────────────────────────────────
+    
+    // 전체 멤버 목록 조회
+    async fetchAllUsers() {
+      const { $firebase } = useNuxtApp()
+      const firestore = ($firebase as any).firestore
+      try {
+        const usersRef = collection(firestore, 'users')
+        const q = query(usersRef, where('status', 'in', ['active', 'pending']))
+        const snapshot = await getDocs(q)
+        return snapshot.docs.map(d => d.data())
+      } catch (error) {
+        console.error('Fetch all users error:', error)
+        throw new Error('멤버 목록을 불러오는데 실패했습니다.')
+      }
+    },
+
+    // 멤버 승인 (status: pending -> active)
+    async updateUserStatus(uid: string, status: string) {
+      const { $firebase } = useNuxtApp()
+      const firestore = ($firebase as any).firestore
+      try {
+        const userRef = doc(firestore, 'users', uid)
+        await updateDoc(userRef, { status, updatedAt: serverTimestamp() })
+        return true
+      } catch (error) {
+        console.error('Update user status error:', error)
+        throw new Error('상태 변경에 실패했습니다.')
+      }
+    },
+
+    // 멤버 탈퇴/삭제 (status: active/pending -> withdrawn)
+    async removeUser(uid: string) {
+      const { $firebase } = useNuxtApp()
+      const firestore = ($firebase as any).firestore
+      try {
+        const userRef = doc(firestore, 'users', uid)
+        // 실제 삭제대신 status 변경 (안전성 고려)
+        await updateDoc(userRef, { status: 'withdrawn', updatedAt: serverTimestamp() })
+        return true
+      } catch (error) {
+        console.error('Remove user error:', error)
+        throw new Error('멤버 삭제에 실패했습니다.')
+      }
     }
   }
 })
+
 //force HMR test
