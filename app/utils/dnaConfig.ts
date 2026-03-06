@@ -11,7 +11,7 @@ export const CATEGORY_MAPPING: Record<string, string> = {
   '경제/경영': 'G',
   '인문/사회': 'K',
   '과학/기술': 'K',
-  '예술/문화': 'E'
+  '시/에세이': 'E'
 };
 
 export const DNA_TYPES: Record<string, any> = {
