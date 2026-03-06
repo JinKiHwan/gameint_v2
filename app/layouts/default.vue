@@ -65,6 +65,41 @@
               <i class="mdi mdi-bell-outline"></i>
               <span v-if="notificationStore.unreadCount > 0" class="notification-badge">{{ notificationStore.unreadCount }}</span>
             </button>
+
+            <!-- 모바일 알림 드롭다운 -->
+            <div v-if="notiMenuOpen" class="notification-dropdown">
+              <div class="noti-header">
+                <span class="noti-title">알림</span>
+                <div class="flex gap-2">
+                  <button class="noti-header-btn" @click="notificationStore.markAllAsRead()">모두 읽음</button>
+                  <button class="noti-header-btn" @click="notificationStore.clearAll()">전체 삭제</button>
+                </div>
+              </div>
+              <div class="noti-body custom-scroll">
+                <div v-if="notificationStore.notifications.length === 0" class="noti-empty">
+                  새로운 알림이 없습니다.
+                </div>
+                <div 
+                  v-for="noti in notificationStore.notifications" 
+                  :key="noti.id" 
+                  class="noti-item"
+                  :class="{ 'is-unread': !noti.isRead }"
+                  @click="handleNotiClick(noti)"
+                >
+                  <div class="noti-icon" :class="noti.type.toLowerCase()">
+                     <i :class="getNotiIcon(noti.type)"></i>
+                  </div>
+                  <div class="noti-content">
+                    <div class="noti-item-title">{{ noti.title }}</div>
+                    <div class="noti-item-msg">{{ noti.message }}</div>
+                    <div class="noti-item-time">{{ formatTime(noti.createdAt) }}</div>
+                  </div>
+                  <button class="noti-delete-btn" @click.stop="notificationStore.deleteNotification(noti.id)">
+                    <i class="mdi mdi-close"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div v-if="mobileMenuOpen" class="mobile-dropdown">
@@ -369,6 +404,11 @@ watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
   border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);
   display: flex; flex-direction: column; overflow: hidden;
   z-index: 1000;
+
+  @media (max-width: 600px) {
+    width: 280px;
+    right: -20px;
+  }
 }
 
 .noti-header {
