@@ -9,7 +9,7 @@ import {
   signOut,
   type User 
 } from 'firebase/auth'
-import { getDoc, doc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, updateDoc, deleteDoc } from 'firebase/firestore'
+import { getDoc, doc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
 
 export const useAuthStore = defineStore('auth', {
   state: () => ({
@@ -29,34 +29,24 @@ export const useAuthStore = defineStore('auth', {
         this.user = firebaseUser
         
         if (firebaseUser) {
-          try {
-            const userDocRef = doc(firestore, 'users', firebaseUser.uid)
-            const userDocSnap = await getDoc(userDocRef)
-            
-            if (userDocSnap.exists()) {
-              this.userData = userDocSnap.data()
+          const userDocRef = doc(firestore, 'users', firebaseUser.uid)
+          
+          // 실시간 데이터 구독 (경험치, 레벨 등 실시간 반영을 위해)
+          onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+              const newData = docSnap.data()
+              this.userData = newData
               
-              // ── 출석 체크 로직 ──────────────────────────────────────
-              const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD (KST 근사)
-              const expTracker = this.userData.expTracker || {}
-              if (expTracker.lastAttendanceDate !== today) {
-                try {
-                  const userRef = doc(firestore, 'users', firebaseUser.uid)
-                  await updateDoc(userRef, { 
-                    'expTracker.lastAttendanceDate': today 
-                  })
-                  // functions에서 onUpdate 트리거로 처리됨
-                  this.userData.expTracker = { ...expTracker, lastAttendanceDate: today }
-                } catch (err) {
-                  console.error("Attendance update failed:", err)
-                }
+              // ── 출석 체크 로직 (최초 1회 실행 유도) ──
+              const today = new Date().toLocaleDateString('en-CA')
+              if (newData.expTracker?.lastAttendanceDate !== today) {
+                updateDoc(userDocRef, { 'expTracker.lastAttendanceDate': today })
+                  .catch(err => console.error("Attendance update failed:", err))
               }
             } else {
-               this.userData = null
+              this.userData = null
             }
-          } catch (e) {
-            console.error("Failed to fetch user data", e)
-          }
+          })
         } else {
           this.userData = null
         }

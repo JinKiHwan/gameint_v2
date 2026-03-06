@@ -117,14 +117,41 @@
         <button class="btn btn--dark btn--lg" @click="handleLogout">로그아웃</button>
       </div>
     </div>
+
+    <!-- ===== 레벨업 축하 모달 (전역) ===== -->
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="levelUpModal" class="modal-overlay" style="z-index:9999; background: rgba(0,0,0,0.8);" @click="levelUpModal = false">
+          <div class="modal level-up-modal text-center pa-10" style="background: linear-gradient(135deg, #1A237E 0%, #0D47A1 100%); color:white; border:none; overflow:visible; max-width:400px; width:90%;">
+            <div class="level-up-crown">👑</div>
+            <h2 class="text-h4 font-black mb-2" style="color:#FFD54F; text-shadow: 0 4px 8px rgba(0,0,0,0.3);">LEVEL UP!</h2>
+            <p class="text-body-1 font-bold mb-6" style="opacity:0.9;">축하합니다! 새로운 단계에 도달하셨습니다.</p>
+            
+            <div class="flex justify-center items-center gap-6 mb-8">
+              <div class="lv-badge-old">{{ authStore.userData?.level - 1 }}</div>
+              <i class="mdi mdi-chevron-double-right text-h4" style="color:#FFD54F;"></i>
+              <div class="lv-badge-new">{{ authStore.userData?.level }}</div>
+            </div>
+
+            <div v-if="tierChanged" class="tier-up-box mb-8">
+              <span class="chip chip--amber mb-2" style="background:#FFC107; color:black;">Tier Up!</span>
+              <h3 class="text-h5 font-black">{{ authStore.userData?.tier }}</h3>
+            </div>
+
+            <button class="btn btn--primary btn--lg rounded-sm w-full font-black" style="background:#FFD54F; color:#1A237E;" @click="levelUpModal = false">확성기로 자랑하기 (닫기)</button>
+          </div>
+        </div>
+      </Teleport>
+    </ClientOnly>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 import { useRouter } from 'vue-router'
+import { EXP_CONFIG } from '~/utils/expConfig'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -157,6 +184,19 @@ const handleClickOutside = (e) => {
 }
 onMounted(() => document.addEventListener('click', handleClickOutside))
 onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
+
+// ── 전역 레벨업 감시 ──
+const levelUpModal = ref(false)
+const tierChanged = ref(false)
+
+watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
+  if (oldLevel && newLevel > oldLevel) {
+    tierChanged.value = EXP_CONFIG.getTier(newLevel) !== EXP_CONFIG.getTier(oldLevel)
+    levelUpModal.value = true
+    // 자동 닫기 (8초 후)
+    setTimeout(() => { levelUpModal.value = false }, 8000)
+  }
+})
 </script>
 
 <style scoped>
@@ -193,4 +233,17 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
 }
 
 .mr-2 { margin-right: 8px; }
+
+/* ── 레벨업 모달 전용 ────────────────────────── */
+.level-up-modal { position:relative; overflow:visible; }
+.level-up-crown { font-size: 4rem; position:absolute; top: -50px; left:50%; transform: translateX(-50%); filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); animation: bounce 1s infinite; }
+.lv-badge-old, .lv-badge-new {
+  width: 60px; height: 60px; display:flex; align-items:center; justify-content:center;
+  border-radius: 50%; font-size: 1.5rem; font-weight: 900; background:rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+}
+.lv-badge-new { background: #FFD54F; color: #1A237E; border-color: #FFD54F; transform: scale(1.2); box-shadow: 0 0 20px rgba(255,213,79,0.5); }
+.tier-up-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+.pa-10 { padding: 40px; }
+
+@keyframes bounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }
 </style>
