@@ -333,7 +333,7 @@ async function handleCycleNotification(cycleId, before, after) {
         await createNotification({
             type: 'CYCLE_PHASE',
             title: '🆕 새로운 월간 주제!',
-            message: `이번 달 새로운 주제로 '${after.title || '알 수 없는 주제'}'이 선정되었습니다. 모두 주제와 관련된 개인 희망책을 선정해 주세요!`,
+            message: `이번 달 새로운 주제로 '${after.keyword || after.title || '알 수 없는 주제'}'이 선정되었습니다. 모두 주제와 관련된 개인 희망책을 선정해 주세요!`,
             link: '/cycles'
         });
     }

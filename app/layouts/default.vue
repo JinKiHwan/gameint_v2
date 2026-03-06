@@ -64,7 +64,7 @@
 
           <!-- 모바일 알림 (간소화) -->
           <div class="notification-wrap ml-2" ref="notiMenuMobileRef">
-            <button class="btn btn--text btn--icon" @click="toggleNotification">
+            <button class="btn btn--text btn--icon" @click.stop="toggleNotification">
               <i class="mdi mdi-bell-outline"></i>
               <span v-if="notificationStore.unreadCount > 0" class="notification-badge">{{ notificationStore.unreadCount }}</span>
             </button>
@@ -90,7 +90,7 @@
 
         <!-- 알림 벨 -->
         <div class="notification-wrap" ref="notiMenuRef">
-          <button class="btn btn--text btn--icon" @click="toggleNotification">
+          <button class="btn btn--text btn--icon" @click.stop="toggleNotification">
             <i class="mdi mdi-bell-outline"></i>
             <span v-if="notificationStore.unreadCount > 0" class="notification-badge">{{ notificationStore.unreadCount }}</span>
           </button>
@@ -264,16 +264,19 @@ const formatTime = (createdAt) => {
 }
 
 const handleClickOutside = (e) => {
+  // 모바일 메뉴 닫기
   if (mobileMenuRef.value && !mobileMenuRef.value.contains(e.target)) {
     mobileMenuOpen.value = false
   }
   
-  // 알림 드롭다운 외부 클릭 감지 (PC/모바일 둘 다 체크)
-  const isInsidePC = notiMenuRef.value && notiMenuRef.value.contains(e.target)
-  const isInsideMobile = notiMenuMobileRef.value && notiMenuMobileRef.value.contains(e.target)
-  
-  if (!isInsidePC && !isInsideMobile) {
-    notiMenuOpen.value = false
+  // 알림 드롭다운 닫기
+  if (notiMenuOpen.value) {
+    const isInsidePC = notiMenuRef.value?.contains(e.target)
+    const isInsideMobile = notiMenuMobileRef.value?.contains(e.target)
+    
+    if (!isInsidePC && !isInsideMobile) {
+      notiMenuOpen.value = false
+    }
   }
 }
 onMounted(() => {
