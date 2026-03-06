@@ -288,6 +288,44 @@ export const useAuthStore = defineStore('auth', {
           }
         }
 
+        // ── 3-2. 사이클(월간 주제) 내 정보 업데이트 ──────────────────
+        const cyclesRef = collection(firestore, 'cycles')
+        const cyclesSnapshot = await getDocs(cyclesRef)
+
+        for (const cycleDoc of cyclesSnapshot.docs) {
+          const cycleId = cycleDoc.id
+          const cycleBatch = writeBatch(firestore)
+          let hasChange = false
+
+          // 1) 참여자 정보 (participants/{uid})
+          const participantRef = doc(firestore, 'cycles', cycleId, 'participants', uid)
+          const participantSnap = await getDoc(participantRef)
+          if (participantSnap.exists()) {
+            cycleBatch.update(participantRef, { nickname: newNickname })
+            hasChange = true
+          }
+
+          // 2) 리뷰들 (reviews where authorUid == uid)
+          const reviewsRef = collection(firestore, 'cycles', cycleId, 'reviews')
+          const reviewsQuery = query(reviewsRef, where('authorUid', '==', uid))
+          const reviewsSnap = await getDocs(reviewsQuery)
+          reviewsSnap.docs.forEach(rd => {
+            cycleBatch.update(rd.ref, { nickname: newNickname })
+            hasChange = true
+          })
+
+          // 3) 모임 기록들 (meetings where authorUid == uid)
+          const meetingsRef = collection(firestore, 'cycles', cycleId, 'meetings')
+          const meetingsQuery = query(meetingsRef, where('authorUid', '==', uid))
+          const meetingsSnap = await getDocs(meetingsQuery)
+          meetingsSnap.docs.forEach(md => {
+            cycleBatch.update(md.ref, { authorNickname: newNickname })
+            hasChange = true
+          })
+
+          if (hasChange) await cycleBatch.commit()
+        }
+
         // ── 4. 로컬 상태 업데이트 ───────────────────────────────
         this.userData.nickname = newNickname
         return true
@@ -341,6 +379,35 @@ export const useAuthStore = defineStore('auth', {
             for (const w of writes.slice(i, i + CHUNK)) batch.update(w.ref, w.data)
             await batch.commit()
           }
+        }
+
+        // ── 2-2. 사이클(월간 주제) 내 정보 업데이트 ─────────────────
+        const cyclesRef = collection(firestore, 'cycles')
+        const cyclesSnapshot = await getDocs(cyclesRef)
+
+        for (const cycleDoc of cyclesSnapshot.docs) {
+          const cycleId = cycleDoc.id
+          const cycleBatch = writeBatch(firestore)
+          let hasChange = false
+
+          // 1) 참여자 정보 (participants/{uid})
+          const participantRef = doc(firestore, 'cycles', cycleId, 'participants', uid)
+          const participantSnap = await getDoc(participantRef)
+          if (participantSnap.exists()) {
+            cycleBatch.update(participantRef, { profileImageId: newImageId })
+            hasChange = true
+          }
+
+          // 2) 리뷰들 (reviews where authorUid == uid)
+          const reviewsRef = collection(firestore, 'cycles', cycleId, 'reviews')
+          const reviewsQuery = query(reviewsRef, where('authorUid', '==', uid))
+          const reviewsSnap = await getDocs(reviewsQuery)
+          reviewsSnap.docs.forEach(rd => {
+            cycleBatch.update(rd.ref, { profileImageId: newImageId })
+            hasChange = true
+          })
+
+          if (hasChange) await cycleBatch.commit()
         }
 
         // 3. 로컬 상태 업데이트
