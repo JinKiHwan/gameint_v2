@@ -991,7 +991,7 @@ const handleAddMeeting = async () => {
       })
     } else {
       // 신규 작성
-      await addMeetingRecord(cycle.value.id, meetingTitle.value.trim(), meetingContent.value.trim())
+      await addMeetingRecord(cycle.value.id, meetingTitle.value.trim(), meetingContent.value.trim(), cycle.value.phase)
     }
     masterMeetingModal.value = false
     meetings.value = await fetchMeetingRecords(cycle.value.id)
