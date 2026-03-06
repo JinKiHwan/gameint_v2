@@ -35,8 +35,8 @@
                 <p class="text-caption font-medium text-grey-2 flex items-center gap-1">
                   <i class="mdi mdi-email-outline"></i> {{ authStore.userData.email }}
                 </p>
-                <p class="text-caption font-medium mt-3 text-grey-3 bg-grey-100 pa-2 rounded-sm border" style="display:inline-block;">
-                  🧬 독서 DNA: <strong class="text-grey-dark">{{ authStore.userData.dnaTitle }}</strong>
+                <p v-if="dnaResult" class="text-caption font-medium mt-3 text-grey-3 bg-grey-100 pa-2 rounded-sm border" style="display:inline-block;">
+                  🧬 독서 DNA: <strong class="text-grey-dark">{{ dnaResult.dnaName }}</strong>
                 </p>
               </div>
 
@@ -112,6 +112,13 @@
       </button>
       <button 
         class="tab-btn" 
+        :class="{ 'is-active': activeTab === 'dna' }" 
+        @click="activeTab = 'dna'"
+      >
+        <i class="mdi mdi-dna mr-1"></i>독서 DNA
+      </button>
+      <button 
+        class="tab-btn" 
         :class="{ 'is-active': activeTab === 'members' }" 
         @click="activeTab = 'members'"
       >
@@ -168,6 +175,22 @@
       </div>
     </div>
 
+
+    <!-- 탭 콘텐츠: 독서 DNA -->
+    <div v-if="activeTab === 'dna'" class="mb-6">
+      <template v-if="loadingReviews">
+        <div class="card pa-10 text-center">
+            <div class="spinner" style="margin:0 auto 16px;"></div>
+            <p class="text-caption font-bold text-grey-2">독서 DNA를 분석하고 있습니다...</p>
+        </div>
+      </template>
+      <DnaCard v-else-if="dnaResult" :dna="dnaResult" />
+      <div v-else class="card pa-10 text-center">
+        <i class="mdi mdi-dna" style="font-size:3rem;color:#E0E0E0;display:block;margin-bottom:12px;"></i>
+        <p class="text-subtitle-1 font-black text-grey-dark mb-1">아직 분석 결과가 없습니다</p>
+        <p class="text-caption font-bold text-grey-2">최소 1개 이상의 리뷰를 작성해주세요!</p>
+      </div>
+    </div>
 
     <!-- 탭 콘텐츠: 나의 리뷰 -->
     <div v-if="activeTab === 'reviews'" class="card mb-6">
@@ -421,8 +444,10 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
 import { useCycle } from '~/composables/useCycle'
+import { useDNA } from '~/composables/useDNA'
 import { PROFILE_IMAGES, isImageUnlocked, getProfileImagePath } from '~/composables/useProfileImages'
 import { EXP_CONFIG } from '~/utils/expConfig'
+import DnaCard from '~/components/DnaCard.vue'
 
 // ── KST 날짜 유틸 ──────────────────────────────────────────────
 const getKstDate = () => {
@@ -497,6 +522,10 @@ const loadUserReviews = async () => {
     loadingReviews.value = false
   }
 }
+
+// ── 독서 DNA 분석 ───────────────────────────────────────────────
+const { analyzeDNA } = useDNA()
+const dnaResult = computed(() => analyzeDNA(userReviews.value))
 
 
 // ── EXP 및 레벨업 ───────────────────────────────────────────────

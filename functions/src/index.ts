@@ -307,6 +307,33 @@ export const onReviewCreate = functions
     if (!data || !data.authorUid) return null;
     
     await rewardExp(data.authorUid, 'CYCLE_REVIEW');
+    await updateUserDNA(data.authorUid);
+    return null;
+  });
+
+/**
+ * 7. 트리거: 사이클 리뷰 수정/삭제 시 (DNA 갱신용)
+ */
+export const onReviewUpdate = functions
+  .region("asia-northeast3")
+  .firestore.document("cycles/{cycleId}/reviews/{reviewId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    if (before.category !== after.category) {
+      await updateUserDNA(after.authorUid);
+    }
+    return null;
+  });
+
+export const onReviewDelete = functions
+  .region("asia-northeast3")
+  .firestore.document("cycles/{cycleId}/reviews/{reviewId}")
+  .onDelete(async (snapshot, context) => {
+    const data = snapshot.data();
+    if (data && data.authorUid) {
+      await updateUserDNA(data.authorUid);
+    }
     return null;
   });
 
@@ -378,3 +405,105 @@ export const onCycleUpdate = functions
     await handleCycleNotification(context.params.cycleId, before, after);
     return null;
   });
+
+/**
+ * DNA 분석 및 업데이트 (공용)
+ */
+async function updateUserDNA(uid: string) {
+  try {
+    const reviewsSnap = await db.collectionGroup("reviews")
+      .where("authorUid", "==", uid)
+      .get();
+    
+    const reviews = reviewsSnap.docs.map(d => d.data());
+    if (reviews.length === 0) {
+      await db.collection("users").doc(uid).set({
+        dna: null,
+        dnaTitle: '미분석'
+      }, { merge: true });
+      return;
+    }
+
+    const CATEGORY_MAPPING: Record<string, string> = {
+      '소설': 'I',
+      '인문/철학': 'K',
+      'IT/과학': 'K',
+      '역사': 'K',
+      '자기계발': 'G',
+      '시/에세이': 'E',
+      '예술': 'E'
+    };
+
+    const scores: Record<string, number> = { I: 0, K: 0, G: 0, E: 0 };
+    let totalValid = 0;
+
+    reviews.forEach(r => {
+      const axis = CATEGORY_MAPPING[r.category];
+      if (axis) {
+        scores[axis]++;
+        totalValid++;
+      }
+    });
+
+    if (totalValid === 0) return;
+
+    const ratios: Record<string, number> = {};
+    Object.keys(scores).forEach(key => {
+      const score = scores[key] || 0;
+      ratios[key] = Number((score / totalValid).toFixed(2));
+    });
+
+    const sortedAxes = Object.entries(ratios)
+      .sort((a: any, b: any) => {
+        const valA = a[1] || 0;
+        const valB = b[1] || 0;
+        if (valB !== valA) return valB - valA;
+        const priority: Record<string, number> = { K: 4, I: 3, E: 2, G: 1 };
+        return (priority[b[0]] || 0) - (priority[a[0]] || 0);
+      });
+
+    const first = sortedAxes[0];
+    const second = sortedAxes[1];
+    
+    const minRatio = Math.min(...Object.values(ratios) as number[]);
+    const maxRatio = Math.max(...Object.values(ratios) as number[]);
+    
+    let dnaType = '';
+    let dnaName = '';
+
+    if (maxRatio - minRatio <= 0.1 && totalValid >= 4) {
+      dnaType = 'BALANCED';
+      dnaName = '균형 독서가';
+    } else if (first) {
+      if (first[1] >= 0.6) {
+        dnaType = first[0] + first[0];
+      } else if (second) {
+        dnaType = first[0] + second[0];
+      } else {
+        dnaType = first[0] + first[0];
+      }
+      
+      const DNA_NAMES: Record<string, string> = {
+        'IE': '인간 문학가', 'IK': '세계관 설계자', 'IG': '인생 서사형',
+        'KE': '철학 탐험가', 'KG': '전략적 사고가', 'KI': '스토리 분석가',
+        'EE': '감성 기록자', 'EK': '예술 사색가', 'EG': '인생 탐색가',
+        'GK': '인생 전략가', 'GE': '자기 탐구자', 'GG': '목표 설계자', 'KK': '지식 수집가'
+      };
+      dnaName = DNA_NAMES[dnaType] || '일반 독서가';
+    }
+
+    await db.collection("users").doc(uid).set({
+      dna: {
+         dnaType,
+         dnaName,
+         scores,
+         ratios,
+         updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      },
+      dnaTitle: dnaName
+    }, { merge: true });
+
+  } catch (err) {
+    console.error('updateUserDNA error:', err);
+  }
+}
