@@ -1,16 +1,25 @@
 <template>
   <div class="fade-in">
-    <!-- 헤더 카드 -->
-    <div class="card mb-8">
-      <div class="card-body recommend-header">
-        <div>
-          <span class="chip chip--tonal-amber mb-3" style="display:inline-flex;">자유 도서 추천</span>
-          <h1 class="text-h5 font-black text-grey-dark mb-2">내 인생의 책을 소개합니다 💡</h1>
-          <p class="text-body-2 font-medium text-grey-2">월간 주제와 무관하게 자유롭게 책을 추천해주세요.</p>
+    <!-- ① 히어로 배너 -->
+    <div class="recommend-hero mb-8">
+      <img
+        src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?q=80&w=2256&auto=format&fit=crop"
+        alt="추천 배너"
+        class="recommend-hero__bg"
+      />
+      <div class="recommend-hero__overlay">
+        <div class="recommend-hero__glass">
+          <div class="flex justify-between items-center w-100">
+            <div>
+              <div class="text-caption font-bold text-white mb-1 opacity-80">도서 큐레이션</div>
+              <h1 class="text-h4 font-black text-white mb-1">인생 도서 추천 💡</h1>
+              <p class="text-body-2 text-white opacity-80">내 인생을 바꾼 소중한 책들을 소개하고 공유하는 공간입니다.</p>
+            </div>
+            <button class="btn btn--white rounded-xl font-bold flex items-center gap-2" @click="router.push('/board/write?category=도서 추천&openSearch=true')">
+              <i class="mdi mdi-pencil"></i>새 추천글 쓰기
+            </button>
+          </div>
         </div>
-        <button class="btn btn--primary btn--lg rounded-xl font-bold flex items-center gap-2" @click="router.push('/board/write?category=도서 추천&openSearch=true')">
-          <i class="mdi mdi-pencil"></i> 새 추천글 쓰기
-        </button>
       </div>
     </div>
 
@@ -25,9 +34,9 @@
           @click="recommendTag = tag"
         >{{ tag }}</span>
       </div>
-      <button class="btn btn--outlined flex items-center gap-1 rounded-xl bg-white">
-        <i class="mdi mdi-filter-variant"></i> 최신순
-      </button>
+      <select v-model="recommendSort" class="select" style="max-width:150px;" @change="page = 1">
+        <option>최신순</option><option>인기순</option><option>댓글순</option>
+      </select>
     </div>
 
     <!-- 로딩 스켈레톤 -->
@@ -35,14 +44,14 @@
       <div v-for="i in 4" :key="`skel-${i}`" class="card flex flex-col h-full" style="min-height: 320px;">
         <div class="skeleton" style="height: 180px; border-radius: 20px 20px 0 0;"></div>
         <div class="card-body flex flex-col flex-grow pa-4">
-          <div class="skeleton skeleton--title" style="width: 80%; mb-2"></div>
+          <div class="skeleton skeleton--title mb-2" style="width: 80%;"></div>
           <div class="skeleton skeleton--text" style="width: 50%;"></div>
         </div>
       </div>
     </div>
 
     <!-- 빈 상태 -->
-    <div v-else-if="filteredPosts.length === 0" class="text-center pa-10 mb-8 bg-white rounded-xl border">
+    <div v-else-if="paginatedPosts.length === 0" class="text-center pa-10 mb-8 bg-white rounded-xl border">
       <i class="mdi mdi-book-open-blank-variant" style="font-size:4rem;color:#BDBDBD;display:block;margin-bottom:16px;"></i>
       <h3 class="text-h6 font-bold text-grey-2 mb-2">등록된 도서 추천글이 없습니다.</h3>
       <p class="text-body-2 text-grey-3">가장 먼저 인생 책을 추천해보세요!</p>
@@ -50,7 +59,7 @@
 
     <!-- 도서 그리드 -->
     <div v-else class="rec-grid">
-      <div v-for="post in filteredPosts" :key="post.id" class="card hover-shadow flex flex-col h-full cursor-pointer" @click="router.push(`/board/${post.id}`)">
+      <div v-for="post in paginatedPosts" :key="post.id" class="card hover-shadow flex flex-col h-full cursor-pointer" @click="router.push(`/board/${post.id}`)">
         <!-- 책 커버 (블러 배경 + 선명한 전경) -->
         <div class="rec-book-img-wrap">
           <div class="rec-book-bg" :style="{ backgroundImage: `url(${post.attachedBook?.thumbnail || 'https://via.placeholder.com/300x400?text=No+Cover'})` }"></div>
@@ -79,6 +88,18 @@
         </div>
       </div>
     </div>
+
+    <!-- 페이지네이션 -->
+    <div v-if="totalPages > 1" class="pagination mt-10">
+      <button class="pagination__btn" :disabled="page <= 1" @click="page--"><i class="mdi mdi-chevron-left"></i></button>
+      <button
+        v-for="p in totalPages" :key="p"
+        class="pagination__btn"
+        :class="{ 'is-active': page === p }"
+        @click="page = p"
+      >{{ p }}</button>
+      <button class="pagination__btn" :disabled="page >= totalPages" @click="page++"><i class="mdi mdi-chevron-right"></i></button>
+    </div>
   </div>
 </template>
 
@@ -90,20 +111,46 @@ import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const router = useRouter()
 const { fetchPosts, loading } = useBoard()
+const page = ref(1)
+const itemsPerPage = 16
+const recommendSort = ref('최신순')
 
-const tags = ['전체', '소설', '인문/철학', '자기계발', 'IT과학', '시/에세이', '역사', '예술', '기타']
+const tags = ['전체', '소설', '자기계발', '경제/경영', '인문/사회', '과학/기술', '시/에세이', '기타']
 const recommendTag = ref('전체')
 const posts = ref([])
 
 onMounted(async () => {
   const allPosts = await fetchPosts('도서 추천')
-  // 모든 도서 추천 게시글은 원칙적으로 책이 첨부되어야 하지만 방어용 필터링 유지
   posts.value = allPosts.filter(p => p.attachedBook)
 })
 
 const filteredPosts = computed(() => {
-  if (recommendTag.value === '전체') return posts.value
-  return posts.value.filter(p => p.bookGenre === recommendTag.value)
+  let filtered = posts.value
+  if (recommendTag.value !== '전체') {
+    filtered = filtered.filter(p => p.bookGenre === recommendTag.value)
+  }
+  
+  // 정렬 적용
+  if (recommendSort.value === '인기순') {
+    filtered = [...filtered].sort((a, b) => (b.likeCount || 0) - (a.likeCount || 0))
+  } else if (recommendSort.value === '댓글순') {
+    filtered = [...filtered].sort((a, b) => (b.commentCount || 0) - (a.commentCount || 0))
+  } else {
+    // 최신순 (이미 기본이 최신순일 수 있지만 보장)
+    filtered = [...filtered].sort((a, b) => {
+      const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : new Date(a.createdAt)
+      const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : new Date(b.createdAt)
+      return dateB - dateA
+    })
+  }
+
+  return filtered
+})
+
+const totalPages = computed(() => Math.ceil(filteredPosts.value.length / itemsPerPage))
+const paginatedPosts = computed(() => {
+  const start = (page.value - 1) * itemsPerPage
+  return filteredPosts.value.slice(start, start + itemsPerPage)
 })
 </script>
 
@@ -116,6 +163,39 @@ const filteredPosts = computed(() => {
   flex-wrap: wrap; gap: 12px;
   @media(max-width:600px){ flex-direction:column; align-items:flex-start; }
 }
+
+/* ── 히어로 배너 ──────────────────────────── */
+.recommend-hero {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+}
+.recommend-hero__bg {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  display: block;
+}
+.recommend-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 25, 41, 0.8) 0%, rgba(10, 25, 41, 0.2) 60%, transparent 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: 32px;
+  @media (max-width: 600px) { padding: 20px; }
+}
+.recommend-hero__glass {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+}
+.btn--white { background: #fff; color: #1E88E5; border: none; }
+.btn--white:hover { background: #f5f5f5; }
 
 /* 3~4열 반응형 그리드 */
 .rec-grid {

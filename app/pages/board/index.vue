@@ -1,15 +1,25 @@
 <template>
   <div class="fade-in">
-    <!-- 헤더 -->
-    <div class="card mb-8">
-      <div class="card-body flex justify-between items-center">
-        <div>
-          <h1 class="text-h5 font-black text-grey-dark mb-1">자유 게시판 💬</h1>
-          <p class="text-body-2 font-medium text-grey-2">멤버들과 자유롭게 소통하는 공간입니다.</p>
+    <!-- ① 히어로 배너 -->
+    <div class="board-hero mb-8">
+      <img
+        src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=2290&auto=format&fit=crop"
+        alt="게시판 배너"
+        class="board-hero__bg"
+      />
+      <div class="board-hero__overlay">
+        <div class="board-hero__glass">
+          <div class="flex justify-between items-center w-100">
+            <div>
+              <div class="text-caption font-bold text-white mb-1 opacity-80">커뮤니티</div>
+              <h1 class="text-h4 font-black text-white mb-1">자유 게시판 💬</h1>
+              <p class="text-body-2 text-white opacity-80">멤버들과 자유롭게 소통하는 공간입니다.</p>
+            </div>
+            <NuxtLink to="/board/write" class="btn btn--white rounded-xl font-bold flex items-center gap-2">
+              <i class="mdi mdi-pencil"></i>글쓰기
+            </NuxtLink>
+          </div>
         </div>
-        <NuxtLink to="/board/write" class="btn btn--primary rounded-xl font-bold flex items-center gap-2">
-          <i class="mdi mdi-pencil"></i>글쓰기
-        </NuxtLink>
       </div>
     </div>
 
@@ -182,6 +192,39 @@ const formatDate = (dateValue) => {
 </script>
 
 <style scoped>
+/* ── 히어로 배너 ──────────────────────────── */
+.board-hero {
+  position: relative;
+  border-radius: 20px;
+  overflow: hidden;
+}
+.board-hero__bg {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  display: block;
+}
+.board-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 25, 41, 0.8) 0%, rgba(10, 25, 41, 0.2) 60%, transparent 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: 32px;
+  @media (max-width: 600px) { padding: 20px; }
+}
+.board-hero__glass {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+}
+.btn--white { background: #fff; color: #1E88E5; border: none; }
+.btn--white:hover { background: #f5f5f5; }
+
 .hot-grid {
   display: grid; grid-template-columns: 1fr;
   gap: 16px;

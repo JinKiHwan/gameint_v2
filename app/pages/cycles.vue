@@ -658,7 +658,7 @@
       </div>
 
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <div v-for="c in closedCycles" :key="c.id" class="card cursor-pointer hover-card" @click="loadHistoryDetail(c.id)">
+        <div v-for="c in paginatedClosedCycles" :key="c.id" class="card cursor-pointer hover-card" @click="loadHistoryDetail(c.id)">
           <div class="card-body flex items-center gap-4">
             <img v-if="c.commonBook" :src="c.commonBook.thumbnail" class="avatar avatar--lg rounded-sm" style="width:48px;height:68px;" alt="표지" />
             <div v-else class="avatar avatar--lg bg-grey-100 flex items-center justify-center text-grey-3 rounded-sm" style="width:48px;height:68px;"><i class="mdi mdi-book-off"></i></div>
@@ -669,6 +669,18 @@
             <i class="mdi mdi-chevron-right ml-auto text-grey-2"></i>
           </div>
         </div>
+      </div>
+
+      <!-- 히스토리 페이지네이션 -->
+      <div v-if="historyTotalPages > 1" class="pagination mt-6">
+        <button class="pagination__btn" :disabled="historyPage <= 1" @click="historyPage--"><i class="mdi mdi-chevron-left"></i></button>
+        <button
+          v-for="p in historyTotalPages" :key="p"
+          class="pagination__btn"
+          :class="{ 'is-active': historyPage === p }"
+          @click="historyPage = p"
+        >{{ p }}</button>
+        <button class="pagination__btn" :disabled="historyPage >= historyTotalPages" @click="historyPage++"><i class="mdi mdi-chevron-right"></i></button>
       </div>
     </div>
 
@@ -696,6 +708,15 @@ const {
 // ── 기본 상태 ────────────────────────────────────────────────────
 const cycle = ref(null)
 const loadingCycle = ref(true)
+// ── 히스토리 페이지네이션 ───────────────────────────────
+const historyPage = ref(1)
+const historyItemsPerPage = 6
+const historyTotalPages = computed(() => Math.ceil(closedCycles.value.length / historyItemsPerPage))
+const paginatedClosedCycles = computed(() => {
+  const start = (historyPage.value - 1) * historyItemsPerPage
+  return closedCycles.value.slice(start, start + historyItemsPerPage)
+})
+
 const isMaster = computed(() => authStore.userData?.role === 'master')
 
 // ── 히스토리 상태 ─────────────────────────────────────────────────

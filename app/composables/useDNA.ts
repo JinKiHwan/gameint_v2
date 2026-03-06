@@ -22,7 +22,7 @@ export const useDNA = () => {
       // Board Post uses 'bookGenre' for genre.
       const genre = item.bookGenre || item.category;
       const axis = CATEGORY_MAPPING[genre];
-      if (axis) {
+      if (axis && scores[axis] !== undefined) {
         scores[axis]++;
         totalValid++;
       }
