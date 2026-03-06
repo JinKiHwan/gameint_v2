@@ -108,7 +108,7 @@ const handleSignup = async () => {
             <input
               v-model="formData.username"
               type="text"
-              placeholder="사내 커스텀 아이디 (4자 이상)"
+              placeholder="로그인 아이디 (4자 이상)"
               @update:modelValue="isIdAvailable = null"
             />
             <button
@@ -178,8 +178,8 @@ const handleSignup = async () => {
   display: flex; align-items: center;
   border: 1.5px solid #E0E0E0; border-radius: 8px; background: #FAFAFA; overflow: hidden; transition: border-color 0.2s;
   &:focus-within { border-color: #1E88E5; background: #fff; box-shadow: 0 0 0 3px rgba(30,136,229,0.12); }
-  input { flex:1; border:none; background:transparent; padding:14px 16px; font-size:0.9375rem; font-weight:600; outline:none; color:#212121; &::placeholder{ color:#BDBDBD; font-weight:500; } }
-  .suffix { padding:14px 16px 14px 0; font-size:0.875rem; color:#757575; font-weight:600; white-space:nowrap; }
-  .append-btn { margin: 0 8px 0 0; }
+  input { flex:1; border:none; background:transparent; padding:14px 12px 14px 16px; font-size:0.9375rem; font-weight:600; outline:none; color:#212121; min-width: 0; &::placeholder{ color:#BDBDBD; font-weight:500; } }
+  .suffix { padding:14px 12px 14px 0; font-size:0.8125rem; color:#757575; font-weight:600; white-space:nowrap; flex-shrink: 0; }
+  .append-btn { margin: 0 4px 0 0; }
 }
 </style>
