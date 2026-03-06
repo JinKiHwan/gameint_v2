@@ -260,6 +260,8 @@ const router = useRouter()
 
 const handleLogout = async () => {
   await authStore.logout()
+  profileDropdown.value = false
+  mobileMenuOpen.value = false
   router.push('/')
 }
 
@@ -285,6 +287,10 @@ const navigation = [
 // 모바일 메뉴
 const mobileMenuOpen = ref(false)
 const mobileMenuRef = ref(null)
+
+// 프로필 드롭다운
+const profileDropdown = ref(false)
+const profileDropdownRef = ref(null)
 
 // 알림 드롭다운
 const notiMenuOpen = ref(false)
@@ -327,9 +333,17 @@ const formatTime = (createdAt) => {
 }
 
 const handleClickOutside = (e) => {
-  // 모바일 메뉴 닫기
+  // 모바일 사이드바 메뉴 닫기
   if (mobileMenuRef.value && !mobileMenuRef.value.contains(e.target)) {
-    mobileMenuOpen.value = false
+    // 햄버거 버튼 자체 클릭 시에는 여기서 닫지 않음 (toggleMobileMenu에서 처리)
+    if (!e.target.closest('.mobile-menu-btn')) {
+      mobileMenuOpen.value = false
+    }
+  }
+  
+  // 프로필 드롭다운 닫기
+  if (profileDropdown.value && profileDropdownRef.value && !profileDropdownRef.value.contains(e.target)) {
+    profileDropdown.value = false
   }
   
   // 알림 드롭다운 닫기
