@@ -98,64 +98,87 @@ export const onUserProfileUpdate = functions
  * 2. Helper function to reward EXP to a user and handle level-ups.
  */
 async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS | 'MANUAL', manualAmount?: number) {
+  console.log(`[rewardExp] Starting reward for userId: ${userId}, action: ${action}`);
   const userRef = db.collection("users").doc(userId);
   const today = getKstDate();
   
-  await db.runTransaction(async (transaction) => {
-    const userDoc = await transaction.get(userRef);
-    if (!userDoc.exists) return;
-
-    const userData = userDoc.data() || {};
-    let currentExp = typeof userData.exp === "number" ? userData.exp : 0;
-    let currentLevel = typeof userData.level === "number" ? userData.level : 1;
-    const expTracker = userData.expTracker || {};
-
-    let expAmount = manualAmount || 0;
-    if (action !== 'MANUAL') {
-      expAmount = EXP_CONFIG.REWARDS[action];
-      
-      // 제한 로직 체크
-      if (action === 'ATTENDANCE') {
-        if (expTracker.lastAttendanceDate === today) return;
-        expTracker.lastAttendanceDate = today;
-      } else if (action === 'POST_GENERAL') {
-        if (expTracker.lastPostDate === today) return;
-        expTracker.lastPostDate = today;
-      } else if (action === 'POST_RECOMMEND') {
-        if (expTracker.lastRecommendBookDate === today) return;
-        expTracker.lastRecommendBookDate = today;
-      } else if (action === 'COMMENT') {
-        const lastDate = expTracker.lastCommentDate || "";
-        let countToday = (lastDate === today) ? (expTracker.commentCountToday || 0) : 0;
-        if (countToday >= EXP_CONFIG.LIMITS.COMMENT_PER_DAY) return;
-        
-        expTracker.lastCommentDate = today;
-        expTracker.commentCountToday = countToday + 1;
+  try {
+    await db.runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) {
+        console.warn(`[rewardExp] User document not found for userId: ${userId}`);
+        return;
       }
-    }
 
-    if (expAmount <= 0) return;
+      const userData = userDoc.data() || {};
+      let currentExp = typeof userData.exp === "number" ? userData.exp : 0;
+      let currentLevel = typeof userData.level === "number" ? userData.level : 1;
+      const expTracker = userData.expTracker || {};
 
-    currentExp += expAmount;
-    
-    // 레벨업 로직 (비선형 테이블 적용)
-    let nextLevelExp = EXP_CONFIG.getNextLevelExp(currentLevel + 1);
+      let expAmount = manualAmount || 0;
+      if (action !== 'MANUAL') {
+        expAmount = EXP_CONFIG.REWARDS[action];
+        
+        // 제한 로직 체크
+        if (action === 'ATTENDANCE') {
+          if (expTracker.lastAttendanceDate === today) {
+            console.log(`[rewardExp] Attendance already rewarded for today: ${today}`);
+            return;
+          }
+          expTracker.lastAttendanceDate = today;
+        } else if (action === 'POST_GENERAL') {
+          if (expTracker.lastPostDate === today) {
+            console.log(`[rewardExp] General post already rewarded for today: ${today}`);
+            return;
+          }
+          expTracker.lastPostDate = today;
+        } else if (action === 'POST_RECOMMEND') {
+          if (expTracker.lastRecommendBookDate === today) {
+            console.log(`[rewardExp] Recommend book already rewarded for today: ${today}`);
+            return;
+          }
+          expTracker.lastRecommendBookDate = today;
+        } else if (action === 'COMMENT') {
+          const lastDate = expTracker.lastCommentDate || "";
+          let countToday = (lastDate === today) ? (expTracker.commentCountToday || 0) : 0;
+          if (countToday >= EXP_CONFIG.LIMITS.COMMENT_PER_DAY) {
+            console.log(`[rewardExp] Comment limit reached for today: ${today}`);
+            return;
+          }
+          
+          expTracker.lastCommentDate = today;
+          expTracker.commentCountToday = countToday + 1;
+        }
+      }
 
-    while (currentExp >= nextLevelExp && currentLevel < 100) {
-      currentExp -= nextLevelExp;
-      currentLevel++;
-      nextLevelExp = EXP_CONFIG.getNextLevelExp(currentLevel + 1);
-    }
+      if (expAmount <= 0) return;
 
-    const currentTier = EXP_CONFIG.getTier(currentLevel);
+      currentExp += expAmount;
+      console.log(`[rewardExp] Adding ${expAmount} XP to userId: ${userId}. New total: ${currentExp}`);
+      
+      // 레벨업 로직 (비선형 테이블 적용)
+      let nextLevelExp = EXP_CONFIG.getNextLevelExp(currentLevel + 1);
 
-    transaction.update(userRef, {
-      exp: currentExp,
-      level: currentLevel,
-      tier: currentTier,
-      expTracker: expTracker
+      while (currentExp >= nextLevelExp && currentLevel < 100) {
+        currentExp -= nextLevelExp;
+        currentLevel++;
+        console.log(`[rewardExp] Level Up! New Level: ${currentLevel}`);
+        nextLevelExp = EXP_CONFIG.getNextLevelExp(currentLevel + 1);
+      }
+
+      const currentTier = EXP_CONFIG.getTier(currentLevel);
+
+      transaction.update(userRef, {
+        exp: currentExp,
+        level: currentLevel,
+        tier: currentTier,
+        expTracker: expTracker
+      });
     });
-  });
+    console.log(`[rewardExp] Successfully completed reward for userId: ${userId}`);
+  } catch (error) {
+    console.error(`[rewardExp] Error in transaction for userId: ${userId}`, error);
+  }
 }
 
 
@@ -251,10 +274,16 @@ export const onCycleCommonBookConfirm = functions
     
     if (!before || !after) return null;
     
+    console.log(`[onCycleCommonBookConfirm] Triggered for cycleId: ${context.params.cycleId}`);
+    console.log(`[onCycleCommonBookConfirm] Phase: ${before.phase} -> ${after.phase}`);
+    console.log(`[onCycleCommonBookConfirm] Recommender: ${before.commonBookRecommenderUid} -> ${after.commonBookRecommenderUid}`);
+
     const isNewlyConfirmed = (before.phase !== 'phase2_reading' && after.phase === 'phase2_reading');
     const isRecommenderNewlySet = (!before.commonBookRecommenderUid && after.commonBookRecommenderUid);
+    const isRecommenderChanged = (before.commonBookRecommenderUid && after.commonBookRecommenderUid && before.commonBookRecommenderUid !== after.commonBookRecommenderUid);
     
-    if ((isNewlyConfirmed || isRecommenderNewlySet) && after.commonBookRecommenderUid) {
+    if ((isNewlyConfirmed || isRecommenderNewlySet || isRecommenderChanged) && after.commonBookRecommenderUid) {
+      console.log(`[onCycleCommonBookConfirm] Rewarding winner: ${after.commonBookRecommenderUid}`);
       await rewardExp(after.commonBookRecommenderUid, 'CYCLE_WIN');
     }
     return null;
