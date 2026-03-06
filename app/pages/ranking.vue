@@ -11,7 +11,7 @@
         <div class="cycles-hero__glass">
           <div class="text-caption font-bold text-white mb-2 opacity-90">HALL OF FAME</div>
           <h1 class="text-h4 font-black text-white mb-2">명예의 전당 🏆</h1>
-          <p class="text-body-2 text-white opacity-80">독서 동호회의 열정적인 상위 10명을소개합니다.</p>
+          <p class="text-body-2 text-white opacity-80">독서 동호회의 열정적인 상위 10명을 소개합니다.</p>
         </div>
       </div>
     </div>
@@ -211,25 +211,35 @@ onMounted(() => {
   background: var(--bg-light);
 }
 
-/* ── 히어로 섹션 ──────────────────────────── */
-.ranking-hero {
-  background: linear-gradient(135deg, #1E88E5 0%, #1565C0 100%);
-  padding: 60px 0;
-  text-align: center;
+/* ── 히어로 배너 ──────────────────────────── */
+.cycles-hero {
   position: relative;
+  border-radius: 20px;
   overflow: hidden;
 }
-.ranking-hero::before {
-  content: '';
-  position: absolute;
-  top: -50%; left: -20%;
-  width: 140%; height: 200%;
-  background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-  pointer-events: none;
+.cycles-hero__bg {
+  width: 100%;
+  height: 300px;
+  object-fit: cover;
+  display: block;
 }
-.ranking-hero__content {
-  position: relative;
-  z-index: 1;
+.cycles-hero__overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 25, 41, 0.85) 0%, rgba(10, 25, 41, 0.3) 60%, transparent 100%);
+  display: flex;
+  align-items: flex-end;
+  padding: 32px;
+  @media (max-width: 600px) { padding: 20px; }
+}
+.cycles-hero__glass {
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 16px;
+  padding: 20px 24px;
+  width: 100%;
 }
 
 /* ── 포디움 ──────────────────────────────── */

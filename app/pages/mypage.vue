@@ -102,29 +102,30 @@
           :class="{ 'is-active': activeTab === 'posts' }"
           @click="activeTab = 'posts'"
         >
-          내가 쓴 글
+          <i class="mdi mdi-pencil-box-multiple mr-1"></i>내가 쓴 글
         </button>
         <button 
           class="tab-btn" 
           :class="{ 'is-active': activeTab === 'dna' }"
           @click="activeTab = 'dna'"
         >
-          독서 DNA
+          <i class="mdi mdi-dna mr-1"></i>독서 DNA
         </button>
         <button 
           class="tab-btn" 
           :class="{ 'is-active': activeTab === 'reviews' }"
           @click="activeTab = 'reviews'"
         >
-          나의 리뷰
+          <i class="mdi mdi-comment-account mr-1"></i>나의 리뷰
         </button>
         <button 
           v-if="isMaster"
           class="tab-btn" 
-          :class="{ 'is-active': activeTab === 'users' }"
-          @click="activeTab = 'users'"
+          :class="{ 'is-active': activeTab === 'members' }"
+          @click="activeTab = 'members'"
         >
-          멤버 관리 <span class="chip chip--xs chip--red ml-1" v-if="pendingCount > 0">{{ pendingCount }}</span>
+          <i class="mdi mdi-account-group mr-1"></i>멤버 관리 
+          <span class="chip chip--xs chip--red ml-1" v-if="pendingCount > 0">{{ pendingCount }}</span>
         </button>
       </div>
     </div>
