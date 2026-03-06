@@ -17,9 +17,11 @@ export const useDNA = () => {
     const scores: Record<string, number> = { I: 0, K: 0, G: 0, E: 0 };
     let totalValid = 0;
 
-    reviews.forEach(review => {
-      const category = review.category as string;
-      const axis = CATEGORY_MAPPING[category];
+    reviews.forEach(item => {
+      // Cycle Review uses 'category' for genre.
+      // Board Post uses 'bookGenre' for genre.
+      const genre = item.bookGenre || item.category;
+      const axis = CATEGORY_MAPPING[genre];
       if (axis) {
         scores[axis]++;
         totalValid++;

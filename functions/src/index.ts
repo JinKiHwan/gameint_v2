@@ -338,6 +338,48 @@ export const onReviewDelete = functions
   });
 
 /**
+ * 트리거: 게시판 글 작성/수정/삭제 시 (DNA 갱신용)
+ */
+export const onPostCreate = functions
+  .region("asia-northeast3")
+  .firestore.document("posts/{postId}")
+  .onCreate(async (snapshot, context) => {
+    const data = snapshot.data();
+    if (data && data.author?.uid && ['도서 추천', '책 리뷰'].includes(data.category)) {
+      await updateUserDNA(data.author.uid);
+    }
+    return null;
+  });
+
+export const onPostUpdate = functions
+  .region("asia-northeast3")
+  .firestore.document("posts/{postId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    if (!after || !after.author?.uid) return null;
+    
+    // 카테고리나 장르가 변경된 경우에만 갱신
+    if (before.category !== after.category || before.bookGenre !== after.bookGenre) {
+      if (['도서 추천', '책 리뷰'].includes(before.category) || ['도서 추천', '책 리뷰'].includes(after.category)) {
+        await updateUserDNA(after.author.uid);
+      }
+    }
+    return null;
+  });
+
+export const onPostDelete = functions
+  .region("asia-northeast3")
+  .firestore.document("posts/{postId}")
+  .onDelete(async (snapshot, context) => {
+    const data = snapshot.data();
+    if (data && data.author?.uid && ['도서 추천', '책 리뷰'].includes(data.category)) {
+      await updateUserDNA(data.author.uid);
+    }
+    return null;
+  });
+
+/**
  * 7. 트리거: 출석 체크 (userData.expTracker.lastAttendanceDate 필드 업데이트 시)
  */
 export const onAttendanceUpdate = functions
@@ -415,8 +457,17 @@ async function updateUserDNA(uid: string) {
       .where("authorUid", "==", uid)
       .get();
     
+    const postsSnap = await db.collection("posts")
+      .where("author.uid", "==", uid)
+      .get();
+    
     const reviews = reviewsSnap.docs.map(d => d.data());
-    if (reviews.length === 0) {
+    const posts = postsSnap.docs.map(d => d.data())
+      .filter(p => ['도서 추천', '책 리뷰'].includes(p.category));
+
+    const allRecords = [...reviews, ...posts];
+
+    if (allRecords.length === 0) {
       await db.collection("users").doc(uid).set({
         dna: null,
         dnaTitle: '미분석'
@@ -436,8 +487,10 @@ async function updateUserDNA(uid: string) {
     const scores: Record<string, number> = { I: 0, K: 0, G: 0, E: 0 };
     let totalValid = 0;
 
-    reviews.forEach(r => {
-      const axis = CATEGORY_MAPPING[r.category];
+    allRecords.forEach(r => {
+      // Review는 category, Post는 bookGenre 필드에 장르가 있음
+      const genre = r.bookGenre || r.category;
+      const axis = CATEGORY_MAPPING[genre];
       if (axis) {
         scores[axis]++;
         totalValid++;

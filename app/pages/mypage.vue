@@ -525,7 +525,13 @@ const loadUserReviews = async () => {
 
 // ── 독서 DNA 분석 ───────────────────────────────────────────────
 const { analyzeDNA } = useDNA()
-const dnaResult = computed(() => analyzeDNA(userReviews.value))
+const dnaResult = computed(() => {
+  const readingActivities = [
+    ...userReviews.value,
+    ...userPosts.value.filter(p => ['도서 추천', '책 리뷰'].includes(p.category))
+  ]
+  return analyzeDNA(readingActivities)
+})
 
 
 // ── EXP 및 레벨업 ───────────────────────────────────────────────
