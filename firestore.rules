@@ -104,6 +104,11 @@ service cloud.firestore {
       }
     }
 
+    // Collection Group rules for reviews
+    match /{path=**}/reviews/{reviewId} {
+      allow read: if isActiveUser();
+    }
+
     match /{document=**} {
       allow read, write: if false; 
     }
