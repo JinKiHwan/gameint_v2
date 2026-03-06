@@ -7,12 +7,11 @@ export const DNA_AXES = {
 
 export const CATEGORY_MAPPING: Record<string, string> = {
   '소설': 'I',
-  '인문/철학': 'K',
-  'IT/과학': 'K',
-  '역사': 'K',
   '자기계발': 'G',
-  '시/에세이': 'E',
-  '예술': 'E'
+  '경제/경영': 'G',
+  '인문/사회': 'K',
+  '과학/기술': 'K',
+  '예술/문화': 'E'
 };
 
 export const DNA_TYPES: Record<string, any> = {

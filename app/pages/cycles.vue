@@ -930,7 +930,7 @@ const reviewCategory = ref('소설') // 기본값
 const submittingReview = ref(false)
 const reviewError = ref('')
 
-const BOOK_CATEGORIES = ['소설', '인문/철학', 'IT/과학', '역사', '자기계발', '시/에세이', '예술']
+const BOOK_CATEGORIES = ['소설', '자기계발', '경제/경영', '인문/사회', '과학/기술', '예술/문화', '기타']
 
 const openReviewModal = () => {
   reviewModal.value = true
