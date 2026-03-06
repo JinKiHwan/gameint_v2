@@ -158,6 +158,61 @@
     </div>
 
 
+    <!-- 탭 콘텐츠: 나의 리뷰 -->
+    <div v-if="activeTab === 'reviews'" class="card mb-6">
+      <div class="card-body">
+        <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2">
+          <i class="mdi mdi-comment-account text-green"></i> 나의 리뷰
+        </h3>
+        
+        <template v-if="loadingReviews">
+          <div v-for="i in 3" :key="`skel-rev-${i}`" class="skeleton-item">
+            <div style="flex:1;"><div class="skeleton skeleton--title" style="width:40%;"></div><div class="skeleton skeleton--text" style="width:80%;"></div></div>
+          </div>
+        </template>
+
+        <div v-else-if="userReviews.length === 0" class="text-center pa-8">
+          <i class="mdi mdi-comment-off-outline" style="font-size:3rem;color:#BDBDBD;display:block;margin-bottom:12px;"></i>
+          <p class="text-body-2 font-bold text-grey-2">아직 작성한 리뷰가 없습니다.</p>
+        </div>
+
+        <ul v-else class="list pa-0">
+          <template v-for="(rev, index) in paginatedUserReviews" :key="rev.id">
+            <li class="list-item rounded-sm">
+              <div class="flex-grow min-w-0">
+                <div class="flex items-center justify-between mb-1">
+                  <div class="flex items-center gap-2">
+                    <span class="chip chip--green chip--xs">{{ rev.category || '일반' }}</span>
+                    <div class="text-amber flex items-center gap-1">
+                      <i v-for="i in 5" :key="i" class="mdi" :class="i <= rev.rating ? 'mdi-star' : 'mdi-star-outline'" style="font-size:0.9rem;"></i>
+                    </div>
+                  </div>
+                  <span class="text-caption text-grey-2">{{ formatDate(rev.createdAt) }}</span>
+                </div>
+                <div class="text-subtitle-2 font-bold text-grey-dark mb-1 whitespace-pre-wrap">{{ rev.content }}</div>
+                <div v-if="rev.phase" class="text-caption font-bold text-grey-2">
+                  <i class="mdi mdi-link-variant"></i> {{ rev.phase === 'phase1' ? 'Phase 1. 개인 도서 리뷰' : 'Phase 2. 공통 도서 리뷰' }}
+                </div>
+              </div>
+            </li>
+            <hr v-if="index !== paginatedUserReviews.length - 1" class="divider" />
+          </template>
+        </ul>
+
+        <!-- 리뷰 페이지네이션 -->
+        <div v-if="totalReviewPages > 1" class="pagination mt-4">
+          <button class="pagination__btn" :disabled="reviewPage <= 1" @click="reviewPage--"><i class="mdi mdi-chevron-left"></i></button>
+          <button
+            v-for="p in totalReviewPages" :key="p"
+            class="pagination__btn"
+            :class="{ 'is-active': reviewPage === p }"
+            @click="reviewPage = p"
+          >{{ p }}</button>
+          <button class="pagination__btn" :disabled="reviewPage >= totalReviewPages" @click="reviewPage++"><i class="mdi mdi-chevron-right"></i></button>
+        </div>
+      </div>
+    </div>
+
     <!-- 탭 콘텐츠: 멤버 관리 -->
     <div v-if="activeTab === 'members'" class="card mb-6">
       <div class="card-body">
@@ -393,6 +448,15 @@ const loadUserPosts = async () => {
 // ── 내가 작성한 리뷰 전체 목록 ───────────────────────────────────
 const userReviews = ref([])
 const loadingReviews = ref(false)
+
+const reviewPage = ref(1)
+const reviewsPerPage = 5
+
+const totalReviewPages = computed(() => Math.ceil(userReviews.value.length / reviewsPerPage))
+const paginatedUserReviews = computed(() => {
+  const start = (reviewPage.value - 1) * reviewsPerPage
+  return userReviews.value.slice(start, start + reviewsPerPage)
+})
 
 const loadUserReviews = async () => {
   if (authStore.userData?.uid) {
