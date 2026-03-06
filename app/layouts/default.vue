@@ -61,6 +61,15 @@
           <div class="avatar avatar--sm cursor-pointer" @click="mobileMenuOpen = !mobileMenuOpen">
             <img :src="getProfileImagePath(authStore.userData?.profileImageId)" alt="프로필" />
           </div>
+
+          <!-- 모바일 알림 (간소화) -->
+          <div class="notification-wrap ml-2">
+            <button class="btn btn--text btn--icon" @click="toggleNotification">
+              <i class="mdi mdi-bell-outline"></i>
+              <span v-if="notificationStore.unreadCount > 0" class="notification-badge">{{ notificationStore.unreadCount }}</span>
+            </button>
+          </div>
+
           <div v-if="mobileMenuOpen" class="mobile-dropdown">
             <button class="mobile-dropdown__item" @click="handleLogout; mobileMenuOpen = false">
               <i class="mdi mdi-logout"></i> 로그아웃
@@ -78,9 +87,43 @@
           <i class="mdi mdi-magnify"></i>
           <input type="text" placeholder="어떤 모임을 찾으시나요?" />
         </div>
-        <button class="btn btn--text btn--icon">
-          <i class="mdi mdi-bell-outline"></i>
-        </button>
+
+        <!-- 알림 벨 -->
+        <div class="notification-wrap" ref="notiMenuRef">
+          <button class="btn btn--text btn--icon" @click="toggleNotification">
+            <i class="mdi mdi-bell-outline"></i>
+            <span v-if="notificationStore.unreadCount > 0" class="notification-badge">{{ notificationStore.unreadCount }}</span>
+          </button>
+
+          <!-- 알림 드롭다운 -->
+          <div v-if="notiMenuOpen" class="notification-dropdown">
+            <div class="noti-header">
+              <span class="noti-title">알림</span>
+              <button class="noti-all-read" @click="notificationStore.markAllAsRead()">모두 읽음</button>
+            </div>
+            <div class="noti-body custom-scroll">
+              <div v-if="notificationStore.notifications.length === 0" class="noti-empty">
+                새로운 알림이 없습니다.
+              </div>
+              <div 
+                v-for="noti in notificationStore.sortedNotifications" 
+                :key="noti.id" 
+                class="noti-item"
+                :class="{ 'is-unread': !noti.isRead }"
+                @click="handleNotiClick(noti)"
+              >
+                <div class="noti-icon" :class="noti.type.toLowerCase()">
+                   <i :class="getNotiIcon(noti.type)"></i>
+                </div>
+                <div class="noti-content">
+                  <div class="noti-item-title">{{ noti.title }}</div>
+                  <div class="noti-item-msg">{{ noti.message }}</div>
+                  <div class="noti-item-time">{{ formatTime(noti.createdAt) }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -138,7 +181,7 @@
               <h3 class="text-h5 font-black">{{ authStore.userData?.tier }}</h3>
             </div>
 
-            <button class="btn btn--primary btn--lg rounded-sm w-full font-black" style="background:#FFD54F; color:#1A237E;" @click="levelUpModal = false">확성기로 자랑하기 (닫기)</button>
+            <button class="btn btn--primary btn--lg rounded-sm w-full font-black" style="background:#FFD54F; color:#1A237E;" @click="levelUpModal = false">닫기</button>
           </div>
         </div>
       </Teleport>
@@ -148,12 +191,13 @@
 
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { useAuthStore } from '~/stores/auth'
+import { useNotificationStore } from '~/stores/notifications'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 import { useRouter } from 'vue-router'
 import { EXP_CONFIG } from '~/utils/expConfig'
 
 const authStore = useAuthStore()
+const notificationStore = useNotificationStore()
 const router = useRouter()
 
 const handleLogout = async () => {
@@ -173,17 +217,71 @@ const navigation = [
   { id: 'mypage',    label: '마이페이지', icon: 'mdi-account',               to: '/mypage' },
 ]
 
-// 모바일 드롭다운
-const mobileMenuOpen = ref(false)
-const mobileMenuRef = ref(null)
+// 알림 드롭다운
+const notiMenuOpen = ref(false)
+const notiMenuRef = ref(null)
+
+const toggleNotification = () => {
+  notiMenuOpen.value = !notiMenuOpen.value
+}
+
+const handleNotiClick = async (noti) => {
+  await notificationStore.markAsRead(noti.id)
+  if (noti.link) {
+    router.push(noti.link)
+    notiMenuOpen.value = false
+  }
+}
+
+const getNotiIcon = (type) => {
+  switch (type) {
+    case 'LIKE': return 'mdi-heart'
+    case 'COMMENT': return 'mdi-comment-text'
+    case 'TIER_UP': return 'mdi-trophy-variant'
+    case 'CYCLE_PHASE': return 'mdi-calendar-clock'
+    default: return 'mdi-bell'
+  }
+}
+
+const formatTime = (createdAt) => {
+  if (!createdAt) return ''
+  const date = createdAt.toDate ? createdAt.toDate() : new Date(createdAt)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  
+  if (diff < 60000) return '방금 전'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}분 전`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}시간 전`
+  return `${date.getMonth() + 1}/${date.getDate()}`
+}
 
 const handleClickOutside = (e) => {
   if (mobileMenuRef.value && !mobileMenuRef.value.contains(e.target)) {
     mobileMenuOpen.value = false
   }
+  if (notiMenuRef.value && !notiMenuRef.value.contains(e.target)) {
+    notiMenuOpen.value = false
+  }
 }
-onMounted(() => document.addEventListener('click', handleClickOutside))
-onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside)
+  // 알림 초기화
+  if (authStore.user) notificationStore.initNotifications()
+})
+
+onBeforeUnmount(() => {
+  document.removeEventListener('click', handleClickOutside)
+  notificationStore.stopSubscriptions()
+})
+
+// 로그인 상태에 따른 알림 구독 관리
+watch(() => authStore.user, (user) => {
+  if (user) {
+    notificationStore.initNotifications()
+  } else {
+    notificationStore.stopSubscriptions()
+  }
+})
 
 // ── 전역 레벨업 감시 ──
 const levelUpModal = ref(false)
@@ -233,6 +331,68 @@ watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
 }
 
 .mr-2 { margin-right: 8px; }
+.ml-2 { margin-left: 8px; }
+
+/* ── 알림 드롭다운 ────────────────────────────── */
+.notification-wrap { position: relative; }
+.notification-badge {
+  position: absolute; top: 0; right: 0;
+  background: #F44336; color: white;
+  font-size: 0.625rem; font-weight: 800;
+  min-width: 16px; height: 16px; 
+  padding: 0 4px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid #fff;
+}
+
+.notification-dropdown {
+  position: absolute; top: calc(100% + 12px); right: -10px;
+  width: 320px; max-height: 480px;
+  background: #fff; border: 1px solid #eee;
+  border-radius: 16px; box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  display: flex; flex-direction: column; overflow: hidden;
+  z-index: 1000;
+}
+
+.noti-header {
+  padding: 16px; border-bottom: 1px solid #f5f5f5;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.noti-title { font-size: 1rem; font-weight: 900; color: #212121; }
+.noti-all-read { 
+  background: none; border: none; color: #757575; 
+  font-size: 0.75rem; font-weight: 700; cursor: pointer;
+  &:hover { color: #1e88e5; }
+}
+
+.noti-body { flex: 1; overflow-y: auto; }
+.noti-empty { padding: 40px 20px; text-align: center; color: #9e9e9e; font-size: 0.875rem; font-weight: 700; }
+
+.noti-item {
+  display: flex; gap: 12px; padding: 14px 16px;
+  border-bottom: 1px solid #fafafa; cursor: pointer;
+  transition: background 0.2s;
+  &:hover { background: #f9f9f9; }
+  &.is-unread { background: #E3F2FD; }
+}
+
+.noti-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 1.25rem;
+  &.like { background: #FFEBEE; color: #E91E63; }
+  &.comment { background: #E8F5E9; color: #43A047; }
+  &.tier_up { background: #FFF8E1; color: #FFB300; }
+  &.cycle_phase { background: #E1F5FE; color: #0288D1; }
+}
+
+.noti-content { flex: 1; min-width: 0; }
+.noti-item-title { font-size: 0.875rem; font-weight: 800; color: #212121; margin-bottom: 2px; }
+.noti-item-msg { font-size: 0.75rem; font-weight: 600; color: #616161; line-height: 1.4; }
+.noti-item-time { font-size: 0.6875rem; color: #9e9e9e; margin-top: 4px; font-weight: 700; }
+
+.custom-scroll::-webkit-scrollbar { width: 6px; }
+.custom-scroll::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }
 
 /* ── 레벨업 모달 전용 ────────────────────────── */
 .level-up-modal { position:relative; overflow:visible; }

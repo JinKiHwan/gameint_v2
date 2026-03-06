@@ -34,6 +34,11 @@ service cloud.firestore {
                     
       // Only masters can delete users
       allow delete: if isMaster();
+
+      // Notifications sub-collection
+      match /notifications/{notiId} {
+        allow read, update, delete: if isAuthenticated() && request.auth.uid == userId;
+      }
     }
     
     // Posts collection permissions
@@ -102,6 +107,12 @@ service cloud.firestore {
         allow read: if isActiveUser();
         allow create, update, delete: if isMaster();
       }
+    }
+
+    // Global Notifications collection
+    match /global_notifications/{notiId} {
+      allow read: if isActiveUser();
+      allow write: if isMaster(); // Only system/master should write (mostly via Functions)
     }
 
     // Collection Group rules for reviews

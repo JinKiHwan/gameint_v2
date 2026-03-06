@@ -105,6 +105,18 @@ exports.onUserProfileUpdate = functions
     }
     return null;
 });
+// ── 알림 생성 헬퍼 ──────────────────────────────────────────────
+async function createNotification(params) {
+    const notificationData = Object.assign(Object.assign({}, params), { createdAt: admin.firestore.FieldValue.serverTimestamp(), isRead: false });
+    if (params.recipientId) {
+        // 개인 알림
+        await db.collection("users").doc(params.recipientId).collection("notifications").add(notificationData);
+    }
+    else {
+        // 전역 알림 (비용 최적화: 문서 1개 고정)
+        await db.collection("global_notifications").add(notificationData);
+    }
+}
 /**
  * 2. Helper function to reward EXP to a user and handle level-ups.
  */
@@ -123,6 +135,7 @@ async function rewardExp(userId, action, manualAmount) {
             let currentExp = typeof userData.exp === "number" ? userData.exp : 0;
             let currentLevel = typeof userData.level === "number" ? userData.level : 1;
             const expTracker = userData.expTracker || {};
+            let oldTier = userData.tier || 'Bronze'; // Capture old tier before any updates
             let expAmount = manualAmount || 0;
             if (action !== 'MANUAL') {
                 expAmount = expConfig_1.EXP_CONFIG.REWARDS[action];
@@ -172,12 +185,22 @@ async function rewardExp(userId, action, manualAmount) {
                 nextLevelExp = expConfig_1.EXP_CONFIG.getNextLevelExp(currentLevel + 1);
             }
             const currentTier = expConfig_1.EXP_CONFIG.getTier(currentLevel);
-            transaction.update(userRef, {
+            const updateData = {
                 exp: currentExp,
                 level: currentLevel,
                 tier: currentTier,
                 expTracker: expTracker
-            });
+            };
+            transaction.update(userRef, updateData);
+            // 티어 승급 알림 (전역)
+            if (currentTier !== oldTier) {
+                await createNotification({
+                    type: 'TIER_UP',
+                    title: '🏆 티어 승급 소식!',
+                    message: `${userData.nickname}님의 티어가 '${currentTier}'로 승급하셨습니다!`,
+                    link: '/board' // 혹은 랭킹 페이지
+                });
+            }
         });
         console.log(`[rewardExp] Successfully completed reward for userId: ${userId}`);
     }
@@ -210,6 +233,18 @@ exports.onCommentCreate = functions
     if (!data || !data.author || !data.author.uid)
         return null;
     await rewardExp(data.author.uid, 'COMMENT');
+    // 알림: 게시글 작성자에게
+    const postSnap = await db.collection("posts").doc(context.params.postId).get();
+    const postData = postSnap.data();
+    if (postData && postData.author && postData.author.uid !== data.author.uid) {
+        await createNotification({
+            recipientId: postData.author.uid,
+            type: 'COMMENT',
+            title: '💬 새로운 댓글',
+            message: `'${data.author.nickname}'님이 회원님의 게시글에 댓글을 남겼습니다.`,
+            link: `/board/${context.params.postId}`
+        });
+    }
     return null;
 });
 /**
@@ -228,6 +263,18 @@ exports.onLikeCreate = functions
     if (likerId === postData.author.uid)
         return null;
     await rewardExp(postData.author.uid, 'LIKE_RECEIVED');
+    // 알림: 게시글 작성자에게
+    const likerSnap = await db.collection("users").doc(likerId).get();
+    const likerData = likerSnap.data();
+    if (likerData) {
+        await createNotification({
+            recipientId: postData.author.uid,
+            type: 'LIKE',
+            title: '❤️ 좋아요 알림',
+            message: `'${likerData.nickname}'님이 회원님의 게시글을 좋아합니다.`,
+            link: `/board/${postId}`
+        });
+    }
     return null;
 });
 /**
@@ -278,6 +325,24 @@ exports.onCycleCommonBookConfirm = functions
     if ((isNewlyConfirmed || isRecommenderNewlySet || isRecommenderChanged) && after.commonBookRecommenderUid) {
         console.log(`[onCycleCommonBookConfirm] Rewarding winner: ${after.commonBookRecommenderUid}`);
         await rewardExp(after.commonBookRecommenderUid, 'CYCLE_WIN');
+        // 전역 알림: 공통 도서 확정
+        if (after.phase === 'phase2_reading') {
+            await createNotification({
+                type: 'CYCLE_PHASE',
+                title: '📖 공통 도서 확정!',
+                message: `이번 달 공통 도서 '${after.commonBookTitle}'가 선정되었습니다. 모두 읽기 단계로 이동해 주세요!`,
+                link: '/cycles'
+            });
+        }
+    }
+    else if (before.title !== after.title && after.title) {
+        // 전역 알림: 새로운 월간 주제 시작 (이건 보통 어드민이 수동으로 세팅할 때)
+        await createNotification({
+            type: 'CYCLE_PHASE',
+            title: '🆕 새로운 월간 주제!',
+            message: `새로운 주제 [${after.title}]가 시작되었습니다. 지금 확인해 보세요!`,
+            link: '/cycles'
+        });
     }
     return null;
 });

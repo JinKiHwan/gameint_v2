@@ -60,10 +60,18 @@
                   <div class="info-tooltip">
                     <div class="tooltip-title">✨ 경험치 획득 방법</div>
                     <ul class="tooltip-list">
-                      <li>• 일일 출석: 50 EXP</li>
-                      <li>• 게시글 작성: 30 EXP (일 1회)</li>
-                      <li>• 도서 추천글: 50 EXP (일 1회)</li>
-                      <li>• 댓글 작성: 10 EXP (일 3회)</li>
+                      <li :class="{ 'is-completed': attendanceRemaining === 0 }">
+                        • 일일 출석: 50 EXP ({{ attendanceRemaining }}회 남음)
+                      </li>
+                      <li :class="{ 'is-completed': postRemaining === 0 }">
+                        • 게시글 작성: 30 EXP ({{ postRemaining }}회 남음)
+                      </li>
+                      <li :class="{ 'is-completed': recommendRemaining === 0 }">
+                        • 도서 추천글: 50 EXP ({{ recommendRemaining }}회 남음)
+                      </li>
+                      <li :class="{ 'is-completed': commentRemaining === 0 }">
+                        • 댓글 작성: 10 EXP ({{ commentRemaining }}회 남음)
+                      </li>
                       <li>• 좋아요 받기: 10 EXP</li>
                       <li>• 월간 리뷰: 200 EXP</li>
                       <li>• 선정자 당첨: 500 EXP</li>
@@ -416,6 +424,13 @@ import { useCycle } from '~/composables/useCycle'
 import { PROFILE_IMAGES, isImageUnlocked, getProfileImagePath } from '~/composables/useProfileImages'
 import { EXP_CONFIG } from '~/utils/expConfig'
 
+// ── KST 날짜 유틸 ──────────────────────────────────────────────
+const getKstDate = () => {
+  const now = new Date()
+  const kstOffset = 9 * 60 * 60 * 1000
+  return new Date(now.getTime() + kstOffset).toISOString().split('T')[0]
+}
+
 const router = useRouter()
 const authStore = useAuthStore()
 const { fetchUserPosts } = useBoard()
@@ -423,6 +438,18 @@ const { fetchUserReviews } = useCycle()
 
 const isMaster = computed(() => authStore.userData?.role === 'master')
 const activeTab = ref('posts') // 'posts' | 'reviews' | 'members'
+
+// ── 일일 한도 계산 ──────────────────────────────────────────────
+const todayKst = getKstDate()
+const tracker = computed(() => authStore.userData?.expTracker || {})
+
+const attendanceRemaining = computed(() => tracker.value.lastAttendanceDate === todayKst ? 0 : 1)
+const postRemaining = computed(() => tracker.value.lastPostDate === todayKst ? 0 : 1)
+const recommendRemaining = computed(() => tracker.value.lastRecommendBookDate === todayKst ? 0 : 1)
+const commentRemaining = computed(() => {
+  const count = tracker.value.lastCommentDate === todayKst ? (tracker.value.commentCountToday || 0) : 0
+  return Math.max(0, EXP_CONFIG.LIMITS.COMMENT_PER_DAY - count)
+})
 
 // ── 프로필 이미지 경로 ───────────────────────────────────────────
 const currentProfileImagePath = computed(() =>
