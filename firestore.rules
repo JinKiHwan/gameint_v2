@@ -39,6 +39,11 @@ service cloud.firestore {
       match /notifications/{notiId} {
         allow read, update, delete: if isAuthenticated() && request.auth.uid == userId;
       }
+      
+      // Notification states (for global notifications)
+      match /notification_states/{notiId} {
+        allow read, write: if isAuthenticated() && request.auth.uid == userId;
+      }
     }
     
     // Posts collection permissions

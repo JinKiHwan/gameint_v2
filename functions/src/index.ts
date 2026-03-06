@@ -355,16 +355,16 @@ export const onCycleCommonBookConfirm = functions
         await createNotification({
           type: 'CYCLE_PHASE',
           title: '📖 공통 도서 확정!',
-          message: `이번 달 공통 도서 '${after.commonBookTitle}'가 선정되었습니다. 모두 읽기 단계로 이동해 주세요!`,
+          message: `이번 달 공통 도서 '${after.commonBook?.title || '알 수 없는 도서'}'가 선정되었습니다. 모두 읽기 단계로 이동해 주세요!`,
           link: '/cycles'
         });
       }
-    } else if (before.title !== after.title && after.title) {
-       // 전역 알림: 새로운 월간 주제 시작 (이건 보통 어드민이 수동으로 세팅할 때)
+    } else if (after.phase === 'phase1_reading' && before.phase !== 'phase1_reading') {
+       // 전역 알림: 새로운 월간 주제 시작
        await createNotification({
          type: 'CYCLE_PHASE',
          title: '🆕 새로운 월간 주제!',
-         message: `새로운 주제 [${after.title}]가 시작되었습니다. 지금 확인해 보세요!`,
+         message: `이번 달 새로운 주제로 '${after.title}'이 선정되었습니다. 모두 주제와 관련된 개인 희망책을 선정해 주세요!`,
          link: '/cycles'
        });
     }

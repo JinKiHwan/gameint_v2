@@ -2,12 +2,11 @@ import { defineStore } from 'pinia'
 import { 
   collection, 
   query, 
-  where, 
   onSnapshot, 
   orderBy, 
   limit, 
   doc, 
-  updateDoc, 
+  setDoc,
   deleteDoc, 
   writeBatch 
 } from 'firebase/firestore'
@@ -21,25 +20,50 @@ export interface Notification {
   link?: string
   createdAt: any
   isRead: boolean
+  isDeleted?: boolean // 로컬/전역 상태 병합용
   recipientId?: string // personal if exists, global if not
+}
+
+interface NotiState {
+  read: boolean
+  deleted: boolean
 }
 
 export const useNotificationStore = defineStore('notification', {
   state: () => ({
-    notifications: [] as Notification[],
+    rawPersonal: [] as Notification[],
+    rawGlobal: [] as Notification[],
+    globalStates: {} as Record<string, NotiState>,
     personalUnsub: null as any,
     globalUnsub: null as any,
+    statesUnsub: null as any,
     isInitialized: false
   }),
 
   getters: {
-    unreadCount: (state) => state.notifications.filter(n => !n.isRead).length,
-    sortedNotifications: (state) => {
-      return [...state.notifications].sort((a, b) => {
+    notifications: (state): Notification[] => {
+      // 개인 알림 + (전역 알림 + 상태 병합 - 삭제된 것)
+      const personal = state.rawPersonal.map(n => ({ ...n, isDeleted: false }))
+      
+      const global = state.rawGlobal
+        .map(n => {
+          const s = state.globalStates[n.id]
+          return {
+            ...n,
+            isRead: s?.read ?? false,
+            isDeleted: s?.deleted ?? false
+          }
+        })
+        .filter(n => !n.isDeleted)
+
+      return [...personal, ...global].sort((a, b) => {
         const timeA = a.createdAt?.seconds || 0
         const timeB = b.createdAt?.seconds || 0
         return timeB - timeA
       })
+    },
+    unreadCount(): number {
+      return this.notifications.filter(n => !n.isRead).length
     }
   },
 
@@ -47,6 +71,7 @@ export const useNotificationStore = defineStore('notification', {
     initNotifications() {
       const authStore = useAuthStore()
       if (!authStore.user) return
+      if (this.isInitialized) return
 
       const { $firebase } = useNuxtApp()
       const firestore = ($firebase as any).firestore
@@ -54,35 +79,56 @@ export const useNotificationStore = defineStore('notification', {
       // 1. 개인 알림 구독
       const personalRef = collection(firestore, 'users', authStore.user.uid, 'notifications')
       const personalQuery = query(personalRef, orderBy('createdAt', 'desc'), limit(50))
-      
       this.personalUnsub = onSnapshot(personalQuery, (snapshot) => {
-        const personalItems = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Notification))
-        this.mergeNotifications(personalItems, 'personal')
+        this.rawPersonal = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Notification))
       })
 
-      // 2. 전역 알림 구독 (최근 50개)
+      // 2. 전역 알림 구독
       const globalRef = collection(firestore, 'global_notifications')
       const globalQuery = query(globalRef, orderBy('createdAt', 'desc'), limit(50))
-
       this.globalUnsub = onSnapshot(globalQuery, (snapshot) => {
-        const globalItems = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Notification))
-        this.mergeNotifications(globalItems, 'global')
+        this.rawGlobal = snapshot.docs.map(d => ({ id: d.id, ...d.data() } as Notification))
+      })
+
+      // 3. 전역 알림 상태(읽음/삭제) 구독
+      const statesRef = collection(firestore, 'users', authStore.user.uid, 'notification_states')
+      this.statesUnsub = onSnapshot(statesRef, (snapshot) => {
+        const newStates: Record<string, NotiState> = {}
+        snapshot.docs.forEach(d => {
+          newStates[d.id] = d.data() as NotiState
+        })
+        this.globalStates = newStates
       })
 
       this.isInitialized = true
     },
 
-    mergeNotifications(newItems: Notification[], source: 'personal' | 'global') {
-      // 기존 알림에서 해당 소스(개인/전역)인 것들을 제외하고 새로 합침
-      const otherSourceItems = this.notifications.filter(n => {
-        if (source === 'personal') return !n.recipientId // recipientId가 없으면 global
-        return !!n.recipientId // recipientId가 있으면 personal
-      })
-      
-      this.notifications = [...otherSourceItems, ...newItems]
+    async markAsRead(notificationId: string) {
+      const authStore = useAuthStore()
+      if (!authStore?.user?.uid) return
+
+      const { $firebase } = useNuxtApp()
+      const firestore = ($firebase as any).firestore
+
+      const target = this.notifications.find(n => n.id === notificationId)
+      if (!target || target.isRead) return
+
+      try {
+        if (target.recipientId) {
+          // 개인 알림 업데이트
+          const docRef = doc(firestore, 'users', authStore.user.uid, 'notifications', notificationId)
+          await setDoc(docRef, { isRead: true }, { merge: true })
+        } else {
+          // 전역 알림 상태 업데이트 (전역 컬렉션이 아닌 유저별 상태 컬렉션에 저장)
+          const stateRef = doc(firestore, 'users', authStore.user.uid, 'notification_states', notificationId)
+          await setDoc(stateRef, { read: true }, { merge: true })
+        }
+      } catch (err) {
+        console.error('Failed to mark notification as read:', err)
+      }
     },
 
-    async markAsRead(notificationId: string) {
+    async deleteNotification(notificationId: string) {
       const authStore = useAuthStore()
       if (!authStore?.user?.uid) return
 
@@ -94,37 +140,65 @@ export const useNotificationStore = defineStore('notification', {
 
       try {
         if (target.recipientId) {
-          // 개인 알림 업데이트
+          // 개인 알림 삭제
           const docRef = doc(firestore, 'users', authStore.user.uid, 'notifications', notificationId)
-          await updateDoc(docRef, { isRead: true })
+          await deleteDoc(docRef)
         } else {
-          // 전역 알림은 유저별 읽음 처리가 복잡하므로 (N:M), 
-          // 현재는 로컬에서만 처리하거나, 개별 알림 스키마 구조상 한계가 있으나 
-          // 우선 로컬 상태만 변경 (전역 알림은 모든 유저가 공유하므로 서버 isRead를 바꾸면 안됨)
-          target.isRead = true
+          // 전역 알림 숨김 (유저별 상태 컬렉션에 deleted: true 저장)
+          const stateRef = doc(firestore, 'users', authStore.user.uid, 'notification_states', notificationId)
+          await setDoc(stateRef, { deleted: true }, { merge: true })
         }
       } catch (err) {
-        console.error('Failed to mark notification as read:', err)
+        console.error('Failed to delete notification:', err)
       }
     },
 
     async markAllAsRead() {
       const authStore = useAuthStore()
-      if (!authStore.user) return
+      if (!authStore?.user?.uid) return
 
       const { $firebase } = useNuxtApp()
       const firestore = ($firebase as any).firestore
       const batch = writeBatch(firestore)
 
-      const unreadPersonal = this.notifications.filter(n => n.recipientId && !n.isRead)
-      
+      // 1. 읽지 않은 개인 알림들
+      const uid = authStore.user.uid
+      const unreadPersonal = this.rawPersonal.filter(n => !n.isRead)
       unreadPersonal.forEach(n => {
-        const docRef = doc(firestore, 'users', authStore.user.uid, 'notifications', n.id)
+        const docRef = doc(firestore, 'users', uid, 'notifications', n.id)
         batch.update(docRef, { isRead: true })
       })
 
-      // 전역 알림은 로컬에서만 처리
-      this.notifications.forEach(n => { if (!n.recipientId) n.isRead = true })
+      // 2. 읽지 않은 전역 알림들
+      const unreadGlobal = this.rawGlobal.filter(n => !this.globalStates[n.id]?.read)
+      unreadGlobal.forEach(n => {
+        const stateRef = doc(firestore, 'users', uid, 'notification_states', n.id)
+        batch.set(stateRef, { read: true }, { merge: true })
+      })
+
+      await batch.commit()
+    },
+
+    async clearAll() {
+      const authStore = useAuthStore()
+      if (!authStore?.user?.uid) return
+
+      const { $firebase } = useNuxtApp()
+      const firestore = ($firebase as any).firestore
+      const batch = writeBatch(firestore)
+
+      // 1. 모든 개인 알림 삭제
+      const uid = authStore.user.uid
+      this.rawPersonal.forEach(n => {
+        const docRef = doc(firestore, 'users', uid, 'notifications', n.id)
+        batch.delete(docRef)
+      })
+
+      // 2. 모든 전역 알림 삭제(숨김)
+      this.rawGlobal.forEach(n => {
+        const stateRef = doc(firestore, 'users', uid, 'notification_states', n.id)
+        batch.set(stateRef, { deleted: true }, { merge: true })
+      })
 
       await batch.commit()
     },
@@ -132,7 +206,10 @@ export const useNotificationStore = defineStore('notification', {
     stopSubscriptions() {
       if (this.personalUnsub) this.personalUnsub()
       if (this.globalUnsub) this.globalUnsub()
-      this.notifications = []
+      if (this.statesUnsub) this.statesUnsub()
+      this.rawPersonal = []
+      this.rawGlobal = []
+      this.globalStates = {}
       this.isInitialized = false
     }
   }

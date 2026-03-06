@@ -99,14 +99,17 @@
           <div v-if="notiMenuOpen" class="notification-dropdown">
             <div class="noti-header">
               <span class="noti-title">알림</span>
-              <button class="noti-all-read" @click="notificationStore.markAllAsRead()">모두 읽음</button>
+              <div class="flex gap-2">
+                <button class="noti-header-btn" @click="notificationStore.markAllAsRead()">모두 읽음</button>
+                <button class="noti-header-btn" @click="notificationStore.clearAll()">전체 삭제</button>
+              </div>
             </div>
             <div class="noti-body custom-scroll">
               <div v-if="notificationStore.notifications.length === 0" class="noti-empty">
                 새로운 알림이 없습니다.
               </div>
               <div 
-                v-for="noti in notificationStore.sortedNotifications" 
+                v-for="noti in notificationStore.notifications" 
                 :key="noti.id" 
                 class="noti-item"
                 :class="{ 'is-unread': !noti.isRead }"
@@ -120,6 +123,9 @@
                   <div class="noti-item-msg">{{ noti.message }}</div>
                   <div class="noti-item-time">{{ formatTime(noti.createdAt) }}</div>
                 </div>
+                <button class="noti-delete-btn" @click.stop="notificationStore.deleteNotification(noti.id)">
+                  <i class="mdi mdi-close"></i>
+                </button>
               </div>
             </div>
           </div>
@@ -228,6 +234,7 @@ const toggleNotification = () => {
 const handleNotiClick = async (noti) => {
   await notificationStore.markAsRead(noti.id)
   if (noti.link) {
+    // 티어 상승 등 동적으로 링크가 바뀔 수 있으므로 재확인
     router.push(noti.link)
     notiMenuOpen.value = false
   }
@@ -359,21 +366,36 @@ watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
   display: flex; justify-content: space-between; align-items: center;
 }
 .noti-title { font-size: 1rem; font-weight: 900; color: #212121; }
-.noti-all-read { 
+.noti-header-btn { 
   background: none; border: none; color: #757575; 
   font-size: 0.75rem; font-weight: 700; cursor: pointer;
-  &:hover { color: #1e88e5; }
+  padding: 4px 8px; border-radius: 4px;
+  &:hover { background: #f5f5f5; color: #1e88e5; }
 }
 
 .noti-body { flex: 1; overflow-y: auto; }
 .noti-empty { padding: 40px 20px; text-align: center; color: #9e9e9e; font-size: 0.875rem; font-weight: 700; }
 
 .noti-item {
+  position: relative;
   display: flex; gap: 12px; padding: 14px 16px;
   border-bottom: 1px solid #fafafa; cursor: pointer;
   transition: background 0.2s;
-  &:hover { background: #f9f9f9; }
+  &:hover { 
+    background: #f9f9f9; 
+    .noti-delete-btn { opacity: 1; }
+  }
   &.is-unread { background: #E3F2FD; }
+}
+
+.noti-delete-btn {
+  position: absolute; top: 12px; right: 12px;
+  width: 20px; height: 20px; border-radius: 50%;
+  border: none; background: rgba(0,0,0,0.05);
+  color: #757575; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; opacity: 0; transition: all 0.2s;
+  &:hover { background: #ef5350; color: white; }
 }
 
 .noti-icon {
