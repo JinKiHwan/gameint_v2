@@ -15,8 +15,8 @@
             <select v-model="formData.category" class="select flex-grow" @change="handleCategoryChange">
               <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
             </select>
-            <select v-if="formData.category === '도서 추천'" v-model="formData.bookGenre" class="select flex-grow">
-              <option value="" disabled>장르를 선택하세요</option>
+            <select v-if="formData.category === '도서 추천' || formData.category === '책 리뷰'" v-model="formData.bookGenre" class="select flex-grow">
+              <option value="" disabled>카테고리를 선택하세요</option>
               <option v-for="genre in bookGenres" :key="genre" :value="genre">{{ genre }}</option>
             </select>
             <button
@@ -116,7 +116,7 @@ const attachedBook = ref(null)
 const loading = ref(false)
 const errorMsg = ref('')
 const categories = ['도서 추천', '책 리뷰', '자유글', '정보/팁', '건의사항']
-const bookGenres = ['소설', '인문/철학', '자기계발', 'IT과학', '시/에세이', '역사', '예술', '기타']
+const bookGenres = ['소설', '자기계발', '경제/경영', '인문/사회', '과학/기술', '예술/문화', '기타']
 const formData = ref({ category: '자유글', bookGenre: '', title: '', content: '' })
 const isEditMode = computed(() => !!route.query.edit)
 
@@ -158,7 +158,7 @@ const handleCategoryChange = (e) => {
   if (e.target.value !== '책 리뷰' && e.target.value !== '도서 추천') {
     attachedBook.value = null 
   }
-  if (e.target.value !== '도서 추천') {
+  if (e.target.value !== '도서 추천' && e.target.value !== '책 리뷰') {
     formData.value.bookGenre = ''
   }
 }
@@ -166,7 +166,9 @@ const handleCategoryChange = (e) => {
 const handleSubmit = async () => {
   errorMsg.value = ''
   if (!formData.value.title.trim()) { errorMsg.value = '제목을 입력해주세요.'; return }
-  if (formData.value.category === '도서 추천' && !formData.value.bookGenre) { errorMsg.value = '도서 장르를 선택해주세요.'; return }
+  if ((formData.value.category === '도서 추천' || formData.value.category === '책 리뷰') && !formData.value.bookGenre) { 
+    errorMsg.value = '도서 카테고리를 선택해주세요.'; return 
+  }
   if ((formData.value.category === '도서 추천' || formData.value.category === '책 리뷰') && !attachedBook.value) { errorMsg.value = '책을 첨부해주세요.'; return }
   if (!formData.value.content || formData.value.content === '<p></p>') { errorMsg.value = '내용을 작성해주세요.'; return }
   loading.value = true
