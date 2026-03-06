@@ -475,6 +475,106 @@ watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
   &:hover { background: #ef5350; color: white; }
 }
 
+.profile-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 200px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  border: 1px solid rgba(0,0,0,0.05);
+  padding: 8px;
+  z-index: 1000;
+  animation: slide-up 0.2s ease-out;
+}
+
+.dropdown-header {
+  padding: 12px 16px;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background: #f0f0f0;
+  margin: 8px;
+}
+
+.dropdown-item {
+  width: 100%;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: none;
+  color: var(--text-grey-dark);
+  font-size: 0.875rem;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  i {
+    font-size: 1.2rem;
+    color: var(--text-grey-2);
+  }
+  
+  &:hover {
+    background: #f5f5f5;
+    color: var(--primary-color);
+    i { color: var(--primary-color); }
+  }
+  
+  &.text-red:hover {
+    background: #fff5f5;
+    color: #ef5350;
+    i { color: #ef5350; }
+  }
+}
+
+.mobile-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 16px;
+  width: 180px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  padding: 8px;
+  z-index: 1000;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+.mobile-dropdown__item {
+  width: 100%;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  background: none;
+  color: var(--text-grey-dark);
+  font-size: 0.9rem;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  
+  i {
+    font-size: 1.25rem;
+    color: var(--text-grey-2);
+  }
+  
+  &:hover {
+    background: #f8f9fa;
+  }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 .noti-icon {
   width: 36px; height: 36px; border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
