@@ -543,6 +543,19 @@
                 <div class="text-subtitle-2 font-bold text-grey-dark mb-3">별점을 선택해주세요</div>
                 <StarRating v-model="reviewRating" style="justify-content:center;font-size:2rem;" />
               </div>
+              <div class="mb-4">
+                <div class="text-caption font-bold text-grey-2 mb-2">카테고리 선택 (DNA 데이터)</div>
+                <div class="flex flex-wrap gap-2">
+                  <button 
+                    v-for="cat in BOOK_CATEGORIES" :key="cat"
+                    class="chip chip--xs cursor-pointer"
+                    :class="reviewCategory === cat ? 'chip--deep-purple' : 'chip--grey-lt'"
+                    @click="reviewCategory = cat"
+                  >
+                    {{ cat }}
+                  </button>
+                </div>
+              </div>
               <textarea v-model="reviewContent" class="textarea" rows="4" placeholder="이 책에 대한 감상을 자유롭게 작성해주세요..."></textarea>
             </div>
             <div class="modal__footer">
@@ -584,6 +597,80 @@
         </div>
       </Teleport>
     </ClientOnly>
+
+    <div v-if="!loading && closedCycles.length > 0" class="mt-12 pt-10 border-t border-grey-200">
+      <h2 class="text-h5 font-black text-grey-dark mb-6 flex items-center gap-2">
+        <i class="mdi mdi-history text-blue-dark"></i> 지난 히스토리
+      </h2>
+      
+      <div v-if="selectedHistoryId" class="mb-8">
+        <div class="card recommender-privilege mb-4">
+          <div class="card-body">
+            <div class="flex justify-between items-center mb-4">
+              <h3 class="text-h6 font-black text-grey-dark">{{ getHistoryCycle(selectedHistoryId).keyword }}</h3>
+              <button class="btn btn--text btn--sm text-blue-dark font-bold" @click="selectedHistoryId = null">목록으로</button>
+            </div>
+            <!-- 당선 도서 표시 -->
+            <div v-if="getHistoryCycle(selectedHistoryId).commonBook" class="phase2-book-featured mb-4">
+              <div class="phase2-book-badge">🏆 최종 선정 도서</div>
+              <img :src="getHistoryCycle(selectedHistoryId).commonBook.thumbnail" class="phase2-book-thumb" alt="표지" />
+              <div class="phase2-book-info">
+                <div class="text-subtitle-1 font-black text-grey-dark">{{ getHistoryCycle(selectedHistoryId).commonBook.title }}</div>
+                <div class="text-caption text-grey-2">{{ getHistoryCycle(selectedHistoryId).commonBook.authors?.join(', ') }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 페이즈별 리뷰 묶음 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="flex flex-col gap-4">
+            <h4 class="text-subtitle-2 font-bold text-grey-2 flex items-center gap-1"><i class="mdi mdi-numeric-1-box"></i> Phase 1 리뷰</h4>
+            <div v-if="historyLoading" class="text-center pa-4"><div class="spinner spinner--sm" style="margin:0 auto;"></div></div>
+            <div v-else-if="historyReviews.filter(r => r.phase === 'phase1').length === 0" class="text-caption text-grey-4 text-center pa-4 italic border-dashed border-2 rounded-sm">리뷰가 없습니다.</div>
+            <div v-for="r in historyReviews.filter(r => r.phase === 'phase1')" :key="r.id" class="card card--flat">
+              <div class="card-body pa-4">
+                <div class="flex gap-2 items-center mb-2">
+                  <div class="avatar avatar--xs"><img :src="getProfileImagePath(r.profileImageId)" alt="프로필" /></div>
+                  <span class="text-caption font-bold text-grey-dark">{{ r.nickname }}</span>
+                  <div class="ml-auto text-amber text-caption flex"><i v-for="s in 5" :key="s" class="mdi" :class="s <= r.rating ? 'mdi-star' : 'mdi-star-outline'"></i></div>
+                </div>
+                <p class="text-caption text-grey-3 line-clamp-3">{{ r.content }}</p>
+              </div>
+            </div>
+          </div>
+          <div class="flex flex-col gap-4">
+            <h4 class="text-subtitle-2 font-bold text-grey-2 flex items-center gap-1"><i class="mdi mdi-numeric-2-box"></i> Phase 2 리뷰</h4>
+            <div v-if="historyLoading" class="text-center pa-4"><div class="spinner spinner--sm" style="margin:0 auto;"></div></div>
+            <div v-else-if="historyReviews.filter(r => r.phase === 'phase2').length === 0" class="text-caption text-grey-4 text-center pa-4 italic border-dashed border-2 rounded-sm">리뷰가 없습니다.</div>
+            <div v-for="r in historyReviews.filter(r => r.phase === 'phase2')" :key="r.id" class="card card--flat">
+              <div class="card-body pa-4">
+                <div class="flex gap-2 items-center mb-2">
+                  <div class="avatar avatar--xs"><img :src="getProfileImagePath(r.profileImageId)" alt="프로필" /></div>
+                  <span class="text-caption font-bold text-grey-dark">{{ r.nickname }}</span>
+                  <div class="ml-auto text-amber text-caption flex"><i v-for="s in 5" :key="s" class="mdi" :class="s <= r.rating ? 'mdi-star' : 'mdi-star-outline'"></i></div>
+                </div>
+                <p class="text-caption text-grey-3 line-clamp-3">{{ r.content }}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div v-for="c in closedCycles" :key="c.id" class="card cursor-pointer hover-card" @click="loadHistoryDetail(c.id)">
+          <div class="card-body flex items-center gap-4">
+            <img v-if="c.commonBook" :src="c.commonBook.thumbnail" class="avatar avatar--lg rounded-sm" style="width:48px;height:68px;" alt="표지" />
+            <div v-else class="avatar avatar--lg bg-grey-100 flex items-center justify-center text-grey-3 rounded-sm" style="width:48px;height:68px;"><i class="mdi mdi-book-off"></i></div>
+            <div class="min-w-0">
+              <div class="text-subtitle-2 font-black text-grey-dark line-clamp-1">#{{ c.keyword }}</div>
+              <div class="text-caption text-grey-2">{{ formatDateRange(c.startDate, c.endDate) }}</div>
+            </div>
+            <i class="mdi mdi-chevron-right ml-auto text-grey-2"></i>
+          </div>
+        </div>
+      </div>
+    </div>
 
   </div>
 </template>
@@ -815,13 +902,17 @@ const handleVote = async (targetUid) => {
 const reviewModal = ref(false)
 const reviewRating = ref(0)
 const reviewContent = ref('')
+const reviewCategory = ref('소설') // 기본값
 const submittingReview = ref(false)
 const reviewError = ref('')
+
+const BOOK_CATEGORIES = ['소설', '자기계발', '경제/경영', '인문/사회', '과학/기술', '예술/문화', '기타']
 
 const openReviewModal = () => {
   reviewModal.value = true
   reviewRating.value = 0
   reviewContent.value = ''
+  reviewCategory.value = '소설'
   reviewError.value = ''
 }
 
@@ -832,9 +923,9 @@ const handleSubmitReview = async () => {
   submittingReview.value = true
   try {
     const phase = cycle.value.phase === 'phase2_reading' ? 'phase2' : 'phase1'
-    await submitReview(cycle.value.id, reviewRating.value, reviewContent.value.trim(), phase)
+    await submitReview(cycle.value.id, reviewRating.value, reviewContent.value.trim(), phase, reviewCategory.value)
     reviewModal.value = false
-    myReview.value = { rating: reviewRating.value, content: reviewContent.value }
+    myReview.value = { rating: reviewRating.value, content: reviewContent.value, category: reviewCategory.value }
     reviews.value = await fetchReviews(cycle.value.id)
   } catch (err) { reviewError.value = err.message || '리뷰 등록 실패' }
   finally { submittingReview.value = false }
@@ -1172,7 +1263,11 @@ const formatDate = (dateValue) => {
   flex: 1;
   min-width: 0;
 }
-
-
+.hover-card {
+  transition: all 0.2s;
+  &:hover { transform: translateY(-3px); border-color: #1E88E5 !important; box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
+}
+.card--flat { border: 1px solid #EEEEEE !important; background: #FAFAFA !important; box-shadow: none !important; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 
 </style>

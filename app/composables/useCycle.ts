@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { useNuxtApp } from '#app'
 import {
     collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
-    query, orderBy, serverTimestamp, increment, setDoc
+    query, where, orderBy, serverTimestamp, increment, setDoc
 } from 'firebase/firestore'
 import { useAuthStore } from '~/stores/auth'
 
@@ -156,7 +156,7 @@ export const useCycle = () => {
     }
 
     // ── 리뷰 등록 ─────────────────────────────────────────────────────
-    const submitReview = async (cycleId: string, rating: number, content: string, phase: string) => {
+    const submitReview = async (cycleId: string, rating: number, content: string, phase: string, category: string = '일반') => {
         const uid = authStore.user?.uid
         if (!uid) throw new Error('로그인이 필요합니다.')
         await addDoc(collection(getDb(), 'cycles', cycleId, 'reviews'), {
@@ -166,12 +166,39 @@ export const useCycle = () => {
             rating,
             content,
             phase,
+            category, // DNA 분석용 데이터
             createdAt: serverTimestamp(),
         })
         // 참여자 리뷰 완료 표시
         try {
             await updateDoc(doc(getDb(), 'cycles', cycleId, 'participants', uid), { hasReviewed: true })
         } catch { }
+    }
+
+    // ── 내 리뷰 전체 조회 (마이페이지용) ──────────────────────────────
+    const fetchUserReviews = async (userId: string) => {
+        try {
+            const { collectionGroup } = await import('firebase/firestore')
+            const q = query(collectionGroup(getDb(), 'reviews'), where('authorUid', '==', userId), orderBy('createdAt', 'desc'))
+            const snapshot = await getDocs(q)
+            return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[]
+        } catch (err) {
+            console.error('Fetch user reviews error:', err)
+            return []
+        }
+    }
+
+    // ── 종료된 사이클 조회 ─────────────────────────────────────────────
+    const fetchClosedCycles = async () => {
+        try {
+            const cyclesRef = collection(getDb(), 'cycles')
+            const q = query(cyclesRef, where('phase', '==', 'closed'), orderBy('createdAt', 'desc'))
+            const snapshot = await getDocs(q)
+            return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[]
+        } catch (err) {
+            console.error('Fetch closed cycles error:', err)
+            return []
+        }
     }
 
     // ── 내 리뷰 조회 (페이즈별) ──────────────────────────────────────
@@ -223,7 +250,7 @@ export const useCycle = () => {
         fetchActiveCycle, createCycle, updateCyclePhase,
         fetchParticipants, registerBook, fetchMyParticipation,
         castVote, fetchMyVote, confirmCommonBook,
-        fetchReviews, submitReview, fetchMyReview,
-        fetchMeetingRecords, addMeetingRecord,
+        fetchReviews, submitReview, fetchMyReview, fetchUserReviews,
+        fetchMeetingRecords, addMeetingRecord, fetchClosedCycles,
     }
 }

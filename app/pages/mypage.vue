@@ -53,7 +53,20 @@
             <!-- EXP 바 -->
             <div class="exp-box mt-6">
               <div class="flex justify-between text-caption font-bold mb-2">
-                <span class="text-grey-2">다음 등급까지 경험치</span>
+                <div class="flex items-center gap-1 text-grey-2 info-tooltip-wrap">
+                  다음 등급까지 경험치
+                  <i class="mdi mdi-help-circle-outline" style="font-size:1rem;"></i>
+                  <!-- 툴팁 내용 -->
+                  <div class="info-tooltip">
+                    <div class="tooltip-title">✨ 경험치 획득 방법</div>
+                    <ul class="tooltip-list">
+                      <li>• 게시글 작성: 10 EXP</li>
+                      <li>• 댓글 작성: 5 EXP</li>
+                      <li>• 사이클 참여 (책 등록): 10 EXP</li>
+                      <li>• 리뷰 작성: 10 EXP</li>
+                    </ul>
+                  </div>
+                </div>
                 <span class="text-blue-dark">{{ authStore.userData.exp || 0 }} / {{ (authStore.userData.level || 1) * 100 }} EXP</span>
               </div>
               <div class="progress-bar">
@@ -78,6 +91,13 @@
         @click="activeTab = 'posts'"
       >
         <i class="mdi mdi-pencil-box-multiple mr-1"></i>내가 쓴 글
+      </button>
+      <button 
+        class="tab-btn" 
+        :class="{ 'is-active': activeTab === 'reviews' }" 
+        @click="activeTab = 'reviews'"
+      >
+        <i class="mdi mdi-comment-account mr-1"></i>나의 리뷰
       </button>
       <button 
         class="tab-btn" 
@@ -333,14 +353,16 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
+import { useCycle } from '~/composables/useCycle'
 import { PROFILE_IMAGES, isImageUnlocked, getProfileImagePath } from '~/composables/useProfileImages'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const { fetchUserPosts } = useBoard()
+const { fetchUserReviews } = useCycle()
 
 const isMaster = computed(() => authStore.userData?.role === 'master')
-const activeTab = ref('posts') // 'posts' | 'members'
+const activeTab = ref('posts') // 'posts' | 'reviews' | 'members'
 
 // ── 프로필 이미지 경로 ───────────────────────────────────────────
 const currentProfileImagePath = computed(() =>
@@ -365,6 +387,18 @@ const loadUserPosts = async () => {
     loadingPosts.value = true
     userPosts.value = await fetchUserPosts(authStore.userData.uid)
     loadingPosts.value = false
+  }
+}
+
+// ── 내가 작성한 리뷰 전체 목록 ───────────────────────────────────
+const userReviews = ref([])
+const loadingReviews = ref(false)
+
+const loadUserReviews = async () => {
+  if (authStore.userData?.uid) {
+    loadingReviews.value = true
+    userReviews.value = await fetchUserReviews(authStore.userData.uid)
+    loadingReviews.value = false
   }
 }
 
@@ -417,11 +451,13 @@ const handleRemoveUser = async (user) => {
 onMounted(() => {
   if (authStore.userData?.uid) {
     loadUserPosts()
+    loadUserReviews()
     loadAllUsers()
   } else {
     const stop = watch(() => authStore.userData, (v) => { 
       if (v?.uid) { 
         loadUserPosts()
+        loadUserReviews()
         loadAllUsers()
         stop() 
       } 
@@ -604,6 +640,24 @@ const handleUpdateProfile = async () => {
 
 /* ── EXP ──────────────────────────────────── */
 .exp-box { background: #FAFAFA; padding: 16px; border-radius: 16px; border: 1px solid #e0e0e0; }
+
+.info-tooltip-wrap {
+  position: relative;
+  cursor: help;
+}
+.info-tooltip {
+  position: absolute; bottom: 100%; left: 0;
+  width: 200px; padding: 12px; margin-bottom: 8px;
+  background: #212121; color: #fff; border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 10;
+  opacity: 0; pointer-events: none;
+  transform: translateY(10px);
+  transition: all 0.2s;
+}
+.info-tooltip-wrap:hover .info-tooltip { opacity: 1; pointer-events: auto; transform: translateY(0); }
+.tooltip-title { font-weight: 900; font-size: 0.8rem; margin-bottom: 6px; color: #FFD54F; }
+.tooltip-list { list-style: none; padding: 0; margin: 0; font-size: 0.75rem; color: #EEEEEE; line-height: 1.6; }
 
 /* ── Input util ───────────────────────────── */
 .input-with-icon {
