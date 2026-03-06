@@ -3,7 +3,14 @@ import { collection, query, where, orderBy, limit, getDocs } from 'firebase/fire
 import { useNuxtApp } from '#app'
 
 export const useRanking = () => {
-    const { $firestore } = useNuxtApp()
+    const nuxtApp = useNuxtApp()
+    
+    const getDb = () => {
+        const fb = nuxtApp.$firebase as any
+        if (!fb) throw new Error('Firebase client-only plugin not loaded yet.')
+        return fb.firestore
+    }
+
     const loading = ref(false)
     const error = ref<string | null>(null)
     const topUsers = ref<any[]>([])
@@ -12,7 +19,7 @@ export const useRanking = () => {
         loading.value = true
         error.value = null
         try {
-            const usersRef = collection($firestore as any, 'users')
+            const usersRef = collection(getDb(), 'users')
             // status: 'active' 필터와 exp: 'desc' 정렬을 사용함 (복합 색인 필요)
             const q = query(
                 usersRef,

@@ -123,10 +123,7 @@
             <button class="mobile-dropdown__item" @click="handleNav('/mypage')">
               <i class="mdi mdi-account-circle-outline"></i> 마이페이지
             </button>
-            <button class="mobile-dropdown__item" @click="handleNav('/ranking')">
-              <i class="mdi mdi-trophy-variant-outline"></i> 명예의 전당
-            </button>
-            <button class="mobile-dropdown__item" @click="handleLogout; mobileMenuOpen = false">
+            <button class="mobile-dropdown__item" @click="handleLogout(); mobileMenuOpen = false">
               <i class="mdi mdi-logout"></i> 로그아웃
             </button>
           </div>
@@ -280,8 +277,8 @@ const navigation = [
   { id: 'home',      label: '홈',       icon: 'mdi-home-variant',          to: '/' },
   { id: 'cycles',    label: '월간 주제',  icon: 'mdi-calendar-check',        to: '/cycles' },
   { id: 'recommend', label: '도서 추천',  icon: 'mdi-bookshelf',              to: '/recommend' },
-  { id: 'ranking',   label: '랭킹',      icon: 'mdi-trophy',                to: '/ranking' },
   { id: 'board',     label: '통합 게시판', icon: 'mdi-bulletin-board',       to: '/board' },
+  { id: 'ranking',   label: '랭킹',      icon: 'mdi-trophy',                to: '/ranking' },
   { id: 'mypage',    label: '마이페이지', icon: 'mdi-account',               to: '/mypage' },
 ]
 
