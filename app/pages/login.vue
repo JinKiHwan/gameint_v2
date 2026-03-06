@@ -16,7 +16,7 @@
         <div class="field mb-3">
           <div class="input-with-suffix">
             <i class="mdi mdi-account-outline" style="padding: 0 8px 0 16px; color: #757575;"></i>
-            <input v-model="username" type="text" placeholder="사내 커스텀 아이디" />
+            <input v-model="username" type="text" placeholder="로그인 아이디" />
           </div>
         </div>
 
@@ -77,7 +77,7 @@
               </div>
 
               <div v-if="findType === 'pw'" class="field mb-3">
-                <input v-model="findPwId" class="input" type="text" placeholder="사내 커스텀 아이디" @keyup.enter="handleFind" />
+                <input v-model="findPwId" class="input" type="text" placeholder="로그인 아이디" @keyup.enter="handleFind" />
               </div>
 
               <div class="field mb-3">
