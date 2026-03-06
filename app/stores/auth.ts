@@ -35,6 +35,22 @@ export const useAuthStore = defineStore('auth', {
             
             if (userDocSnap.exists()) {
               this.userData = userDocSnap.data()
+              
+              // ── 출석 체크 로직 ──────────────────────────────────────
+              const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD (KST 근사)
+              const expTracker = this.userData.expTracker || {}
+              if (expTracker.lastAttendanceDate !== today) {
+                try {
+                  const userRef = doc(firestore, 'users', firebaseUser.uid)
+                  await updateDoc(userRef, { 
+                    'expTracker.lastAttendanceDate': today 
+                  })
+                  // functions에서 onUpdate 트리거로 처리됨
+                  this.userData.expTracker = { ...expTracker, lastAttendanceDate: today }
+                } catch (err) {
+                  console.error("Attendance update failed:", err)
+                }
+              }
             } else {
                this.userData = null
             }
@@ -110,6 +126,13 @@ export const useAuthStore = defineStore('auth', {
           exp: 0,
           level: 1,
           dnaTitle: '아직 데이터가 부족해요',
+          expTracker: {
+            lastAttendanceDate: '',
+            lastPostDate: '',
+            lastRecommendBookDate: '',
+            commentCountToday: 0,
+            lastCommentDate: '',
+          },
           role: 'user', 
           status: 'pending', 
           securityQuestion: payload.securityQuestion,

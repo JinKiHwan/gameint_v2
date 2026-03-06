@@ -60,17 +60,20 @@
                   <div class="info-tooltip">
                     <div class="tooltip-title">✨ 경험치 획득 방법</div>
                     <ul class="tooltip-list">
-                      <li>• 게시글 작성: 10 EXP</li>
-                      <li>• 댓글 작성: 5 EXP</li>
-                      <li>• 사이클 참여 (책 등록): 10 EXP</li>
-                      <li>• 리뷰 작성: 10 EXP</li>
+                      <li>• 일일 출석: 50 EXP</li>
+                      <li>• 게시글 작성: 30 EXP (일 1회)</li>
+                      <li>• 도서 추천글: 50 EXP (일 1회)</li>
+                      <li>• 댓글 작성: 10 EXP (일 3회)</li>
+                      <li>• 좋아요 받기: 10 EXP</li>
+                      <li>• 월간 리뷰: 200 EXP</li>
+                      <li>• 선정 왕 당첨: 500 EXP</li>
                     </ul>
                   </div>
                 </div>
-                <span class="text-blue-dark">{{ authStore.userData.exp || 0 }} / {{ (authStore.userData.level || 1) * 100 }} EXP</span>
+                <span class="text-blue-dark">{{ authStore.userData.exp || 0 }} / {{ nextLevelExp }} EXP</span>
               </div>
               <div class="progress-bar">
-                <div class="progress-bar__fill" :style="`width: ${Math.min(((authStore.userData.exp || 0) / ((authStore.userData.level || 1) * 100)) * 100, 100)}%`"></div>
+                <div class="progress-bar__fill" :style="`width: ${Math.min(((authStore.userData.exp || 0) / nextLevelExp) * 100, 100)}%`"></div>
               </div>
             </div>
           </div>
@@ -400,6 +403,33 @@
       </Teleport>
     </ClientOnly>
 
+    <!-- ===== 레벨업 축하 모달 ===== -->
+    <ClientOnly>
+      <Teleport to="body">
+        <div v-if="levelUpModal" class="modal-overlay" style="z-index:9999; background: rgba(0,0,0,0.8);" @click="levelUpModal = false">
+          <div class="modal level-up-modal text-center pa-10" style="background: linear-gradient(135deg, #1A237E 0%, #0D47A1 100%); color:white; border:none; overflow:visible;">
+            <div class="level-up-crown">👑</div>
+            <h2 class="text-h4 font-black mb-2" style="color:#FFD54F; text-shadow: 0 4px 8px rgba(0,0,0,0.3);">LEVEL UP!</h2>
+            <p class="text-body-1 font-bold mb-6" style="opacity:0.9;">축하합니다! 새로운 단계에 도달하셨습니다.</p>
+            
+            <div class="flex justify-center items-center gap-6 mb-8">
+              <div class="lv-badge-old">{{ authStore.userData.level - 1 }}</div>
+              <i class="mdi mdi-chevron-double-right text-h4" style="color:#FFD54F;"></i>
+              <div class="lv-badge-new">{{ authStore.userData.level }}</div>
+            </div>
+
+            <div v-if="tierChanged" class="tier-up-box mb-8">
+              <span class="chip chip--amber mb-2">Tier Up!</span>
+              <h3 class="text-h5 font-black">{{ authStore.userData.tier }}</h3>
+            </div>
+
+            <button class="btn btn--primary btn--lg rounded-sm w-full font-black" @click="levelUpModal = false">확성기로 자랑하기 (닫기)</button>
+            <div class="confetti-wrap"></div>
+          </div>
+        </div>
+      </Teleport>
+    </ClientOnly>
+
   </div>
 </template>
 
@@ -410,6 +440,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
 import { useCycle } from '~/composables/useCycle'
 import { PROFILE_IMAGES, isImageUnlocked, getProfileImagePath } from '~/composables/useProfileImages'
+import { EXP_CONFIG } from '~/utils/expConfig'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -465,6 +496,24 @@ const loadUserReviews = async () => {
     loadingReviews.value = false
   }
 }
+
+// ── EXP 및 레벨업 ───────────────────────────────────────────────
+const nextLevelExp = computed(() => EXP_CONFIG.getNextLevelExp((authStore.userData?.level || 1) + 1))
+const levelUpModal = ref(false)
+const tierChanged = ref(false)
+
+watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
+  if (oldLevel && newLevel > oldLevel) {
+    // 티어 승급 여부 확인
+    const oldTier = EXP_CONFIG.getTier(oldLevel)
+    const newTier = EXP_CONFIG.getTier(newLevel)
+    tierChanged.value = oldTier !== newTier
+    
+    levelUpModal.value = true
+    // 5초 후 자동 닫기
+    setTimeout(() => { levelUpModal.value = false }, 5000)
+  }
+})
 
 // ── 멤버 목록 ────────────────────────────────────────────────────
 const allUsers = ref([])
@@ -837,4 +886,16 @@ const handleUpdateProfile = async () => {
   &.is-active { background: #1E88E5; color: #fff; border-color: #1E88E5; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
+
+/* ── 레벨업 모달 전용 ────────────────────────── */
+.level-up-modal { position:relative; overflow:visible; }
+.level-up-crown { font-size: 4rem; position:absolute; top: -50px; left:50%; transform: translateX(-50%); filter: drop-shadow(0 4px 8px rgba(0,0,0,0.5)); animation: bounce 1s infinite; }
+.lv-badge-old, .lv-badge-new {
+  width: 60px; height: 60px; display:flex; align-items:center; justify-content:center;
+  border-radius: 50%; font-size: 1.5rem; font-weight: 900; background:rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.2);
+}
+.lv-badge-new { background: #FFD54F; color: #1A237E; border-color: #FFD54F; transform: scale(1.2); box-shadow: 0 0 20px rgba(255,213,79,0.5); }
+.tier-up-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
+
+@keyframes bounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }
 </style>

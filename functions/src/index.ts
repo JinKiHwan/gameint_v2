@@ -1,8 +1,16 @@
 import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
+import { EXP_CONFIG } from "./shared/expConfig";
 
 admin.initializeApp();
 const db = admin.firestore();
+
+// ── KST 변환 유틸 ──────────────────────────────────────────────
+const getKstDate = () => {
+  const now = new Date();
+  const kstOffset = 9 * 60 * 60 * 1000;
+  return new Date(now.getTime() + kstOffset).toISOString().split("T")[0];
+};
 
 // 1. 프로필 업데이트 시 과거 게시글/댓글 동기화
 export const onUserProfileUpdate = functions
@@ -89,8 +97,9 @@ export const onUserProfileUpdate = functions
 /**
  * 2. Helper function to reward EXP to a user and handle level-ups.
  */
-async function rewardExp(userId: string, expAmount: number) {
+async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS | 'MANUAL', manualAmount?: number) {
   const userRef = db.collection("users").doc(userId);
+  const today = getKstDate();
   
   await db.runTransaction(async (transaction) => {
     const userDoc = await transaction.get(userRef);
@@ -99,28 +108,59 @@ async function rewardExp(userId: string, expAmount: number) {
     const userData = userDoc.data() || {};
     let currentExp = typeof userData.exp === "number" ? userData.exp : 0;
     let currentLevel = typeof userData.level === "number" ? userData.level : 1;
+    const expTracker = userData.expTracker || {};
+
+    let expAmount = manualAmount || 0;
+    if (action !== 'MANUAL') {
+      expAmount = EXP_CONFIG.REWARDS[action];
+      
+      // 제한 로직 체크
+      if (action === 'ATTENDANCE') {
+        if (expTracker.lastAttendanceDate === today) return;
+        expTracker.lastAttendanceDate = today;
+      } else if (action === 'POST_GENERAL') {
+        if (expTracker.lastPostDate === today) return;
+        expTracker.lastPostDate = today;
+      } else if (action === 'POST_RECOMMEND') {
+        if (expTracker.lastRecommendBookDate === today) return;
+        expTracker.lastRecommendBookDate = today;
+      } else if (action === 'COMMENT') {
+        const lastDate = expTracker.lastCommentDate || "";
+        let countToday = (lastDate === today) ? (expTracker.commentCountToday || 0) : 0;
+        if (countToday >= EXP_CONFIG.LIMITS.COMMENT_PER_DAY) return;
+        
+        expTracker.lastCommentDate = today;
+        expTracker.commentCountToday = countToday + 1;
+      }
+    }
+
+    if (expAmount <= 0) return;
 
     currentExp += expAmount;
     
-    // 경험치가 다음 레벨업 목표 경험치(현재 레벨 * 100)를 초과하는 한 계속 레벨업 처리
-    let nextLevelExp = currentLevel * 100;
+    // 레벨업 로직 (비선형 테이블 적용)
+    let nextLevelExp = EXP_CONFIG.getNextLevelExp(currentLevel + 1);
 
-    while (currentExp >= nextLevelExp) {
+    while (currentExp >= nextLevelExp && currentLevel < 100) {
       currentExp -= nextLevelExp;
       currentLevel++;
-      nextLevelExp = currentLevel * 100;
+      nextLevelExp = EXP_CONFIG.getNextLevelExp(currentLevel + 1);
     }
+
+    const currentTier = EXP_CONFIG.getTier(currentLevel);
 
     transaction.update(userRef, {
       exp: currentExp,
-      level: currentLevel
+      level: currentLevel,
+      tier: currentTier,
+      expTracker: expTracker
     });
   });
 }
 
 
 /**
- * 3. 트리거: 게시글 작성 시 (EXP 15 증가)
+ * 3. 트리거: 게시글 작성 시 (도서 추천 vs 일반)
  */
 export const onPostCreate = functions
   .region("asia-northeast3")
@@ -129,13 +169,14 @@ export const onPostCreate = functions
     const data = snapshot.data();
     if (!data || !data.author || !data.author.uid) return null;
     
-    await rewardExp(data.author.uid, 15);
+    const action = data.category === '도서 추천' ? 'POST_RECOMMEND' : 'POST_GENERAL';
+    await rewardExp(data.author.uid, action);
     return null;
   });
 
 
 /**
- * 4. 트리거: 댓글 작성 시 (EXP 5 증가)
+ * 4. 트리거: 댓글 작성 시
  */
 export const onCommentCreate = functions
   .region("asia-northeast3")
@@ -144,6 +185,74 @@ export const onCommentCreate = functions
     const data = snapshot.data();
     if (!data || !data.author || !data.author.uid) return null;
     
-    await rewardExp(data.author.uid, 5);
+    await rewardExp(data.author.uid, 'COMMENT');
+    return null;
+  });
+
+/**
+ * 5. 트리거: 좋아요 발생 시 (게시글 작성자에게 보상)
+ */
+export const onLikeCreate = functions
+  .region("asia-northeast3")
+  .firestore.document("posts/{postId}/likes/{userId}")
+  .onCreate(async (snapshot, context) => {
+    const postId = context.params.postId;
+    const postSnap = await db.collection("posts").doc(postId).get();
+    const postData = postSnap.data();
+    
+    if (!postData || !postData.author || !postData.author.uid) return null;
+    
+    const likerId = context.params.userId;
+    if (likerId === postData.author.uid) return null;
+
+    await rewardExp(postData.author.uid, 'LIKE_RECEIVED');
+    return null;
+  });
+
+/**
+ * 6. 트리거: 사이클 리뷰 작성 시
+ */
+export const onReviewCreate = functions
+  .region("asia-northeast3")
+  .firestore.document("cycles/{cycleId}/reviews/{reviewId}")
+  .onCreate(async (snapshot, context) => {
+    const data = snapshot.data();
+    if (!data || !data.authorUid) return null;
+    
+    await rewardExp(data.authorUid, 'CYCLE_REVIEW');
+    return null;
+  });
+
+/**
+ * 7. 트리거: 출석 체크 (userData.expTracker.lastAttendanceDate 필드 업데이트 시)
+ */
+export const onAttendanceUpdate = functions
+  .region("asia-northeast3")
+  .firestore.document("users/{userId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data()?.expTracker?.lastAttendanceDate;
+    const after = change.after.data()?.expTracker?.lastAttendanceDate;
+    
+    if (after && before !== after) {
+      await rewardExp(context.params.userId, 'ATTENDANCE');
+    }
+    return null;
+  });
+
+/**
+ * 8. 트리거: 사이클 공통 도서 확정 (당선자 보상)
+ */
+export const onCycleCommonBookConfirm = functions
+  .region("asia-northeast3")
+  .firestore.document("cycles/{cycleId}")
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    
+    if (!before || !after) return null;
+    
+    if (before.phase !== 'phase2_reading' && after.phase === 'phase2_reading' && after.commonBookRecommenderUid) {
+      await rewardExp(after.commonBookRecommenderUid, 'CYCLE_WIN');
+    }
     return null;
   });
