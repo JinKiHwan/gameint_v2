@@ -53,11 +53,8 @@
           <span class="logo-text">Game Int</span>
         </NuxtLink>
         <div class="spacer"></div>
-        <button class="btn btn--text btn--icon mr-2">
-          <i class="mdi mdi-bell-outline"></i>
-        </button>
 
-        <div v-if="authStore.user" class="mobile-menu" ref="mobileMenuRef">
+        <div v-if="authStore.user" class="mobile-menu flex items-center gap-2" ref="mobileMenuRef">
           <div class="avatar avatar--sm cursor-pointer" @click="mobileMenuOpen = !mobileMenuOpen">
             <img :src="getProfileImagePath(authStore.userData?.profileImageId)" alt="프로필" />
           </div>
@@ -222,6 +219,10 @@ const navigation = [
   { id: 'board',     label: '통합 게시판', icon: 'mdi-forum',                 to: '/board' },
   { id: 'mypage',    label: '마이페이지', icon: 'mdi-account',               to: '/mypage' },
 ]
+
+// 모바일 메뉴
+const mobileMenuOpen = ref(false)
+const mobileMenuRef = ref(null)
 
 // 알림 드롭다운
 const notiMenuOpen = ref(false)
