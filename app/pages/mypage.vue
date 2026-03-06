@@ -8,7 +8,7 @@
     </div>
 
     <!-- 프로필 카드 -->
-    <div class="card mb-6">
+    <div class="card mb-6" style="overflow: visible;">
       <div class="card-body">
         <div v-if="authStore.userData" class="profile-layout">
 
