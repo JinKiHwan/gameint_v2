@@ -24,8 +24,8 @@
       </nav>
 
       <div class="sidebar__footer">
-        <div v-if="authStore.user" class="sidebar__user">
-          <NuxtLink to="/mypage" class="user-info" style="text-decoration:none; color:inherit;">
+        <div v-if="authStore.user" class="sidebar__user" ref="profileDropdownRef">
+          <div class="user-info" style="text-decoration:none; color:inherit; cursor:pointer;" @click="profileDropdown = !profileDropdown">
             <div class="avatar avatar--md">
               <img :src="getProfileImagePath(authStore.userData?.profileImageId)" alt="프로필" />
             </div>
@@ -33,10 +33,27 @@
               <span class="user-name">{{ authStore.userData?.nickname || '신규회원' }}</span>
               <span class="user-tier">{{ authStore.userData?.tier || 'Bronze' }}</span>
             </div>
-          </NuxtLink>
+          </div>
           <button class="btn btn--text btn--icon" @click="handleLogout" title="로그아웃">
             <i class="mdi mdi-logout"></i>
           </button>
+          <div v-if="profileDropdown" class="profile-dropdown">
+              <div class="dropdown-header">
+                <div class="font-black text-grey-dark">{{ authStore.userData?.nickname }}</div>
+                <div class="text-caption text-grey-2">{{ authStore.userData?.email }}</div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item" @click="handleNav('/mypage')">
+                <i class="mdi mdi-account-circle-outline"></i> 마이페이지
+              </button>
+              <button class="dropdown-item" @click="handleNav('/ranking')">
+                <i class="mdi mdi-trophy-variant-outline"></i> 명예의 전당
+              </button>
+              <div class="dropdown-divider"></div>
+              <button class="dropdown-item text-red" @click="handleLogout">
+                <i class="mdi mdi-logout"></i> 로그아웃
+              </button>
+            </div>
         </div>
         <div v-else class="text-center">
           <NuxtLink to="/login" class="btn btn--primary btn--block">로그인</NuxtLink>
@@ -103,6 +120,12 @@
           </div>
 
           <div v-if="mobileMenuOpen" class="mobile-dropdown">
+            <button class="mobile-dropdown__item" @click="handleNav('/mypage')">
+              <i class="mdi mdi-account-circle-outline"></i> 마이페이지
+            </button>
+            <button class="mobile-dropdown__item" @click="handleNav('/ranking')">
+              <i class="mdi mdi-trophy-variant-outline"></i> 명예의 전당
+            </button>
             <button class="mobile-dropdown__item" @click="handleLogout; mobileMenuOpen = false">
               <i class="mdi mdi-logout"></i> 로그아웃
             </button>
@@ -243,15 +266,21 @@ const handleLogout = async () => {
   router.push('/')
 }
 
+const handleNav = (path) => {
+  router.push(path)
+  profileDropdown.value = false
+  mobileMenuOpen.value = false
+}
+
 const isPendingUser = computed(() => {
   return authStore.user && authStore.userData?.status === 'pending'
 })
 
 const navigation = [
   { id: 'home',      label: '홈',       icon: 'mdi-home-variant',          to: '/' },
-  { id: 'monthly',   label: '월간 주제',  icon: 'mdi-book-open-page-variant', to: '/cycles' },
-  { id: 'recommend', label: '도서 추천',  icon: 'mdi-bookshelf',              to: '/recommend' },
-  { id: 'board',     label: '통합 게시판', icon: 'mdi-forum',                 to: '/board' },
+  { id: 'cycles', label: '월간 주제', icon: 'mdi-calendar-check', to: '/cycles' },
+  { id: 'ranking', label: '랭킹', icon: 'mdi-trophy', to: '/ranking' },
+  { id: 'board', label: '통합 게시판', icon: 'mdi-bulletin-board', to: '/board' },
   { id: 'mypage',    label: '마이페이지', icon: 'mdi-account',               to: '/mypage' },
 ]
 
