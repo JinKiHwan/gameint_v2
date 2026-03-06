@@ -171,7 +171,7 @@
           <div class="action-box__text">
             <i class="mdi mdi-crown action-box__icon" style="color:#FFB300;"></i>
             <div>
-              <div class="text-subtitle-1 font-black text-grey-dark">🎉 선정왕 특권!</div>
+              <div class="text-subtitle-1 font-black text-grey-dark">🎉 선정자 특권!</div>
               <div class="text-caption text-grey-2 font-medium">내 책이 공통 도서로 선정되었습니다! 나만의 자유 도서를 추가 등록할 수 있어요.</div>
             </div>
           </div>

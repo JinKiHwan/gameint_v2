@@ -251,7 +251,10 @@ export const onCycleCommonBookConfirm = functions
     
     if (!before || !after) return null;
     
-    if (before.phase !== 'phase2_reading' && after.phase === 'phase2_reading' && after.commonBookRecommenderUid) {
+    const isNewlyConfirmed = (before.phase !== 'phase2_reading' && after.phase === 'phase2_reading');
+    const isRecommenderNewlySet = (!before.commonBookRecommenderUid && after.commonBookRecommenderUid);
+    
+    if ((isNewlyConfirmed || isRecommenderNewlySet) && after.commonBookRecommenderUid) {
       await rewardExp(after.commonBookRecommenderUid, 'CYCLE_WIN');
     }
     return null;
