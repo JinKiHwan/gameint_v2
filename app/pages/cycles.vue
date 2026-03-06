@@ -598,7 +598,7 @@
       </Teleport>
     </ClientOnly>
 
-    <div v-if="!loading && closedCycles.length > 0" class="mt-12 pt-10 border-t border-grey-200">
+    <div v-if="!loadingCycle && closedCycles.length > 0" class="mt-12 pt-10 border-t border-grey-200">
       <h2 class="text-h5 font-black text-grey-dark mb-6 flex items-center gap-2">
         <i class="mdi mdi-history text-blue-dark"></i> 지난 히스토리
       </h2>
@@ -690,13 +690,31 @@ const {
   fetchParticipants, registerBook, fetchMyParticipation,
   castVote, fetchMyVote, confirmCommonBook,
   fetchReviews, submitReview, fetchMyReview,
-  fetchMeetingRecords, addMeetingRecord,
+  fetchMeetingRecords, addMeetingRecord, fetchClosedCycles
 } = useCycle()
 
 // ── 기본 상태 ────────────────────────────────────────────────────
 const cycle = ref(null)
 const loadingCycle = ref(true)
 const isMaster = computed(() => authStore.userData?.role === 'master')
+
+// ── 히스토리 상태 ─────────────────────────────────────────────────
+const closedCycles = ref([])
+const loadingHistory = ref(false)
+const selectedHistoryId = ref(null)
+const historyReviews = ref([])
+const historyLoading = ref(false)
+
+const loadHistoryDetail = async (id) => {
+  selectedHistoryId.value = id
+  historyLoading.value = true
+  try {
+    historyReviews.value = await fetchReviews(id)
+  } catch (err) { console.error(err) }
+  finally { historyLoading.value = false }
+}
+
+const getHistoryCycle = (id) => closedCycles.value.find(c => c.id === id)
 
 const activeTab = ref('members')
 const tabs = computed(() => {
@@ -775,6 +793,12 @@ const loadTabData = async () => {
 onMounted(async () => {
   cycle.value = await fetchActiveCycle()
   loadingCycle.value = false
+  
+  // 히스토리 로드
+  loadingHistory.value = true
+  closedCycles.value = await fetchClosedCycles()
+  loadingHistory.value = false
+
   await loadTabData()
 })
 
