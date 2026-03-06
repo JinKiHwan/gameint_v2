@@ -78,7 +78,7 @@
 
           <!-- 모바일 알림 (간소화) -->
           <div class="notification-wrap ml-2" ref="notiMenuMobileRef">
-            <button class="btn btn--text btn--icon" @click.stop="toggleNotification">
+            <button class="btn btn--text btn--icon mobile-noti-btn" @click.stop="toggleNotification">
               <i class="mdi mdi-bell-outline"></i>
               <span v-if="notificationStore.unreadCount > 0" class="notification-badge">{{ notificationStore.unreadCount }}</span>
             </button>
@@ -429,13 +429,18 @@ watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
 /* ── 알림 드롭다운 ────────────────────────────── */
 .notification-wrap { position: relative; }
 .notification-badge {
-  position: absolute; top: 0; right: 0;
+  position: absolute; top: -2px; right: -2px;
   background: #F44336; color: white;
-  font-size: 0.625rem; font-weight: 800;
-  min-width: 16px; height: 16px; 
-  padding: 0 4px; border-radius: 8px;
+  font-size: 0.7rem; font-weight: 800;
+  min-width: 18px; height: 18px; 
+  padding: 0 4px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   border: 1.5px solid #fff;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.mobile-noti-btn {
+  i { font-size: 1.6rem !important; }
 }
 
 .notification-dropdown {
@@ -600,9 +605,9 @@ watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
 }
 
 .noti-content { flex: 1; min-width: 0; }
-.noti-item-title { font-size: 0.875rem; font-weight: 800; color: #212121; margin-bottom: 2px; }
-.noti-item-msg { font-size: 0.75rem; font-weight: 600; color: #616161; line-height: 1.4; }
-.noti-item-time { font-size: 0.6875rem; color: #9e9e9e; margin-top: 4px; font-weight: 700; }
+.noti-item-title { font-size: 0.9375rem; font-weight: 800; color: #212121; margin-bottom: 2px; }
+.noti-item-msg { font-size: 0.8125rem; font-weight: 600; color: #616161; line-height: 1.4; }
+.noti-item-time { font-size: 0.75rem; color: #9e9e9e; margin-top: 4px; font-weight: 700; }
 
 .custom-scroll::-webkit-scrollbar { width: 6px; }
 .custom-scroll::-webkit-scrollbar-thumb { background: #ddd; border-radius: 3px; }

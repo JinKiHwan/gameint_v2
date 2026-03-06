@@ -32,10 +32,10 @@
                   </span>
                   <span class="chip chip--grey-lt">Lv.{{ authStore.userData.level || 1 }}</span>
                 </div>
-                <p class="text-caption font-medium text-grey-2 flex items-center gap-1">
+                <p class="text-body-2 font-bold text-grey-2 flex items-center gap-1 justify-center justify-sm-start">
                   <i class="mdi mdi-email-outline"></i> {{ authStore.userData.email }}
                 </p>
-                <p v-if="dnaResult" class="text-caption font-medium mt-3 text-grey-3 bg-grey-100 pa-2 rounded-sm border" style="display:inline-block;">
+                <p v-if="dnaResult" class="text-body-2 font-bold mt-3 text-grey-3 bg-grey-100 pa-2 rounded-sm border" style="display:inline-block;">
                   🧬 독서 DNA: <strong class="text-grey-dark">{{ dnaResult.dnaName }}</strong>
                 </p>
               </div>
@@ -94,36 +94,39 @@
       </div>
     </div>
 
-    <!-- 탭 메뉴 -->
-    <div class="tabs mb-6">
-      <button 
-        class="tab-btn" 
-        :class="{ 'is-active': activeTab === 'posts' }" 
-        @click="activeTab = 'posts'"
-      >
-        <i class="mdi mdi-pencil-box-multiple mr-1"></i>내가 쓴 글
-      </button>
-      <button 
-        class="tab-btn" 
-        :class="{ 'is-active': activeTab === 'reviews' }" 
-        @click="activeTab = 'reviews'"
-      >
-        <i class="mdi mdi-comment-account mr-1"></i>나의 리뷰
-      </button>
-      <button 
-        class="tab-btn" 
-        :class="{ 'is-active': activeTab === 'dna' }" 
-        @click="activeTab = 'dna'"
-      >
-        <i class="mdi mdi-dna mr-1"></i>독서 DNA
-      </button>
-      <button 
-        class="tab-btn" 
-        :class="{ 'is-active': activeTab === 'members' }" 
-        @click="activeTab = 'members'"
-      >
-        <i class="mdi mdi-account-group mr-1"></i>멤버
-      </button>
+    <!-- 탭 메뉴 (모바일 스크롤 지원) -->
+    <div class="tabs-container mb-6">
+      <div class="tabs">
+        <button 
+          class="tab-btn" 
+          :class="{ 'is-active': activeTab === 'posts' }"
+          @click="activeTab = 'posts'"
+        >
+          내가 쓴 글
+        </button>
+        <button 
+          class="tab-btn" 
+          :class="{ 'is-active': activeTab === 'dna' }"
+          @click="activeTab = 'dna'"
+        >
+          독서 DNA
+        </button>
+        <button 
+          class="tab-btn" 
+          :class="{ 'is-active': activeTab === 'reviews' }"
+          @click="activeTab = 'reviews'"
+        >
+          나의 리뷰
+        </button>
+        <button 
+          v-if="isMaster"
+          class="tab-btn" 
+          :class="{ 'is-active': activeTab === 'users' }"
+          @click="activeTab = 'users'"
+        >
+          멤버 관리 <span class="chip chip--xs chip--red ml-1" v-if="pendingCount > 0">{{ pendingCount }}</span>
+        </button>
+      </div>
     </div>
 
     <!-- 탭 콘텐츠: 내가 쓴 글 -->
@@ -138,9 +141,10 @@
             <div style="flex:1;"><div class="skeleton skeleton--title" style="width:60%;"></div><div class="skeleton skeleton--text" style="width:40%;"></div></div>
           </div>
         </template>
-        <div v-else-if="userPosts.length === 0" class="text-center pa-8">
-          <i class="mdi mdi-note-off-outline" style="font-size:3rem;color:#BDBDBD;display:block;margin-bottom:12px;"></i>
-          <p class="text-body-2 font-bold text-grey-2">아직 작성한 글이 없습니다.</p>
+        <div v-else-if="userPosts.length === 0" class="text-center py-12">
+          <i class="mdi mdi-notebook-outline text-grey-100" style="font-size: 4rem; display: block; margin-bottom: 16px;"></i>
+          <p class="text-body-1 font-black text-grey-2">아직 작성한 게시글이 없습니다.</p>
+          <p class="text-body-2 text-grey-3 mt-1">통합 게시판에서 첫 글을 남겨보세요!</p>
         </div>
         <ul v-else class="list pa-0">
           <template v-for="(post, index) in paginatedUserPosts" :key="post.id">
@@ -742,6 +746,50 @@ const handleUpdateProfile = async () => {
 }
 .justify-center { justify-content: center; }
 .justify-sm-start { @media(min-width:600px){ justify-content:flex-start; } }
+
+/* ── 탭 메뉴 ─────────────────────────────────── */
+.tabs-container {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar { display: none; }
+}
+.tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid #E0E0E0;
+  padding-bottom: 1px;
+  min-width: max-content;
+}
+.tab-btn {
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #9E9E9E;
+  cursor: pointer;
+  position: relative;
+  white-space: nowrap;
+  transition: all 0.2s;
+  
+  &:after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-color);
+    transform: scaleX(0);
+    transition: transform 0.2s;
+  }
+  
+  &.is-active {
+    color: var(--primary-color);
+    &:after { transform: scaleX(1); }
+  }
+}
 
 /* ── 프로필 아바타 ──────────────────────────── */
 .profile-avatar-wrap {

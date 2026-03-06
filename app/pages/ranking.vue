@@ -1,10 +1,18 @@
 <template>
   <div class="ranking-page fade-in">
-    <!-- 헤더 섹션 -->
-    <div class="ranking-hero mb-8">
-      <div class="ranking-hero__content">
-        <h1 class="text-h4 font-black text-white mb-2">명예의 전당 🏆</h1>
-        <p class="text-subtitle-1 text-white opacity-80">독서 동호회의 열정적인 상위 10명을 소개합니다.</p>
+    <!-- 히어로 섹션 (다른 페이지와 표준화) -->
+    <div class="cycles-hero mb-6">
+      <img
+        src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2070&auto=format&fit=crop"
+        alt="명예의 전당 배너"
+        class="cycles-hero__bg"
+      />
+      <div class="cycles-hero__overlay">
+        <div class="cycles-hero__glass">
+          <div class="text-caption font-bold text-white mb-2 opacity-90">HALL OF FAME</div>
+          <h1 class="text-h4 font-black text-white mb-2">명예의 전당 🏆</h1>
+          <p class="text-body-2 text-white opacity-80">독서 동호회의 열정적인 상위 10명을소개합니다.</p>
+        </div>
       </div>
     </div>
 
@@ -12,7 +20,7 @@
       <!-- 로딩 상태 -->
       <div v-if="loading" class="text-center py-20">
         <div class="spinner spinner--lg mb-4"></div>
-        <p class="text-grey-2 font-bold">랭킹 데이터를 불러오고 있습니다...</p>
+        <p class="text-body-2 font-bold text-grey-2">랭킹 데이터를 불러오고 있습니다...</p>
       </div>
 
       <!-- 에러 상태 -->
@@ -36,10 +44,10 @@
                   <i class="mdi mdi-trophy"></i>
                 </div>
               </div>
-              <div class="podium-info">
-                <div class="podium-name line-clamp-1">{{ topUsers[1].nickname }}</div>
-                <div class="podium-dna">{{ topUsers[1].dna?.dnaName || '분석 중' }}</div>
-                <div class="podium-exp">{{ topUsers[1].exp || 0 }} EXP</div>
+              <div class="podium-info mt-2">
+                <div class="podium-name line-clamp-1 text-subtitle-2 font-black">{{ topUsers[1].nickname }}</div>
+                <div class="podium-dna text-caption font-bold opacity-70">{{ topUsers[1].dna?.dnaName || '분석 중' }}</div>
+                <div class="podium-exp text-body-2 font-black text-primary-color mt-1">{{ topUsers[1].exp || 0 }} EXP</div>
               </div>
               <div class="podium-base"></div>
             </div>
@@ -72,10 +80,10 @@
                   <i class="mdi mdi-trophy"></i>
                 </div>
               </div>
-              <div class="podium-info">
-                <div class="podium-name line-clamp-1">{{ topUsers[2].nickname }}</div>
-                <div class="podium-dna">{{ topUsers[2].dna?.dnaName || '분석 중' }}</div>
-                <div class="podium-exp">{{ topUsers[2].exp || 0 }} EXP</div>
+              <div class="podium-info mt-2">
+                <div class="podium-name line-clamp-1 text-subtitle-2 font-black">{{ topUsers[2].nickname }}</div>
+                <div class="podium-dna text-caption font-bold opacity-70">{{ topUsers[2].dna?.dnaName || '분석 중' }}</div>
+                <div class="podium-exp text-body-2 font-black text-primary-color mt-1">{{ topUsers[2].exp || 0 }} EXP</div>
               </div>
               <div class="podium-base"></div>
             </div>
@@ -85,7 +93,7 @@
         <!-- 4위 ~ 10위 리스트 -->
         <div class="card ranking-list-card">
           <div class="card-body pa-0">
-            <div class="ranking-list-header flex items-center px-6 py-4 border-b bg-grey-50 text-grey-2 text-caption font-bold">
+            <div class="ranking-list-header flex items-center px-6 py-4 border-b bg-grey-50 text-grey-2 text-body-2 font-bold">
               <span class="w-12 text-center">순위</span>
               <span class="flex-grow ml-4">멤버</span>
               <span class="w-24 text-right">경험치</span>
@@ -98,10 +106,10 @@
                 </div>
                 <div class="ml-3 min-w-0">
                   <div class="flex items-center gap-2">
-                    <span class="text-subtitle-2 font-black text-grey-dark line-clamp-1">{{ user.nickname }}</span>
+                    <span class="text-subtitle-1 font-black text-grey-dark line-clamp-1">{{ user.nickname }}</span>
                     <span :class="`chip chip--xs chip--${getTierChipClass(user.tier)}`">{{ user.tier || 'Bronze' }}</span>
                   </div>
-                  <div class="text-caption text-grey-2">{{ user.dna?.dnaName || '독서 DNA 분석 중' }}</div>
+                  <div class="text-caption font-bold text-grey-2">{{ user.dna?.dnaName || '독서 DNA 분석 중' }}</div>
                 </div>
               </div>
               <div class="w-24 text-right font-black text-blue-dark">{{ user.exp || 0 }} <span class="text-caption text-grey-3 font-medium">EXP</span></div>
@@ -296,11 +304,12 @@ onMounted(() => {
   text-align: center;
   margin-bottom: 8px;
   z-index: 2;
+  line-height: 1.4;
 }
 
-.podium-name { font-weight: 800; font-size: 0.9rem; margin-bottom: 2px; }
-.podium-dna { font-size: 0.75rem; color: var(--text-grey-2); }
-.podium-exp { font-weight: 900; color: var(--primary-color); font-size: 0.85rem; }
+.podium-name { font-weight: 800; }
+.podium-dna { color: var(--text-grey-2); }
+.podium-exp { font-weight: 900; }
 
 .podium-base {
   width: 100%;
@@ -340,10 +349,10 @@ onMounted(() => {
 }
 
 .my-rank-num {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 900;
   color: #FFD54F;
-  min-width: 48px;
+  min-width: 40px;
 }
 
 @media (max-width: 600px) {
