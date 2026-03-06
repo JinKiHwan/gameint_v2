@@ -63,7 +63,7 @@
           </div>
 
           <!-- 모바일 알림 (간소화) -->
-          <div class="notification-wrap ml-2">
+          <div class="notification-wrap ml-2" ref="notiMenuMobileRef">
             <button class="btn btn--text btn--icon" @click="toggleNotification">
               <i class="mdi mdi-bell-outline"></i>
               <span v-if="notificationStore.unreadCount > 0" class="notification-badge">{{ notificationStore.unreadCount }}</span>
@@ -226,6 +226,7 @@ const navigation = [
 // 알림 드롭다운
 const notiMenuOpen = ref(false)
 const notiMenuRef = ref(null)
+const notiMenuMobileRef = ref(null)
 
 const toggleNotification = () => {
   notiMenuOpen.value = !notiMenuOpen.value
@@ -266,7 +267,12 @@ const handleClickOutside = (e) => {
   if (mobileMenuRef.value && !mobileMenuRef.value.contains(e.target)) {
     mobileMenuOpen.value = false
   }
-  if (notiMenuRef.value && !notiMenuRef.value.contains(e.target)) {
+  
+  // 알림 드롭다운 외부 클릭 감지 (PC/모바일 둘 다 체크)
+  const isInsidePC = notiMenuRef.value && notiMenuRef.value.contains(e.target)
+  const isInsideMobile = notiMenuMobileRef.value && notiMenuMobileRef.value.contains(e.target)
+  
+  if (!isInsidePC && !isInsideMobile) {
     notiMenuOpen.value = false
   }
 }

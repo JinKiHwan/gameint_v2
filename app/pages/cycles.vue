@@ -27,7 +27,7 @@
             <div class="text-h4 font-black text-white mb-3"># {{ cycle.keyword }}</div>
             <div class="flex items-center gap-4 text-body-2 font-medium" style="color:rgba(255,255,255,0.8);">
                <span class="flex items-center gap-1"><i class="mdi mdi-calendar"></i> {{ formatDateRange(cycle.phase1Start, cycle.phase1End) }}</span>
-              <span class="flex items-center gap-1"><i class="mdi mdi-map-marker"></i> 회의실 : 하와이</span>
+              <span class="flex items-center gap-1"><i class="mdi mdi-map-marker"></i> 모임장소 : 하와이</span>
             </div>
           </template>
 

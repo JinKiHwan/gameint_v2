@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onCycleCommonBookConfirm = exports.onAttendanceUpdate = exports.onReviewCreate = exports.onLikeCreate = exports.onCommentCreate = exports.onPostCreate = exports.onUserProfileUpdate = void 0;
+exports.onCycleUpdate = exports.onCycleCreate = exports.onAttendanceUpdate = exports.onReviewCreate = exports.onLikeCreate = exports.onCommentCreate = exports.onPostCreate = exports.onUserProfileUpdate = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const expConfig_1 = require("./shared/expConfig");
@@ -306,45 +306,53 @@ exports.onAttendanceUpdate = functions
     return null;
 });
 /**
- * 8. 트리거: 사이클 공통 도서 확정 (당선자 보상)
+ * 8. 트리거: 사이클 공통 도서 확정 및 페이즈 전환 알림
  */
-exports.onCycleCommonBookConfirm = functions
-    .region("asia-northeast3")
-    .firestore.document("cycles/{cycleId}")
-    .onUpdate(async (change, context) => {
+async function handleCycleNotification(cycleId, before, after) {
     var _a;
-    const before = change.before.data();
-    const after = change.after.data();
-    if (!before || !after)
-        return null;
-    console.log(`[onCycleCommonBookConfirm] Triggered for cycleId: ${context.params.cycleId}`);
-    console.log(`[onCycleCommonBookConfirm] Phase: ${before.phase} -> ${after.phase}`);
-    console.log(`[onCycleCommonBookConfirm] Recommender: ${before.commonBookRecommenderUid} -> ${after.commonBookRecommenderUid}`);
-    const isNewlyConfirmed = (before.phase !== 'phase2_reading' && after.phase === 'phase2_reading');
-    const isRecommenderNewlySet = (!before.commonBookRecommenderUid && after.commonBookRecommenderUid);
-    const isRecommenderChanged = (before.commonBookRecommenderUid && after.commonBookRecommenderUid && before.commonBookRecommenderUid !== after.commonBookRecommenderUid);
+    if (!after)
+        return;
+    const isNewlyConfirmed = ((before === null || before === void 0 ? void 0 : before.phase) !== 'phase2_reading' && after.phase === 'phase2_reading');
+    const isRecommenderNewlySet = (!(before === null || before === void 0 ? void 0 : before.commonBookRecommenderUid) && after.commonBookRecommenderUid);
+    const isRecommenderChanged = ((before === null || before === void 0 ? void 0 : before.commonBookRecommenderUid) && after.commonBookRecommenderUid && before.commonBookRecommenderUid !== after.commonBookRecommenderUid);
+    // 1. 당선자 보상 (EXP)
     if ((isNewlyConfirmed || isRecommenderNewlySet || isRecommenderChanged) && after.commonBookRecommenderUid) {
-        console.log(`[onCycleCommonBookConfirm] Rewarding winner: ${after.commonBookRecommenderUid}`);
+        console.log(`[handleCycleNotification] Rewarding winner: ${after.commonBookRecommenderUid}`);
         await rewardExp(after.commonBookRecommenderUid, 'CYCLE_WIN');
-        // 전역 알림: 공통 도서 확정
-        if (after.phase === 'phase2_reading') {
-            await createNotification({
-                type: 'CYCLE_PHASE',
-                title: '📖 공통 도서 확정!',
-                message: `이번 달 공통 도서 '${((_a = after.commonBook) === null || _a === void 0 ? void 0 : _a.title) || '알 수 없는 도서'}'가 선정되었습니다. 모두 읽기 단계로 이동해 주세요!`,
-                link: '/cycles'
-            });
-        }
     }
-    else if (after.phase === 'phase1_reading' && before.phase !== 'phase1_reading') {
-        // 전역 알림: 새로운 월간 주제 시작
+    // 2. 페이즈 전환 알림 (전역)
+    if (isNewlyConfirmed) {
         await createNotification({
             type: 'CYCLE_PHASE',
-            title: '🆕 새로운 월간 주제!',
-            message: `이번 달 새로운 주제로 '${after.title}'이 선정되었습니다. 모두 주제와 관련된 개인 희망책을 선정해 주세요!`,
+            title: '📖 공통 도서 확정!',
+            message: `이번 달 공통 도서 '${((_a = after.commonBook) === null || _a === void 0 ? void 0 : _a.title) || '알 수 없는 도서'}'가 선정되었습니다. 모두 읽기 단계로 이동해 주세요!`,
             link: '/cycles'
         });
     }
+    else if (after.phase === 'phase1_reading' && (before === null || before === void 0 ? void 0 : before.phase) !== 'phase1_reading') {
+        await createNotification({
+            type: 'CYCLE_PHASE',
+            title: '🆕 새로운 월간 주제!',
+            message: `이번 달 새로운 주제로 '${after.title || '알 수 없는 주제'}'이 선정되었습니다. 모두 주제와 관련된 개인 희망책을 선정해 주세요!`,
+            link: '/cycles'
+        });
+    }
+}
+exports.onCycleCreate = functions
+    .region("asia-northeast3")
+    .firestore.document("cycles/{cycleId}")
+    .onCreate(async (snapshot, context) => {
+    const data = snapshot.data();
+    await handleCycleNotification(context.params.cycleId, null, data);
+    return null;
+});
+exports.onCycleUpdate = functions
+    .region("asia-northeast3")
+    .firestore.document("cycles/{cycleId}")
+    .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    await handleCycleNotification(context.params.cycleId, before, after);
     return null;
 });
 //# sourceMappingURL=index.js.map

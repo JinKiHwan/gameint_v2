@@ -327,46 +327,54 @@ export const onAttendanceUpdate = functions
   });
 
 /**
- * 8. 트리거: 사이클 공통 도서 확정 (당선자 보상)
+ * 8. 트리거: 사이클 공통 도서 확정 및 페이즈 전환 알림
  */
-export const onCycleCommonBookConfirm = functions
+async function handleCycleNotification(cycleId: string, before: any, after: any) {
+  if (!after) return;
+
+  const isNewlyConfirmed = (before?.phase !== 'phase2_reading' && after.phase === 'phase2_reading');
+  const isRecommenderNewlySet = (!before?.commonBookRecommenderUid && after.commonBookRecommenderUid);
+  const isRecommenderChanged = (before?.commonBookRecommenderUid && after.commonBookRecommenderUid && before.commonBookRecommenderUid !== after.commonBookRecommenderUid);
+
+  // 1. 당선자 보상 (EXP)
+  if ((isNewlyConfirmed || isRecommenderNewlySet || isRecommenderChanged) && after.commonBookRecommenderUid) {
+    console.log(`[handleCycleNotification] Rewarding winner: ${after.commonBookRecommenderUid}`);
+    await rewardExp(after.commonBookRecommenderUid, 'CYCLE_WIN');
+  }
+
+  // 2. 페이즈 전환 알림 (전역)
+  if (isNewlyConfirmed) {
+    await createNotification({
+      type: 'CYCLE_PHASE',
+      title: '📖 공통 도서 확정!',
+      message: `이번 달 공통 도서 '${after.commonBook?.title || '알 수 없는 도서'}'가 선정되었습니다. 모두 읽기 단계로 이동해 주세요!`,
+      link: '/cycles'
+    });
+  } else if (after.phase === 'phase1_reading' && before?.phase !== 'phase1_reading') {
+    await createNotification({
+      type: 'CYCLE_PHASE',
+      title: '🆕 새로운 월간 주제!',
+      message: `이번 달 새로운 주제로 '${after.title || '알 수 없는 주제'}'이 선정되었습니다. 모두 주제와 관련된 개인 희망책을 선정해 주세요!`,
+      link: '/cycles'
+    });
+  }
+}
+
+export const onCycleCreate = functions
+  .region("asia-northeast3")
+  .firestore.document("cycles/{cycleId}")
+  .onCreate(async (snapshot, context) => {
+    const data = snapshot.data();
+    await handleCycleNotification(context.params.cycleId, null, data);
+    return null;
+  });
+
+export const onCycleUpdate = functions
   .region("asia-northeast3")
   .firestore.document("cycles/{cycleId}")
   .onUpdate(async (change, context) => {
     const before = change.before.data();
     const after = change.after.data();
-    
-    if (!before || !after) return null;
-    
-    console.log(`[onCycleCommonBookConfirm] Triggered for cycleId: ${context.params.cycleId}`);
-    console.log(`[onCycleCommonBookConfirm] Phase: ${before.phase} -> ${after.phase}`);
-    console.log(`[onCycleCommonBookConfirm] Recommender: ${before.commonBookRecommenderUid} -> ${after.commonBookRecommenderUid}`);
-
-    const isNewlyConfirmed = (before.phase !== 'phase2_reading' && after.phase === 'phase2_reading');
-    const isRecommenderNewlySet = (!before.commonBookRecommenderUid && after.commonBookRecommenderUid);
-    const isRecommenderChanged = (before.commonBookRecommenderUid && after.commonBookRecommenderUid && before.commonBookRecommenderUid !== after.commonBookRecommenderUid);
-    
-    if ((isNewlyConfirmed || isRecommenderNewlySet || isRecommenderChanged) && after.commonBookRecommenderUid) {
-      console.log(`[onCycleCommonBookConfirm] Rewarding winner: ${after.commonBookRecommenderUid}`);
-      await rewardExp(after.commonBookRecommenderUid, 'CYCLE_WIN');
-      
-      // 전역 알림: 공통 도서 확정
-      if (after.phase === 'phase2_reading') {
-        await createNotification({
-          type: 'CYCLE_PHASE',
-          title: '📖 공통 도서 확정!',
-          message: `이번 달 공통 도서 '${after.commonBook?.title || '알 수 없는 도서'}'가 선정되었습니다. 모두 읽기 단계로 이동해 주세요!`,
-          link: '/cycles'
-        });
-      }
-    } else if (after.phase === 'phase1_reading' && before.phase !== 'phase1_reading') {
-       // 전역 알림: 새로운 월간 주제 시작
-       await createNotification({
-         type: 'CYCLE_PHASE',
-         title: '🆕 새로운 월간 주제!',
-         message: `이번 달 새로운 주제로 '${after.title}'이 선정되었습니다. 모두 주제와 관련된 개인 희망책을 선정해 주세요!`,
-         link: '/cycles'
-       });
-    }
+    await handleCycleNotification(context.params.cycleId, before, after);
     return null;
   });
