@@ -27,10 +27,11 @@ service cloud.firestore {
                     
       // Allow users to update their own profile (but prevent tampering with status/role)
       // OR allow master to update any field
-      allow update: if (isAuthenticated() && request.auth.uid == userId 
+      allow update: if isMaster() || (
+                        isAuthenticated() && request.auth.uid == userId 
                         && request.resource.data.role == resource.data.role 
-                        && request.resource.data.status == resource.data.status)
-                    || isMaster();
+                        && request.resource.data.status == resource.data.status
+                      );
                     
       // Only masters can delete users
       allow delete: if isMaster();

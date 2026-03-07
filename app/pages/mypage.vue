@@ -125,7 +125,7 @@
           @click="activeTab = 'members'"
         >
           <i class="mdi mdi-account-group mr-1"></i>멤버 관리 
-          <span class="chip chip--xs chip--red ml-1" v-if="pendingCount > 0">{{ pendingCount }}</span>
+          <span class="chip chip--xs chip--orange ml-1" v-if="pendingUsers.length > 0">{{ pendingUsers.length }}</span>
         </button>
       </div>
     </div>
@@ -266,47 +266,79 @@
           <div class="spinner" style="margin:0 auto;"></div>
         </div>
 
-        <div v-else-if="filteredUsers.length === 0" class="text-center pa-8">
-          <p class="text-body-2 font-bold text-grey-2">표시할 멤버가 없습니다.</p>
+        <div v-else>
+          <!-- 1. 승인 대기 유저 -->
+          <div v-if="pendingUsers.length > 0" class="mb-8">
+            <h4 class="text-subtitle-2 font-black text-orange mb-3 flex items-center gap-2">
+              <i class="mdi mdi-account-clock"></i> 승인 대기 중 ({{ pendingUsers.length }})
+            </h4>
+            <ul class="list pa-0 border rounded-lg bg-orange-50">
+              <template v-for="(u_raw, index) in pendingUsers" :key="u_raw.uid">
+                <template v-for="u in [resolveUser(u_raw.uid, u_raw)]" :key="u_raw.uid">
+                  <li class="list-item flex items-center gap-3 py-3 px-4">
+                    <div class="avatar avatar--sm">
+                      <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
+                    </div>
+                    <div class="flex-grow min-w-0">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-subtitle-2 font-black text-grey-dark">{{ u.nickname }}</span>
+                        <span class="chip chip--orange chip--xs">PENDING</span>
+                      </div>
+                      <div class="text-caption font-bold text-grey-2">{{ u.realName || '이름 미등록' }} · {{ u.email }}</div>
+                    </div>
+                    <div class="flex gap-1">
+                      <button 
+                        class="btn btn--primary btn--sm py-1 px-3 text-xs font-black rounded-sm"
+                        @click="handleApproveUser(u)"
+                      >승인</button>
+                      <button 
+                        class="btn btn--red-lt btn--sm py-1 px-3 text-xs font-black rounded-sm"
+                        @click="handleRemoveUser(u, true)"
+                      >거절</button>
+                    </div>
+                  </li>
+                </template>
+                <hr v-if="index !== pendingUsers.length - 1" class="divider mx-4" />
+              </template>
+            </ul>
+          </div>
+
+          <!-- 2. 활동 중인 멤버 -->
+          <div>
+            <h4 class="text-subtitle-2 font-black text-grey-dark mb-3 flex items-center gap-2">
+              <i class="mdi mdi-check-decagram text-blue"></i> 활동 중인 멤버 ({{ activeUsers.length }})
+            </h4>
+            <div v-if="activeUsers.length === 0" class="text-center pa-8 border rounded-lg border-dashed">
+              <p class="text-caption font-bold text-grey-2">활동 중인 멤버가 없습니다.</p>
+            </div>
+            <ul v-else class="list pa-0 border rounded-lg">
+              <template v-for="(u_raw, index) in activeUsers" :key="u_raw.uid">
+                <template v-for="u in [resolveUser(u_raw.uid, u_raw)]" :key="u_raw.uid">
+                  <li class="list-item flex items-center gap-3 py-3 px-4">
+                    <div class="avatar avatar--sm">
+                      <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
+                    </div>
+                    <div class="flex-grow min-w-0">
+                      <div class="flex items-center gap-2 mb-1">
+                        <span class="text-subtitle-2 font-bold text-grey-dark">{{ u.nickname }}</span>
+                        <span v-if="u.role === 'master'" class="chip chip--amber chip--xs">MASTER</span>
+                        <span class="chip chip--grey-lt chip--xs">{{ u.tier }}</span>
+                      </div>
+                      <div class="text-caption text-grey-2">{{ u.realName || '이름 미등록' }} · Lv.{{ u.level }}</div>
+                    </div>
+                    <div v-if="isMaster && u.uid !== authStore.user?.uid" class="flex gap-1">
+                      <button 
+                        class="btn btn--red-lt btn--sm py-1 px-3 text-xs font-black rounded-sm"
+                        @click="handleRemoveUser(u)"
+                      >탈퇴</button>
+                    </div>
+                  </li>
+                </template>
+                <hr v-if="index !== activeUsers.length - 1" class="divider mx-4" />
+              </template>
+            </ul>
+          </div>
         </div>
-
-        <ul v-else class="list pa-0">
-          <template v-for="(u_raw, index) in filteredUsers" :key="u_raw.uid">
-            <template v-for="u in [resolveUser(u_raw.uid, u_raw)]" :key="u_raw.uid">
-              <li class="list-item flex items-center gap-3 py-3">
-                <div class="avatar avatar--sm">
-                  <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
-                </div>
-                <div class="flex-grow min-w-0">
-                  <div class="flex items-center gap-2 mb-1">
-                    <span class="text-subtitle-2 font-bold text-grey-dark">{{ u.nickname }}</span>
-                    <span v-if="u.role === 'master'" class="chip chip--amber chip--xs">MASTER</span>
-                    <span v-if="u.status === 'pending'" class="chip chip--orange chip--xs">승인 대기</span>
-                  </div>
-                  <div class="text-caption text-grey-2">{{ u.realName || '이름 미등록' }} · {{ u.tier }}</div>
-                </div>
-
-                <!-- 마스터 전용 작업 버튼 -->
-                <div v-if="isMaster && u.uid !== authStore.user?.uid" class="flex gap-1">
-                  <button 
-                    v-if="u.status === 'pending'"
-                    class="btn btn--primary btn--sm py-1 px-3 text-xs font-black rounded-sm"
-                    @click="handleApproveUser(u)"
-                  >
-                    승인
-                  </button>
-                  <button 
-                    class="btn btn--red-lt btn--sm py-1 px-3 text-xs font-black rounded-sm"
-                    @click="handleRemoveUser(u)"
-                  >
-                    탈퇴
-                  </button>
-                </div>
-              </li>
-            </template>
-            <hr v-if="index !== filteredUsers.length - 1" class="divider" />
-          </template>
-        </ul>
       </div>
     </div>
 
@@ -550,10 +582,8 @@ const nextLevelExp = computed(() => EXP_CONFIG.getNextLevelExp((authStore.userDa
 const allUsers = ref([])
 const loadingUsers = ref(false)
 
-const filteredUsers = computed(() => {
-  if (isMaster.value) return allUsers.value
-  return allUsers.value.filter(u => u.status === 'active')
-})
+const activeUsers = computed(() => allUsers.value.filter(u => u.status === 'active'))
+const pendingUsers = computed(() => allUsers.value.filter(u => u.status === 'pending'))
 
 const loadAllUsers = async () => {
   loadingUsers.value = true
@@ -577,8 +607,8 @@ const handleApproveUser = async (user) => {
   }
 }
 
-const handleRemoveUser = async (user) => {
-  const msg = user.status === 'pending' 
+const handleRemoveUser = async (user, isRejection = false) => {
+  const msg = isRejection 
     ? `'${user.nickname}'님의 가입 신청을 거절하고 삭제하시겠습니까?`
     : `'${user.nickname}'님을 정말 탈퇴 처리하시겠습니까?`
     
