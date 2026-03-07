@@ -17,6 +17,10 @@ export const useAuthStore = defineStore('auth', {
     userData: null as any, // Firestore user document
     isInitialized: false,
   }),
+  getters: {
+    isLoggedIn: (state) => !!state.user,
+    isMaster: (state) => state.userData?.role === 'master',
+  },
   actions: {
     initAuth() {
       if (this.isInitialized) return

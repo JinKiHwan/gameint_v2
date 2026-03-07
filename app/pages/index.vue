@@ -170,7 +170,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useCycle } from '~/composables/useCycle'
@@ -181,7 +181,7 @@ import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const { fetchActiveCycle, fetchMyParticipation, loading: cycleLoading } = useCycle()
+const { fetchActiveCycle, fetchMyParticipation, fetchParticipants, loading: cycleLoading } = useCycle()
 const { fetchPosts, loading: boardLoading } = useBoard()
 const { activities, loading: feedLoading, hasMore, fetchActivities } = useActivityFeed()
 const { resolveUser } = useUserMapper()
@@ -193,21 +193,36 @@ const latestRecommendations = ref([])
 onMounted(async () => {
   // 1. 사이클 데이터 로드
   activeCycle.value = await fetchActiveCycle()
-  if (activeCycle.value && authStore.isLoggedIn) {
-    myParticipation.value = await fetchMyParticipation(activeCycle.value.id)
+  
+  if (activeCycle.value) {
+    // [Fix] 기존 사이클의 인원수가 0인 경우(새 필드 도입 전 데이터) 동기화 시도
+    if (!activeCycle.value.participantCount || activeCycle.value.participantCount === 0) {
+      const p = await fetchParticipants(activeCycle.value.id)
+      if (p.length > 0) {
+        activeCycle.value.participantCount = p.length
+      }
+    }
+
+    if (authStore.isLoggedIn) {
+      myParticipation.value = await fetchMyParticipation(activeCycle.value.id)
+    }
   }
 
   // 2. 최신 추천 도서 로드 (3개)
-  const posts = await fetchPosts({ 
-    category: '도서 추천', 
-    sortBy: '최신순',
-    limit: 3 
-  })
-  latestRecommendations.value = posts || []
+  // [Fix] fetchPosts는 객체가 아닌 카테고리 문자열을 인자로 받음
+  const posts = await fetchPosts('도서 추천')
+  latestRecommendations.value = (posts || []).slice(0, 3)
 
   // 3. 활동 피드 초기 로드
   await fetchActivities(5)
 })
+
+// [Fix] Firebase Auth 초기화 시점이 마운트 이후일 수 있으므로 유저 상태 감시
+watch(() => authStore.user, async (newUser) => {
+  if (newUser && activeCycle.value && !myParticipation.value) {
+    myParticipation.value = await fetchMyParticipation(activeCycle.value.id)
+  }
+}, { immediate: true })
 
 // 유틸리티 함수
 const getPhaseLabel = (phase) => {

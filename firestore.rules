@@ -46,10 +46,16 @@ service cloud.firestore {
       }
     }
     
+    // Global Activities Feed
+    match /activities/{activityId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     // Posts collection permissions
     match /posts/{postId} {
-      // Anyone logged in and active can read posts
-      allow read: if isActiveUser();
+      // Allow public read for home page visibility
+      allow read: if true;
       
       // Active users can create new posts
       allow create: if isActiveUser() && request.resource.data.author.uid == request.auth.uid;
@@ -66,26 +72,26 @@ service cloud.firestore {
 
       // Comments sub-collection permissions
       match /comments/{commentId} {
-        allow read: if isActiveUser();
+        allow read: if true;
         allow create: if isActiveUser() && request.resource.data.author.uid == request.auth.uid;
         allow update, delete: if isActiveUser() && (resource.data.author.uid == request.auth.uid || isMaster());
       }
       
       // Likes sub-collection permissions (Used for optimistic deduplication)
       match /likes/{userId} {
-        allow read: if isActiveUser();
+        allow read: if true;
         allow write: if isActiveUser() && request.auth.uid == userId;
       }
     }
 
     // Cycles collection permissions
     match /cycles/{cycleId} {
-      allow read: if isActiveUser();
+      allow read: if true;
       allow create, update, delete: if isMaster();
 
       // participants sub-collection
       match /participants/{uid} {
-        allow read: if isActiveUser();
+        allow read: if true;
         // active user can write their own participation doc
         allow create, update: if isActiveUser() && request.auth.uid == uid;
         // master can update voteCount etc.
@@ -95,34 +101,34 @@ service cloud.firestore {
 
       // votes sub-collection (1 vote per user)
       match /votes/{uid} {
-        allow read: if isActiveUser();
+        allow read: if true;
         allow create, update: if isActiveUser() && request.auth.uid == uid;
         allow delete: if isMaster();
       }
 
       // reviews sub-collection
       match /reviews/{reviewId} {
-        allow read: if isActiveUser();
+        allow read: if true;
         allow create: if isActiveUser() && request.resource.data.authorUid == request.auth.uid;
         allow update, delete: if isActiveUser() && resource.data.authorUid == request.auth.uid || isMaster();
       }
 
       // meetings sub-collection (master only writes, all active users read)
       match /meetings/{meetingId} {
-        allow read: if isActiveUser();
+        allow read: if true;
         allow create, update, delete: if isMaster();
       }
     }
 
     // Global Notifications collection
     match /global_notifications/{notiId} {
-      allow read: if isActiveUser();
+      allow read: if isAuthenticated();
       allow write: if isMaster(); // Only system/master should write (mostly via Functions)
     }
 
     // Collection Group rules for reviews
     match /{path=**}/reviews/{reviewId} {
-      allow read: if isActiveUser();
+      allow read: if true;
     }
 
     match /{document=**} {
