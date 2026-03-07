@@ -127,29 +127,25 @@
       </div>
     </div>
 
-    <!-- Reading DNA Showcase (Replaced Activity Feed) -->
+    <!-- DNA Showcase (Conveyor Belt Effect) -->
     <div class="mb-12">
       <h3 class="text-h6 font-black text-grey-dark mb-6 flex items-center gap-2 px-1">
         지능형 독서 진단, 당신의 독서 DNA는?
       </h3>
-      <div class="card dna-showcase relative overflow-hidden">
-        <div class="dna-carousel-track" :style="{ transform: `translateX(-${dnaCurrentIndex * 100}%)` }">
-          <div v-for="dna in dnaTypes" :key="dna.type" class="dna-slide">
-             <div class="dna-slide-content">
+      <div class="dna-conveyor card relative overflow-hidden">
+        <div class="dna-conveyor-inner">
+          <!-- Double the list for seamless looping -->
+          <div v-for="dna in [...dnaTypes, ...dnaTypes]" :key="dna.type + Math.random()" class="dna-item">
+             <div class="dna-item-content">
                <div class="dna-icon-wrap" :class="getDnaColorClass(dna.type)">
                  <i :class="`mdi ${dna.icon}`"></i>
                </div>
-               <div class="text-center">
-                 <div class="text-h5 font-black text-grey-dark mb-1">{{ dna.name }}</div>
-                 <p class="text-body-2 text-grey-2 font-medium opacity-80" style="max-width: 320px;">{{ dna.desc }}</p>
+               <div class="text-center px-4">
+                 <div class="text-subtitle-1 font-black text-grey-dark mb-1">{{ dna.name }}</div>
+                 <p class="text-caption text-grey-2 font-medium opacity-80">{{ dna.desc }}</p>
                </div>
              </div>
           </div>
-        </div>
-        
-        <!-- Indicator dots (Simplified) -->
-        <div class="dna-dots">
-          <div v-for="(_, i) in dnaTypes" :key="i" class="dot" :class="{ 'active': i === dnaCurrentIndex }" @click="dnaCurrentIndex = i"></div>
         </div>
       </div>
     </div>
@@ -182,8 +178,6 @@ const activeCycle = ref(null)
 const myParticipation = ref(null)
 const latestRecommendations = ref([])
 
-// DNA 데이터 & 상태
-const dnaCurrentIndex = ref(0)
 const dnaTypes = [
   { type: 'IE', name: '인간 문학가', desc: '사람의 감정과 삶의 서사에 깊이 몰입하는 독서가', icon: 'mdi-human-greeting' },
   { type: 'IK', name: '세계관 설계자', desc: '지식의 구조를 파악하고 새로운 세계를 상상하는 독서가', icon: 'mdi-pillar' },
@@ -202,8 +196,6 @@ const dnaTypes = [
   { type: 'BALANCED', name: '균형 독서가', desc: '다양한 분야를 골고루 섭렵하며 균형 잡힌 시각을 가진 독서가', icon: 'mdi-scale-balance' },
 ]
 
-let dnaTimer = null
-
 onMounted(async () => {
   // 1. 사이클 데이터 로드
   activeCycle.value = await fetchActiveCycle()
@@ -221,15 +213,6 @@ onMounted(async () => {
   // 2. 최신 추천 도서 로드
   const posts = await fetchPosts('도서 추천')
   latestRecommendations.value = (posts || []).slice(0, 3)
-
-  // 3. DNA 캐러셀 타이머
-  dnaTimer = setInterval(() => {
-    dnaCurrentIndex.value = (dnaCurrentIndex.value + 1) % dnaTypes.length
-  }, 4000)
-})
-
-onBeforeUnmount(() => {
-  if (dnaTimer) clearInterval(dnaTimer)
 })
 
 watch(() => authStore.user, async (newUser) => {
@@ -370,64 +353,48 @@ import { onBeforeUnmount } from 'vue'
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
 
-.dna-showcase {
-  height: 280px;
+.dna-conveyor {
+  height: 240px;
   background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
   border: 1px solid #edf0ff;
-}
-.dna-carousel-track {
   display: flex;
-  height: 100%;
-  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  align-items: center;
 }
-.dna-slide {
-  flex: 0 0 100%;
-  height: 100%;
+.dna-conveyor-inner {
+  display: flex;
+  width: max-content;
+  animation: infiniteScroll 60s linear infinite;
+  &:hover {
+    animation-play-state: paused;
+  }
+}
+.dna-item {
+  width: 280px;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0 20px;
 }
-.dna-slide-content {
+.dna-item-content {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 16px;
 }
 .dna-icon-wrap {
-  width: 80px;
-  height: 80px;
-  border-radius: 24px;
+  width: 70px;
+  height: 70px;
+  border-radius: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.8rem;
-  box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+  font-size: 2.2rem;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
 }
-.dna-dots {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 6px;
-  max-width: 90%;
-  overflow-x: auto;
-  padding: 4px;
-  &::-webkit-scrollbar { display: none; }
-}
-.dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 3px;
-  background: #e0e0e0;
-  transition: all 0.3s;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.dot.active {
-  width: 20px;
-  background: #3949ab;
+
+@keyframes infiniteScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); } /* Since we doubled the items */
 }
 
 .telegram-btn {
