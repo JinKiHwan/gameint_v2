@@ -4,10 +4,11 @@
 // Card
 // ============================
 .card {
-  background: $white;
+  background: rgba($white, 0.5);
   border: 1px solid $grey-lighten-2;
   border-radius: $radius-xl;
   overflow: hidden;
+  backdrop-filter: blur(5px);
 
   &--flat {
     box-shadow: none;
