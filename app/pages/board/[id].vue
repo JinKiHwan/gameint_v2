@@ -132,8 +132,8 @@
               <!-- 일반 표시 -->
               <p v-else class="text-body-2 text-grey-3" style="white-space:pre-wrap;word-break:break-all;">{{ comment.content }}</p>
                 </div>
-              </div>
             </template>
+          </div>
         </div>
 
         <!-- 댓글 입력창 -->
