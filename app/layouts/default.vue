@@ -135,10 +135,7 @@
 
       <!-- 데스크톱 -->
       <div class="app-bar__desktop">
-        <div class="search-box">
-          <i class="mdi mdi-magnify"></i>
-          <input type="text" placeholder="어떤 모임을 찾으시나요?" />
-        </div>
+        <div class="spacer"></div>
 
         <!-- 알림 벨 -->
         <div class="notification-wrap" ref="notiMenuRef">

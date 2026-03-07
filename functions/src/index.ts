@@ -145,16 +145,6 @@ export const onPostCreate = functions
     const genre = data.bookGenre || (data.category === '도서 추천' ? '자기계발' : null);
     await rewardExp(data.author.uid, action, undefined, genre);
 
-    // 2. 전역 피드 추가 (Global Activity Feed)
-    await db.collection("activities").add({
-      type: 'POST',
-      uid: data.author.uid,
-      contentSummary: data.content?.replace(/<[^>]*>/g, '').substring(0, 100) || "", // HTML 태그 제거 후 요약
-      link: `/board/${context.params.postId}`,
-      targetTitle: data.title || "새로운 게시글",
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
     return null;
   });
 
@@ -176,17 +166,7 @@ export const onCommentCreate = functions
     const postSnap = await db.collection("posts").doc(context.params.postId).get();
     const postData = postSnap.data();
 
-    // 3. 전역 피드 추가 (Global Activity Feed)
-    await db.collection("activities").add({
-      type: 'COMMENT',
-      uid: data.author.uid,
-      contentSummary: data.content?.substring(0, 100) || "",
-      link: `/board/${context.params.postId}`,
-      targetTitle: postData?.title || "게시글",
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    // 4. 알림: 게시글 작성자에게 (본인이 아닐 때만)
+    // 3. 알림: 게시글 작성자에게 (본인이 아닐 때만)
     if (postData && postData.author && postData.author.uid !== data.author.uid) {
       await createNotification({
         recipientId: postData.author.uid,

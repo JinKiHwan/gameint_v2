@@ -90,12 +90,12 @@
         <button class="btn btn--text text-grey-2 font-bold" @click="router.push('/recommend')">전체보기</button>
       </div>
 
-      <div class="scroll-x gap-6 py-2">
-        <div v-if="boardLoading" v-for="i in 3" :key="`skel-book-${i}`" class="card book-card-skeleton">
-          <div class="skeleton" style="height: 100%; border-radius: 16px;"></div>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-2">
+        <div v-if="boardLoading" v-for="i in 3" :key="`skel-book-${i}`" class="card book-card-skeleton" style="width: 100%;">
+          <div class="skeleton" style="height: 180px; border-radius: 16px;"></div>
         </div>
         
-        <div v-else-if="latestRecommendations.length > 0" v-for="post in latestRecommendations" :key="post.id" class="card book-card hover-shadow" @click="router.push(`/board/${post.id}`)">
+        <div v-else-if="latestRecommendations.length > 0" v-for="post in latestRecommendations" :key="post.id" class="card book-card hover-shadow" style="width: 100%;" @click="router.push(`/board/${post.id}`)">
           <div class="card-body flex flex-col h-full">
             <div class="flex justify-between items-start mb-4">
               <span class="chip chip--blue-lt">{{ post.bookGenre || '도서 추천' }}</span>
@@ -121,63 +121,46 @@
           </div>
         </div>
 
-        <div v-else-if="!boardLoading" class="card w-full pa-10 text-center border-dashed">
+        <div v-else-if="!boardLoading" class="card w-full pa-10 text-center border-dashed lg:col-span-3">
           <p class="text-body-2 text-grey-3">최근 등록된 추천 도서가 없습니다.</p>
         </div>
       </div>
     </div>
 
-    <!-- 실시간 멤버 소식 (Restored & Fixed) -->
+    <!-- Reading DNA Showcase (Replaced Activity Feed) -->
     <div class="mb-12">
-      <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2 px-1">
-        💬 실시간 멤버 소식
+      <h3 class="text-h6 font-black text-grey-dark mb-6 flex items-center gap-2 px-1">
+        지능형 독서 진단, 당신의 독서 DNA는?
       </h3>
-      <div class="card shadow-sm border-0 overflow-hidden">
-        <ul class="list pa-0">
-          <template v-for="(activity, i) in activities" :key="activity.id">
-            <li class="list-item activity-item hover:bg-grey-50 transition-colors" @click="router.push(activity.link)">
-              <template v-for="user in [resolveUser(activity.uid)]" :key="'feed_user_' + activity.id">
-                <div class="avatar avatar--md border flex-shrink-0 mr-4" :class="getTierAvatarClass(user.tier)">
-                  <img :src="getProfileImagePath(user.profileImageId)" alt="profile" />
-                </div>
-                <div class="flex-grow min-w-0">
-                  <div class="text-body-2 text-grey-dark">
-                    <span class="font-black mr-1">{{ user.nickname }}</span>
-                    <span class="text-grey-2">{{ activity.type === 'POST' ? '님이 새로운 글을 남겼습니다.' : '님이 댓글을 작성했습니다.' }}</span>
-                  </div>
-                  <div class="text-caption font-bold text-primary-color mt-1 line-clamp-1 opacity-80">
-                    "{{ activity.targetTitle }}"
-                  </div>
-                  <div class="mt-2 text-[10px] text-grey-3 flex items-center gap-2">
-                    <span>{{ formatRelativeTime(activity.createdAt) }}</span>
-                  </div>
-                </div>
-                <div class="mdi mdi-chevron-right text-grey-300"></div>
-              </template>
-            </li>
-            <hr v-if="i !== activities.length - 1" class="divider mx-5" />
-          </template>
-
-          <li v-if="activities.length === 0 && !feedLoading" class="pa-12 text-center text-grey-3">
-            <div class="mdi mdi-chat-sleep mb-2 text-h4 opacity-20"></div>
-            <p class="text-body-2 mb-1">아직 활동 소식이 없습니다.</p>
-            <p class="text-[11px] opacity-70">새로운 게시글이나 댓글이 작성되면 여기에 표시됩니다!</p>
-          </li>
-
-          <li v-if="feedLoading" class="pa-10 text-center">
-            <div class="spinner spinner--sm"></div>
-          </li>
-        </ul>
+      <div class="card dna-showcase relative overflow-hidden">
+        <div class="dna-carousel-track" :style="{ transform: `translateX(-${dnaCurrentIndex * 100}%)` }">
+          <div v-for="dna in dnaTypes" :key="dna.type" class="dna-slide">
+             <div class="dna-slide-content">
+               <div class="dna-icon-wrap" :class="getDnaColorClass(dna.type)">
+                 <i :class="`mdi ${dna.icon}`"></i>
+               </div>
+               <div class="text-center">
+                 <div class="text-h5 font-black text-grey-dark mb-1">{{ dna.name }}</div>
+                 <p class="text-body-2 text-grey-2 font-medium opacity-80" style="max-width: 320px;">{{ dna.desc }}</p>
+               </div>
+             </div>
+          </div>
+        </div>
         
-        <div v-if="hasMore" class="card-footer border-t bg-grey-50/50 pa-0">
-          <button 
-            class="btn btn--text btn--block py-4 text-grey-2 font-bold hover:text-primary-color transition-colors"
-            @click="fetchActivities(5, true)"
-          >
-            활동 더보기 ({{ activities.length }}/20)
-          </button>
+        <!-- Indicator dots (Simplified) -->
+        <div class="dna-dots">
+          <div v-for="(_, i) in dnaTypes" :key="i" class="dot" :class="{ 'active': i === dnaCurrentIndex }" @click="dnaCurrentIndex = i"></div>
         </div>
       </div>
+    </div>
+
+    <!-- Telegram Contact Button -->
+    <div class="mb-16 text-center py-6">
+      <p class="text-caption text-grey-2 mb-4 font-bold">동호회 가입이나 궁금한 점이 있으신가요? 👋</p>
+      <a href="https://t.me/asp367" target="_blank" class="telegram-btn btn--indigo">
+        <i class="mdi mdi-telegram text-h5"></i>
+        <span class="font-black ml-2">가입문의 @asp367</span>
+      </a>
     </div>
   </div>
 </template>
@@ -188,7 +171,6 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useCycle } from '~/composables/useCycle'
 import { useBoard } from '~/composables/useBoard'
-import { useActivityFeed } from '~/composables/useActivityFeed'
 import { useUserMapper } from '~/composables/useUserMapper'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 
@@ -196,37 +178,58 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { fetchActiveCycle, fetchMyParticipation, fetchParticipants, loading: cycleLoading } = useCycle()
 const { fetchPosts, loading: boardLoading } = useBoard()
-const { activities, loading: feedLoading, hasMore, fetchActivities } = useActivityFeed()
-const { resolveUser } = useUserMapper()
-
 const activeCycle = ref(null)
 const myParticipation = ref(null)
 const latestRecommendations = ref([])
 
+// DNA 데이터 & 상태
+const dnaCurrentIndex = ref(0)
+const dnaTypes = [
+  { type: 'IE', name: '인간 문학가', desc: '사람의 감정과 삶의 서사에 깊이 몰입하는 독서가', icon: 'mdi-human-greeting' },
+  { type: 'IK', name: '세계관 설계자', desc: '지식의 구조를 파악하고 새로운 세계를 상상하는 독서가', icon: 'mdi-pillar' },
+  { type: 'IG', name: '인생 서사형', desc: '자신의 삶을 한 편의 예술처럼 가꾸는 독서가', icon: 'mdi-book-open-page-variant' },
+  { type: 'KE', name: '철학 탐험가', desc: '세상의 근원적인 원리와 지혜를 탐구하는 독서가', icon: 'mdi-compass-rose' },
+  { type: 'KG', name: '전략적 사고가', desc: '실질적인 해법과 지식을 효율적으로 습득하는 독서가', icon: 'mdi-chess-knight' },
+  { type: 'KI', name: '스토리 분석가', desc: '이야기 속 숨겨진 의미와 구조를 파악하는 독서가', icon: 'mdi-magnify-scan' },
+  { type: 'EE', name: '감성 기록자', desc: '책을 통해 느끼는 감정을 소중히 기록하는 독서가', icon: 'mdi-feather' },
+  { type: 'EK', name: '예술 사색가', desc: '아름다운 문장과 예술적 영감을 즐기는 독서가', icon: 'mdi-palette' },
+  { type: 'EG', name: '인생 탐색가', desc: '다양한 경험과 지식을 통해 자신을 찾아가는 독서가', icon: 'mdi-map-marker-path' },
+  { type: 'GK', name: '인생 전략가', desc: '지식을 바탕으로 더 나은 미래를 설계하는 독서가', icon: 'mdi-trending-up' },
+  { type: 'GE', name: '자기 탐구자', desc: '내면의 목소리에 귀를 기울이고 성장하는 독서가', icon: 'mdi-head-heart' },
+  { type: 'GG', name: '목표 설계자', desc: '뚜렷한 목적을 가지고 지식을 습득하고 실천하는 독서가', icon: 'mdi-target' },
+  { type: 'KK', name: '지식 수집가', desc: '폭넓은 분야의 깊이 있는 지식을 쌓는 것에 즐거움을 느끼는 독서가', icon: 'mdi-database' },
+  { type: 'II', name: '몰입 독서가', desc: '한 권의 책에 깊이 빠져들어 작가의 의도와 하나가 되는 독서가', icon: 'mdi-focus-field' },
+  { type: 'BALANCED', name: '균형 독서가', desc: '다양한 분야를 골고루 섭렵하며 균형 잡힌 시각을 가진 독서가', icon: 'mdi-scale-balance' },
+]
+
+let dnaTimer = null
+
 onMounted(async () => {
-  // 1. 사이클 데이터 로드 (활성 사이클 & 참여 여부)
+  // 1. 사이클 데이터 로드
   activeCycle.value = await fetchActiveCycle()
   
   if (activeCycle.value) {
-    // 하위 호환성용: 참여자 수 동기화
     if (!activeCycle.value.participantCount || activeCycle.value.participantCount === 0) {
       const p = await fetchParticipants(activeCycle.value.id)
-      if (p.length > 0) {
-        activeCycle.value.participantCount = p.length
-      }
+      if (p.length > 0) activeCycle.value.participantCount = p.length
     }
-
     if (authStore.isLoggedIn) {
       myParticipation.value = await fetchMyParticipation(activeCycle.value.id)
     }
   }
 
-  // 2. 최신 추천 도서 로드 (3개)
+  // 2. 최신 추천 도서 로드
   const posts = await fetchPosts('도서 추천')
   latestRecommendations.value = (posts || []).slice(0, 3)
 
-  // 3. 활동 피드 초기 로드
-  await fetchActivities(5)
+  // 3. DNA 캐러셀 타이머
+  dnaTimer = setInterval(() => {
+    dnaCurrentIndex.value = (dnaCurrentIndex.value + 1) % dnaTypes.length
+  }, 4000)
+})
+
+onBeforeUnmount(() => {
+  if (dnaTimer) clearInterval(dnaTimer)
 })
 
 watch(() => authStore.user, async (newUser) => {
@@ -278,6 +281,18 @@ const getHeroFallbackClass = (i) => {
   const classes = ['avatar--blue', 'avatar--amber', 'avatar--cyan', 'avatar--indigo']
   return classes[i % classes.length]
 }
+
+const getDnaColorClass = (type) => {
+  if (type.includes('I')) return 'dna-blue'
+  if (type.includes('K')) return 'dna-indigo'
+  if (type.includes('G')) return 'dna-amber'
+  if (type.includes('E')) return 'dna-cyan'
+  return 'dna-grey'
+}
+</script>
+
+<script>
+import { onBeforeUnmount } from 'vue'
 </script>
 
 <style scoped>
@@ -355,28 +370,100 @@ const getHeroFallbackClass = (i) => {
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
 
-.activity-item { 
-  padding: 20px 24px; 
-  align-items: center; 
-  cursor: pointer;
+.dna-showcase {
+  height: 280px;
+  background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
+  border: 1px solid #edf0ff;
 }
-
-.scroll-x {
+.dna-carousel-track {
   display: flex;
+  height: 100%;
+  transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.dna-slide {
+  flex: 0 0 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 20px;
+}
+.dna-slide-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+.dna-icon-wrap {
+  width: 80px;
+  height: 80px;
+  border-radius: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.8rem;
+  box-shadow: 0 12px 24px rgba(0,0,0,0.06);
+}
+.dna-dots {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 6px;
+  max-width: 90%;
   overflow-x: auto;
-  padding-bottom: 8px;
-  &::-webkit-scrollbar { height: 4px; }
-  &::-webkit-scrollbar-thumb { background: #E0E0E0; border-radius: 10px; }
+  padding: 4px;
+  &::-webkit-scrollbar { display: none; }
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: #e0e0e0;
+  transition: all 0.3s;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.dot.active {
+  width: 20px;
+  background: #3949ab;
 }
 
-.mb-4 { margin-bottom: 16px; }
-.mb-10 { margin-bottom: 40px; }
-.mb-12 { margin-bottom: 48px; }
-.mr-4 { margin-right: 16px; }
-.mt-1 { margin-top: 4px; }
-.mt-2 { margin-top: 8px; }
-.pa-0 { padding: 0 !important; }
-.pa-10 { padding: 40px !important; }
-.pa-12 { padding: 48px !important; }
+.telegram-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 48px;
+  background: #3949ab;
+  color: white;
+  border-radius: 20px;
+  text-decoration: none;
+  box-shadow: 0 10px 30px rgba(57, 73, 171, 0.3);
+  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  &:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(57, 73, 171, 0.4);
+    background: #303f9f;
+  }
+}
+
+/* DNA Color Classes */
+.dna-blue { background: #E3F2FD; color: #1E88E5; }
+.dna-amber { background: #FFF8E1; color: #FFB300; }
+.dna-cyan { background: #E0F7FA; color: #00ACC1; }
+.dna-indigo { background: #E8EAF6; color: #3949AB; }
+.dna-grey { background: #F5F5F5; color: #757575; }
+
+.mb-16 { margin-bottom: 64px; }
 .gap-6 { gap: 24px; }
+.grid { display: grid; }
+.grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+@media (min-width: 768px) {
+  .md\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 960px) {
+  .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .lg\:col-span-3 { grid-column: span 3 / span 3; }
+}
 </style>
