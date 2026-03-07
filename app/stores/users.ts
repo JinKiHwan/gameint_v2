@@ -8,6 +8,11 @@ export interface UserProfile {
     tier?: string
     level?: number
     status?: string
+    exp?: number
+    dna?: {
+        dnaName?: string
+        scores?: Record<string, number>
+    }
 }
 
 export const useUsersStore = defineStore('users', {
@@ -37,7 +42,9 @@ export const useUsersStore = defineStore('users', {
                         profileImageId: data.profileImageId,
                         tier: data.tier,
                         level: data.level,
-                        status: data.status
+                        status: data.status,
+                        exp: data.exp,
+                        dna: data.dna
                     }
                 })
                 this.isInitialized = true
