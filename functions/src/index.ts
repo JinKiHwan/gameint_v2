@@ -131,9 +131,9 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
 
 
 /**
- * 3. 트리거: 게시글 작성 시 (도서 추천 vs 일반)
+ * 3. 트리거: 게시글 작성 시 (마일리지, DNA, 활동 피드 통합)
  */
-export const onPostCreateMerged = functions
+export const onPostCreate = functions
   .region("asia-northeast3")
   .firestore.document("posts/{postId}")
   .onCreate(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
@@ -143,8 +143,18 @@ export const onPostCreateMerged = functions
     // 1. 경험치 보상 & DNA 증분 업데이트 호출
     const action = data.category === '도서 추천' ? 'POST_RECOMMEND' : 'POST_GENERAL';
     const genre = data.bookGenre || (data.category === '도서 추천' ? '자기계발' : null);
-
     await rewardExp(data.author.uid, action, undefined, genre);
+
+    // 2. 전역 피드 추가 (Global Activity Feed)
+    await db.collection("activities").add({
+      type: 'POST',
+      uid: data.author.uid,
+      contentSummary: data.content?.replace(/<[^>]*>/g, '').substring(0, 100) || "", // HTML 태그 제거 후 요약
+      link: `/board/${context.params.postId}`,
+      targetTitle: data.title || "새로운 게시글",
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
     return null;
   });
 
@@ -159,9 +169,14 @@ export const onCommentCreate = functions
     const data = snapshot.data();
     if (!data || !data.author || !data.author.uid) return null;
 
+    // 1. 경험치 보상
     await rewardExp(data.author.uid, 'COMMENT');
 
-    // ── 전역 피드 추가 (Global Activity Feed) ───────────────────
+    // 2. 게시글 정보 조회 (알림 및 피드용)
+    const postSnap = await db.collection("posts").doc(context.params.postId).get();
+    const postData = postSnap.data();
+
+    // 3. 전역 피드 추가 (Global Activity Feed)
     await db.collection("activities").add({
       type: 'COMMENT',
       uid: data.author.uid,
@@ -171,9 +186,7 @@ export const onCommentCreate = functions
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // 알림: 게시글 작성자에게
-    const postSnap = await db.collection("posts").doc(context.params.postId).get();
-    const postData = postSnap.data();
+    // 4. 알림: 게시글 작성자에게 (본인이 아닐 때만)
     if (postData && postData.author && postData.author.uid !== data.author.uid) {
       await createNotification({
         recipientId: postData.author.uid,
@@ -187,35 +200,6 @@ export const onCommentCreate = functions
     return null;
   });
 
-return null;
-  });
-
-/**
- * 트리거: 게시글 작성 시
- */
-export const onPostCreate = functions
-  .region("asia-northeast3")
-  .firestore.document("posts/{postId}")
-  .onCreate(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
-    const data = snapshot.data();
-    if (!data || !data.author || !data.author.uid) return null;
-
-    // 경험치 지급 (카테고리에 따라 차등 가능하지만 기본 POST_GENERAL)
-    const action = data.category === '도서 추천' ? 'POST_RECOMMEND' : 'POST_GENERAL';
-    await rewardExp(data.author.uid, action);
-
-    // ── 전역 피드 추가 (Global Activity Feed) ───────────────────
-    await db.collection("activities").add({
-      type: 'POST',
-      uid: data.author.uid,
-      contentSummary: data.content?.replace(/<[^>]*>/g, '').substring(0, 100) || "", // HTML 태그 제거 후 요약
-      link: `/board/${context.params.postId}`,
-      targetTitle: data.title || "새로운 게시글",
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    return null;
-  });
 
 /**
  * 5. 트리거: 좋아요 발생 시 (게시글 작성자에게 보상)

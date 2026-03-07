@@ -104,7 +104,7 @@
             </div>
             
             <p class="text-body-2 text-grey-2 line-clamp-2 mb-0 opacity-80" style="min-height: 3em;">
-              {{ post.content }}
+              {{ post.content?.replace(/<[^>]*>/g, '') }}
             </p>
           </div>
         </div>
@@ -115,68 +115,55 @@
       </div>
     </div>
 
-    <!-- 커뮤니티 대시보드 (활동 피드 대체) -->
+    <!-- 실시간 멤버 소식 (Restored & Fixed) -->
     <div class="mb-12">
-      <div class="flex flex-col lg:flex-row gap-8">
-        <!-- 🏆 명예의 전당 (실시간 랭킹 요약) -->
-        <div class="flex-grow">
-          <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2 px-1">
-            🏆 이달의 명예의 전당
-          </h3>
-          <div class="card shadow-sm border-0 pa-6 h-full">
-            <div v-if="rankingLoading" class="flex flex-col gap-4">
-              <div v-for="i in 3" :key="i" class="skeleton" style="height: 60px; border-radius: 12px;"></div>
-            </div>
-            <div v-else class="flex flex-col gap-5">
-              <div v-for="(user, idx) in topRankers" :key="user.uid" class="flex items-center gap-4 group">
-                <div class="rank-num" :class="`rank-${idx+1}`">{{ idx + 1 }}</div>
-                <div class="avatar avatar--md" :class="getTierAvatarClass(user.tier)">
+      <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2 px-1">
+        💬 실시간 멤버 소식
+      </h3>
+      <div class="card shadow-sm border-0 overflow-hidden">
+        <ul class="list pa-0">
+          <template v-for="(activity, i) in activities" :key="activity.id">
+            <li class="list-item activity-item hover:bg-grey-50 transition-colors" @click="router.push(activity.link)">
+              <template v-for="user in [resolveUser(activity.uid)]" :key="'feed_user_' + activity.id">
+                <div class="avatar avatar--md border flex-shrink-0 mr-4" :class="getTierAvatarClass(user.tier)">
                   <img :src="getProfileImagePath(user.profileImageId)" alt="profile" />
                 </div>
                 <div class="flex-grow min-w-0">
-                  <div class="flex justify-between items-end mb-1">
-                    <span class="text-body-2 font-black text-grey-dark">{{ user.nickname }}</span>
-                    <span class="text-[10px] text-grey-2 font-bold">{{ user.exp }} EXP</span>
+                  <div class="text-body-2 text-grey-dark">
+                    <span class="font-black mr-1">{{ user.nickname }}</span>
+                    <span class="text-grey-2">{{ activity.type === 'POST' ? '님이 새로운 글을 남겼습니다.' : '님이 댓글을 작성했습니다.' }}</span>
                   </div>
-                  <div class="progress-bar-bg">
-                    <div class="progress-bar-fill" :class="`fill-${idx+1}`" :style="{width: `${Math.min(100, (user.exp / 1000) * 100)}%`}"></div>
+                  <div class="text-caption font-bold text-primary-color mt-1 line-clamp-1 opacity-80">
+                    "{{ activity.targetTitle }}"
+                  </div>
+                  <div class="mt-2 text-[10px] text-grey-3 flex items-center gap-2">
+                    <span>{{ formatRelativeTime(activity.createdAt) }}</span>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
+                <div class="mdi mdi-chevron-right text-grey-300"></div>
+              </template>
+            </li>
+            <hr v-if="i !== activities.length - 1" class="divider mx-5" />
+          </template>
 
-        <!-- ⚡ 퀵 액션 & 내 상태 -->
-        <div class="lg:w-[320px]">
-          <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2 px-1">
-            ⚡ 퀵 링크
-          </h3>
-          <div class="flex flex-col gap-4">
-            <button class="action-card action-card--primary" @click="router.push('/write')">
-              <div class="action-card__icon"><i class="mdi mdi-pencil-plus"></i></div>
-              <div class="text-left">
-                <div class="text-body-2 font-black">추천글 작성</div>
-                <div class="text-[10px] opacity-80">좋은 책을 동료에게 추천하세요</div>
-              </div>
-            </button>
-            <button class="action-card action-card--secondary" @click="router.push('/cycles')">
-              <div class="action-card__icon"><i class="mdi mdi-book-open-page-variant"></i></div>
-              <div class="text-left">
-                <div class="text-body-2 font-black">독서 리뷰 쓰기</div>
-                <div class="text-[10px] opacity-80">이번 사이클 리뷰를 남겨보세요</div>
-              </div>
-            </button>
-            <div v-if="authStore.isLoggedIn" class="card shadow-sm border-0 pa-5 mt-2 bg-primary-lt">
-              <div class="text-caption font-bold text-primary-color mb-1">내 성장 목표</div>
-              <div class="text-body-2 font-black text-grey-dark mb-3">
-                다음 티어까지 {{ 1000 - (authStore.userData?.exp % 1000 || 0) }} EXP 남음!
-              </div>
-              <div class="progress-bar-bg" style="height: 6px;">
-                <div class="progress-bar-fill" :style="{width: `${(authStore.userData?.exp % 1000 || 0) / 10}%`}"></div>
-              </div>
-            </div>
-          </div>
+          <li v-if="activities.length === 0 && !feedLoading" class="pa-12 text-center text-grey-3">
+            <div class="mdi mdi-chat-sleep mb-2 text-h4 opacity-20"></div>
+            <p class="text-body-2 mb-1">아직 활동 소식이 없습니다.</p>
+            <p class="text-[11px] opacity-70">새로운 게시글이나 댓글이 작성되면 여기에 표시됩니다!</p>
+          </li>
+
+          <li v-if="feedLoading" class="pa-10 text-center">
+            <div class="spinner spinner--sm"></div>
+          </li>
+        </ul>
+        
+        <div v-if="hasMore" class="card-footer border-t bg-grey-50/50 pa-0">
+          <button 
+            class="btn btn--text btn--block py-4 text-grey-2 font-bold hover:text-primary-color transition-colors"
+            @click="fetchActivities(5, true)"
+          >
+            활동 더보기 ({{ activities.length }}/20)
+          </button>
         </div>
       </div>
     </div>
@@ -189,7 +176,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useCycle } from '~/composables/useCycle'
 import { useBoard } from '~/composables/useBoard'
-import { useRanking } from '~/composables/useRanking'
+import { useActivityFeed } from '~/composables/useActivityFeed'
 import { useUserMapper } from '~/composables/useUserMapper'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 
@@ -197,19 +184,19 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { fetchActiveCycle, fetchMyParticipation, fetchParticipants, loading: cycleLoading } = useCycle()
 const { fetchPosts, loading: boardLoading } = useBoard()
-const { fetchTopUsersByExp, loading: rankingLoading } = useRanking()
+const { activities, loading: feedLoading, hasMore, fetchActivities } = useActivityFeed()
 const { resolveUser } = useUserMapper()
 
 const activeCycle = ref(null)
 const myParticipation = ref(null)
 const latestRecommendations = ref([])
-const topRankers = ref([])
 
 onMounted(async () => {
-  // 1. 사이클 데이터 로드
+  // 1. 사이클 데이터 로드 (활성 사이클 & 참여 여부)
   activeCycle.value = await fetchActiveCycle()
   
   if (activeCycle.value) {
+    // 하위 호환성용: 참여자 수 동기화
     if (!activeCycle.value.participantCount || activeCycle.value.participantCount === 0) {
       const p = await fetchParticipants(activeCycle.value.id)
       if (p.length > 0) {
@@ -226,8 +213,8 @@ onMounted(async () => {
   const posts = await fetchPosts('도서 추천')
   latestRecommendations.value = (posts || []).slice(0, 3)
 
-  // 3. 랭킹 데이터 로드 (TOP 3)
-  topRankers.value = await fetchTopUsersByExp(3)
+  // 3. 활동 피드 초기 로드
+  await fetchActivities(5)
 })
 
 watch(() => authStore.user, async (newUser) => {
@@ -258,6 +245,21 @@ const formatDate = (timestamp) => {
   const M = String(date.getMonth() + 1).padStart(2, '0')
   const D = String(date.getDate()).padStart(2, '0')
   return `${Y}.${M}.${D}`
+}
+
+const formatRelativeTime = (timestamp) => {
+  if (!timestamp) return ''
+  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+  const diff = Date.now() - date.getTime()
+  
+  const minutes = Math.floor(diff / (1000 * 60))
+  if (minutes < 1) return '방금 전'
+  if (minutes < 60) return `${minutes}분 전`
+  
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  if (hours < 24) return `${hours}시간 전`
+  
+  return formatDate(timestamp)
 }
 </script>
 
@@ -336,32 +338,10 @@ const formatDate = (timestamp) => {
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
 
-.rank-num {
-  width: 24px; height: 24px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 12px; font-weight: 900; color: #fff; background: #BDC3C7;
-}
-.rank-1 { background: #F1C40F; box-shadow: 0 0 12px rgba(241,196,15,0.4); }
-.rank-2 { background: #BDC3C7; }
-.rank-3 { background: #E67E22; }
-
-.progress-bar-bg { width: 100%; height: 8px; background: #f0f0f0; border-radius: 10px; overflow: hidden; }
-.progress-bar-fill { height: 100%; border-radius: 10px; transition: width 1s ease-out; }
-.fill-1 { background: linear-gradient(90deg, #F1C40F, #F39C12); }
-.fill-2 { background: linear-gradient(90deg, #BDC3C7, #95A5A6); }
-.fill-3 { background: linear-gradient(90deg, #E67E22, #D35400); }
-
-.action-card {
-  display: flex; align-items: center; gap: 16px; width: 100%; padding: 16px 20px;
-  border-radius: 18px; border: 0; cursor: pointer; transition: all 0.2s;
-  color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-.action-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
-.action-card--primary { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
-.action-card--secondary { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); }
-.action-card__icon { 
-  width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.2);
-  display: flex; align-items: center; justify-content: center; font-size: 20px;
+.activity-item { 
+  padding: 20px 24px; 
+  align-items: center; 
+  cursor: pointer;
 }
 
 .scroll-x {
@@ -375,7 +355,11 @@ const formatDate = (timestamp) => {
 .mb-4 { margin-bottom: 16px; }
 .mb-10 { margin-bottom: 40px; }
 .mb-12 { margin-bottom: 48px; }
-.pa-6 { padding: 24px !important; }
-.bg-primary-lt { background: #eef2ff !important; }
-.text-primary-color { color: #4f46e5 !important; }
+.mr-4 { margin-right: 16px; }
+.mt-1 { margin-top: 4px; }
+.mt-2 { margin-top: 8px; }
+.pa-0 { padding: 0 !important; }
+.pa-10 { padding: 40px !important; }
+.pa-12 { padding: 48px !important; }
+.gap-6 { gap: 24px; }
 </style>
