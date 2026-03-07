@@ -10,6 +10,8 @@ onMounted(() => {
 
 <template>
   <div id="app">
+    <div class="gradient-bg">
+    </div>
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
