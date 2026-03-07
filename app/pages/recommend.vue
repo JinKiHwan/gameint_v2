@@ -78,7 +78,7 @@
           <hr class="divider mt-auto mb-3" />
           <div class="flex items-center justify-between text-caption">
             <div class="flex items-center gap-2">
-              <template v-let="author = resolveUser(post.author?.uid, post.author)">
+              <template v-for="author in [resolveUser(post.author?.uid, post.author)]" :key="'rec_author_' + post.id">
                 <img :src="getProfileImagePath(author.profileImageId)" alt="프로필" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" />
                 <span class="font-bold text-grey-3 text-truncate" style="max-width:80px;">{{ author.nickname }}</span>
               </template>

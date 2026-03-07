@@ -37,7 +37,7 @@
           <div class="podium">
             <!-- 2위 -->
             <div v-if="topUsers[1]" class="podium-item podium-item--2nd">
-              <template v-let="u = resolveUser(topUsers[1].uid, topUsers[1])">
+              <template v-for="u in [resolveUser(topUsers[1].uid, topUsers[1])]" :key="'rank_2'">
                 <div class="podium-item__rank">2</div>
                 <div class="podium-avatar-wrap">
                   <img :src="getProfileImagePath(u.profileImageId)" class="podium-avatar" alt="2nd profile" />
@@ -56,7 +56,7 @@
 
             <!-- 1위 -->
             <div v-if="topUsers[0]" class="podium-item podium-item--1st">
-              <template v-let="u = resolveUser(topUsers[0].uid, topUsers[0])">
+              <template v-for="u in [resolveUser(topUsers[0].uid, topUsers[0])]" :key="'rank_1'">
                 <div class="podium-item__rank">
                   <i class="mdi mdi-crown text-amber-400"></i>
                 </div>
@@ -77,7 +77,7 @@
 
             <!-- 3위 -->
             <div v-if="topUsers[2]" class="podium-item podium-item--3rd">
-              <template v-let="u = resolveUser(topUsers[2].uid, topUsers[2])">
+              <template v-for="u in [resolveUser(topUsers[2].uid, topUsers[2])]" :key="'rank_3'">
                 <div class="podium-item__rank">3</div>
                 <div class="podium-avatar-wrap">
                   <img :src="getProfileImagePath(u.profileImageId)" class="podium-avatar" alt="3rd profile" />
@@ -106,7 +106,7 @@
             </div>
             <div v-for="(user, index) in topUsers.slice(3)" :key="user.uid" class="ranking-item flex items-center px-6 py-4 border-b last:border-0 hover:bg-grey-50 transition-colors">
               <div class="w-12 text-center font-bold text-grey-dark">{{ index + 4 }}위</div>
-              <template v-let="u = resolveUser(user.uid, user)">
+              <template v-for="u in [resolveUser(user.uid, user)]" :key="'rank_' + user.uid">
                 <div class="flex items-center flex-grow ml-4 min-w-0">
                   <div class="avatar avatar--sm flex-shrink-0">
                     <img :src="getProfileImagePath(u.profileImageId)" alt="profile" />
@@ -134,7 +134,7 @@
           <div class="my-rank-num">
             {{ userRank > 0 ? `${userRank}위` : '-' }}
           </div>
-          <template v-let="me = resolveUser(authStore.userData.uid, authStore.userData)">
+          <template v-for="me in [resolveUser(authStore.userData.uid, authStore.userData)]" :key="'my_rank_sticky'">
             <div class="flex items-center gap-3">
               <div class="avatar avatar--xs">
                 <img :src="getProfileImagePath(me.profileImageId)" alt="my profile" />

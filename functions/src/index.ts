@@ -54,7 +54,7 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
   const today = getKstDate();
 
   try {
-    await db.runTransaction(async (transaction) => {
+    await db.runTransaction(async (transaction: admin.firestore.Transaction) => {
       const userDoc = await transaction.get(userRef);
       if (!userDoc.exists) {
         console.warn(`[rewardExp] User document not found for userId: ${userId}`);
@@ -311,7 +311,7 @@ async function handleCycleNotification(cycleId: string, before: any, after: any)
 export const onCycleCreate = functions
   .region("asia-northeast3")
   .firestore.document("cycles/{cycleId}")
-  .onCreate(async (snapshot, context) => {
+  .onCreate(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
     const data = snapshot.data();
     await handleCycleNotification(context.params.cycleId, null, data);
     return null;
@@ -334,7 +334,7 @@ export const onCycleUpdate = functions
 export const onUserScoresUpdate = functions
   .region("asia-northeast3")
   .firestore.document("users/{userId}")
-  .onUpdate(async (change) => {
+  .onUpdate(async (change: functions.Change<admin.firestore.DocumentSnapshot>) => {
     const after: any = change.after.data();
     if (!after) return null;
 

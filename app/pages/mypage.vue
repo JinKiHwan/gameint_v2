@@ -272,7 +272,7 @@
 
         <ul v-else class="list pa-0">
           <template v-for="(u_raw, index) in filteredUsers" :key="u_raw.uid">
-            <template v-let="u = resolveUser(u_raw.uid, u_raw)">
+            <template v-for="u in [resolveUser(u_raw.uid, u_raw)]" :key="u_raw.uid">
               <li class="list-item flex items-center gap-3 py-3">
                 <div class="avatar avatar--sm">
                   <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />

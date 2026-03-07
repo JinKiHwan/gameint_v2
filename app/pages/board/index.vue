@@ -97,7 +97,7 @@
               </div>
               <div class="flex items-center gap-3 text-caption font-medium text-grey-2">
                 <div class="flex items-center gap-1 font-bold text-grey-3">
-                  <template v-let="author = resolveUser(post.author?.uid, post.author)">
+                  <template v-for="author in [resolveUser(post.author?.uid, post.author)]" :key="post.id + '_author'">
                     <img :src="getProfileImagePath(author.profileImageId)" alt="프로필" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;" />
                     <span>{{ author.nickname }}</span>
                   </template>

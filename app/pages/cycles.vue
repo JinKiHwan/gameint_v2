@@ -211,7 +211,7 @@
                     <img v-if="p.book?.thumbnail" :src="p.book.thumbnail" class="master-book-thumb" alt="표지" />
                     <div v-else class="master-book-thumb-placeholder"><i class="mdi mdi-book"></i></div>
                     <div class="min-w-0">
-                      <template v-let="u = resolveUser(p.uid, p)">
+                      <template v-for="u in [resolveUser(p.uid, p)]" :key="'master_sel_' + p.uid">
                         <div class="text-subtitle-2 font-black text-grey-dark line-clamp-1">{{ p.book?.title }}</div>
                         <div class="text-caption text-grey-2">@{{ u.nickname }}</div>
                       </template>
@@ -249,7 +249,7 @@
                 :key="p.uid"
                 class="master-review-item"
               >
-                <template v-let="u = resolveUser(p.uid, p)">
+                <template v-for="u in [resolveUser(p.uid, p)]" :key="'master_rev_' + p.uid">
                   <div class="avatar avatar--xs">
                     <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
                   </div>
@@ -391,7 +391,7 @@
                 <div class="text-subtitle-2 font-black text-grey-dark line-clamp-2 mb-1">{{ p.book?.title }}</div>
                 <div class="text-caption text-grey-2 font-medium mb-2">{{ p.book?.authors?.join(', ') }}</div>
                 <div class="flex items-center gap-2 mb-3">
-                  <template v-let="u = resolveUser(p.uid, p)">
+                  <template v-for="u in [resolveUser(p.uid, p)]" :key="'part_' + p.uid">
                     <div class="avatar avatar--xs">
                       <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
                     </div>
@@ -435,7 +435,7 @@
             >
               <div class="card-body">
                 <div class="flex items-center gap-3 mb-3">
-                  <template v-let="u = resolveUser(r.authorUid, r)">
+                  <template v-for="u in [resolveUser(r.authorUid, r)]" :key="'rev_list_' + r.id">
                     <div class="avatar avatar--sm">
                       <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
                     </div>

@@ -33,7 +33,7 @@
 
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <template v-let="author = resolveUser(post.author.uid, post.author)">
+              <template v-for="author in [resolveUser(post.author.uid, post.author)]" :key="'author_' + post.id">
                 <div class="avatar avatar--sm border bg-white">
                   <img :src="getProfileImagePath(author.profileImageId)" alt="프로필" />
                 </div>
@@ -108,7 +108,7 @@
             </div>
             <div class="flex-grow">
               <div class="flex justify-between items-center mb-1">
-                <template v-let="cAuthor = resolveUser(comment.author.uid, comment.author)">
+                <template v-for="cAuthor in [resolveUser(comment.author.uid, comment.author)]" :key="'comm_' + comment.id">
                   <div class="flex items-center gap-2">
                     <span class="text-subtitle-2 font-bold text-grey-dark">{{ cAuthor.nickname }}</span>
                     <span class="text-caption text-grey-2">{{ formatDate(comment.createdAt) }}</span>
