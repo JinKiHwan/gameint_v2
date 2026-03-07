@@ -30,11 +30,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
   // ── Pending User Protection ──
   // If logged in but status is 'pending', only allow access to the home page ('/')
-  // This prevents direct URL access to internal pages like /cycles, /board, etc.
   const authStore = useAuthStore()
+  const isMasterPage = to.path.startsWith('/admin') // Or any other master-only routes
+
   if (auth.currentUser && !isMasterPage) {
-    // We need to check userData which is fetched in initAuth (App.vue)
-    // For pending users, we only allow='/' and logout (done via home page)
     if (authStore.userData?.status === 'pending' && to.path !== '/') {
       return navigateTo('/')
     }
