@@ -103,18 +103,17 @@
         <!-- 댓글 목록 -->
         <div v-else class="mb-6">
           <div v-for="comment in comments" :key="comment.id" class="comment-row mb-4 pb-4 border-b">
-            <div class="avatar avatar--sm border bg-white" style="margin-top:4px;">
-              <img :src="getProfileImagePath(comment.author.profileImageId)" alt="프로필" />
-            </div>
-            <div class="flex-grow">
-              <div class="flex justify-between items-center mb-1">
-                <template v-for="cAuthor in [resolveUser(comment.author.uid, comment.author)]" :key="'comm_' + comment.id">
+            <template v-for="cAuthor in [resolveUser(comment.author.uid, comment.author)]" :key="'comm_' + comment.id">
+              <div class="avatar avatar--sm border bg-white" style="margin-top:4px;">
+                <img :src="getProfileImagePath(cAuthor.profileImageId)" alt="프로필" />
+              </div>
+              <div class="flex-grow">
+                <div class="flex justify-between items-center mb-1">
                   <div class="flex items-center gap-2">
                     <span class="text-subtitle-2 font-bold text-grey-dark">{{ cAuthor.nickname }}</span>
                     <span class="text-caption text-grey-2">{{ formatDate(comment.createdAt) }}</span>
                     <span v-if="comment.isEdited" class="text-caption text-grey-2 font-italic">(수정됨)</span>
                   </div>
-                </template>
                 <div v-if="authStore.user?.uid === comment.author.uid && editingCommentId !== comment.id" class="flex items-center gap-1">
                   <button class="btn btn--text btn--icon-sm" @click="startEditComment(comment)"><i class="mdi mdi-pencil"></i></button>
                   <button class="btn btn--text-danger btn--icon-sm" @click="handleDeleteComment(comment.id)"><i class="mdi mdi-close"></i></button>
@@ -132,8 +131,9 @@
 
               <!-- 일반 표시 -->
               <p v-else class="text-body-2 text-grey-3" style="white-space:pre-wrap;word-break:break-all;">{{ comment.content }}</p>
-            </div>
-          </div>
+                </div>
+              </div>
+            </template>
         </div>
 
         <!-- 댓글 입력창 -->
@@ -216,12 +216,42 @@ onMounted(async () => {
   if (postId) {
     post.value = await fetchPost(postId)
     if (post.value) {
-      incrementViewCount(postId)
+      // 조회수 어뷰징 방지: 24시간 내 동일 게시글 조회 시 쓰기 건너뜀
+      if (shouldIncrementView(postId)) {
+        incrementViewCount(postId)
+      }
       loadComments(postId)
       if (isLoggedIn.value) isLiked.value = await checkUserLiked(postId, authStore.user.uid)
     }
   }
 })
+
+const shouldIncrementView = (postId) => {
+  try {
+    const viewedPosts = JSON.parse(localStorage.getItem('viewed_posts') || '{}')
+    const now = new Date().getTime()
+    const lastViewed = viewedPosts[postId]
+    const DAY_MS = 24 * 60 * 60 * 1000
+
+    if (!lastViewed || (now - lastViewed) > DAY_MS) {
+      viewedPosts[postId] = now
+      
+      // 만료된 데이터 정리 (선택 사항: 과도한 localStorage 점유 방지)
+      const cleaned = {}
+      for (const id in viewedPosts) {
+        if (now - viewedPosts[id] < DAY_MS) cleaned[id] = viewedPosts[id]
+      }
+      cleaned[postId] = now
+      
+      localStorage.setItem('viewed_posts', JSON.stringify(cleaned))
+      return true
+    }
+  } catch (e) {
+    console.warn('localStorage error:', e)
+    return true // 에러 시에는 기본적으로 증가 허용
+  }
+  return false
+}
 
 const handleToggleLike = async () => {
   if (!isLoggedIn.value) { alert('로그인한 회원만 좋아요를 누를 수 있습니다.'); router.push('/login'); return }
