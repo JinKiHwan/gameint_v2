@@ -1,10 +1,15 @@
 import { ref } from 'vue'
-import { collection, query, orderBy, limit, startAfter, getDocs, QueryDocumentSnapshot } from 'firebase/firestore'
+import { collection, query, orderBy, limit, startAfter, getDocs, type QueryDocumentSnapshot } from 'firebase/firestore'
 import { useNuxtApp } from '#app'
 
 export const useActivityFeed = () => {
-    const { $firebase } = useNuxtApp()
-    const db = ($firebase as any).firestore
+    const nuxtApp = useNuxtApp()
+
+    const getDb = () => {
+        const fb = nuxtApp.$firebase as any
+        if (!fb) return null
+        return fb.firestore
+    }
 
     const activities = ref<any[]>([])
     const loading = ref(false)
@@ -20,6 +25,12 @@ export const useActivityFeed = () => {
         error.value = null
 
         try {
+            const db = getDb()
+            if (!db) {
+                // Not in client context or firebase not loaded
+                return
+            }
+
             const activitiesRef = collection(db, 'activities')
             let q = query(
                 activitiesRef,
@@ -55,7 +66,7 @@ export const useActivityFeed = () => {
                 activities.value = newActivities
             }
 
-            lastDoc.value = snapshot.docs[snapshot.docs.length - 1]
+            lastDoc.value = snapshot.docs[snapshot.docs.length - 1] as QueryDocumentSnapshot
 
             // 만약 가져온 개수가 요청한 개수보다 적으면 더 이상 데이터 없음
             if (snapshot.docs.length < pageSize) {
