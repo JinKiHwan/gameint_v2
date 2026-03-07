@@ -161,6 +161,16 @@ export const onCommentCreate = functions
 
     await rewardExp(data.author.uid, 'COMMENT');
 
+    // ── 전역 피드 추가 (Global Activity Feed) ───────────────────
+    await db.collection("activities").add({
+      type: 'COMMENT',
+      uid: data.author.uid,
+      contentSummary: data.content?.substring(0, 100) || "",
+      link: `/board/${context.params.postId}`,
+      targetTitle: postData?.title || "게시글",
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+
     // 알림: 게시글 작성자에게
     const postSnap = await db.collection("posts").doc(context.params.postId).get();
     const postData = postSnap.data();
@@ -173,6 +183,36 @@ export const onCommentCreate = functions
         link: `/board/${context.params.postId}`
       });
     }
+
+    return null;
+  });
+
+return null;
+  });
+
+/**
+ * 트리거: 게시글 작성 시
+ */
+export const onPostCreate = functions
+  .region("asia-northeast3")
+  .firestore.document("posts/{postId}")
+  .onCreate(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
+    const data = snapshot.data();
+    if (!data || !data.author || !data.author.uid) return null;
+
+    // 경험치 지급 (카테고리에 따라 차등 가능하지만 기본 POST_GENERAL)
+    const action = data.category === '도서 추천' ? 'POST_RECOMMEND' : 'POST_GENERAL';
+    await rewardExp(data.author.uid, action);
+
+    // ── 전역 피드 추가 (Global Activity Feed) ───────────────────
+    await db.collection("activities").add({
+      type: 'POST',
+      uid: data.author.uid,
+      contentSummary: data.content?.replace(/<[^>]*>/g, '').substring(0, 100) || "", // HTML 태그 제거 후 요약
+      link: `/board/${context.params.postId}`,
+      targetTitle: data.title || "새로운 게시글",
+      createdAt: admin.firestore.FieldValue.serverTimestamp()
+    });
 
     return null;
   });
@@ -400,5 +440,32 @@ export const onUserScoresUpdate = functions
       dnaTitle: dnaName
     }, { merge: true });
 
+    return null;
+  });
+return null;
+  });
+
+/**
+ * 9. 트리거: 사이클 참여자 증가/감소 시 카운터 업데이트
+ */
+export const onParticipantCreate = functions
+  .region("asia-northeast3")
+  .firestore.document("cycles/{cycleId}/participants/{uid}")
+  .onCreate(async (snapshot, context) => {
+    const cycleId = context.params.cycleId;
+    await db.collection("cycles").doc(cycleId).update({
+      participantCount: admin.firestore.FieldValue.increment(1)
+    });
+    return null;
+  });
+
+export const onParticipantDelete = functions
+  .region("asia-northeast3")
+  .firestore.document("cycles/{cycleId}/participants/{uid}")
+  .onDelete(async (snapshot, context) => {
+    const cycleId = context.params.cycleId;
+    await db.collection("cycles").doc(cycleId).update({
+      participantCount: admin.firestore.FieldValue.increment(-1)
+    });
     return null;
   });
