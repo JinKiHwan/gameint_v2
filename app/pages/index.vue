@@ -47,11 +47,23 @@
               <i class="mdi mdi-account-group"></i> 현재 {{ activeCycle.participantCount || 0 }}명 참여중
             </div>
             <div class="hero-avatars mb-5">
-              <div v-for="i in Math.min(activeCycle.participantCount || 0, 4)" :key="i" class="avatar avatar--sm avatar--grey avatar--stacked">
-                <i class="mdi mdi-account" style="font-size: 0.8rem;"></i>
-              </div>
-              <div v-if="(activeCycle.participantCount || 0) > 4" class="avatar avatar--sm avatar--white avatar--stacked">
-                <span class="text-blue-dark">+{{ (activeCycle.participantCount || 0) - 4 }}</span>
+              <template v-if="activeCycle.recentParticipantUids && activeCycle.recentParticipantUids.length > 0">
+                <div 
+                  v-for="(uid, idx) in activeCycle.recentParticipantUids" 
+                  :key="uid" 
+                  class="avatar avatar--sm avatar--stacked"
+                  :style="{ zIndex: 10 - idx }"
+                >
+                  <img :src="getProfileImagePath(resolveUser(uid).profileImageId)" alt="profile" />
+                </div>
+              </template>
+              <template v-else>
+                <div v-for="i in 3" :key="'mock-' + i" class="avatar avatar--sm avatar--stacked" :class="getHeroFallbackClass(i)">
+                  <i class="mdi mdi-account" style="font-size: 0.8rem;"></i>
+                </div>
+              </template>
+              <div v-if="(activeCycle.participantCount || 0) > (activeCycle.recentParticipantUids?.length || 0)" class="avatar avatar--sm avatar--white avatar--stacked">
+                <span class="text-blue-dark" style="font-size: 0.7rem;">+{{ (activeCycle.participantCount || 0) - (activeCycle.recentParticipantUids?.length || 0) }}</span>
               </div>
             </div>
             <button 
@@ -260,6 +272,11 @@ const formatRelativeTime = (timestamp) => {
   if (hours < 24) return `${hours}시간 전`
   
   return formatDate(timestamp)
+}
+
+const getHeroFallbackClass = (i) => {
+  const classes = ['avatar--blue', 'avatar--amber', 'avatar--cyan', 'avatar--indigo']
+  return classes[i % classes.length]
 }
 </script>
 

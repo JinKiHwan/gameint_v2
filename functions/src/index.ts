@@ -426,20 +426,38 @@ export const onUserScoresUpdate = functions
 
     return null;
   });
-return null;
-  });
 
 /**
- * 9. 트리거: 사이클 참여자 증가/감소 시 카운터 업데이트
+ * 9. 트리거: 사이클 참여자 증가/감소 시 카운터 업데이트 및 최근 참여자 목록 동기화
  */
 export const onParticipantCreate = functions
   .region("asia-northeast3")
   .firestore.document("cycles/{cycleId}/participants/{uid}")
   .onCreate(async (snapshot, context) => {
     const cycleId = context.params.cycleId;
-    await db.collection("cycles").doc(cycleId).update({
-      participantCount: admin.firestore.FieldValue.increment(1)
-    });
+    const uid = context.params.uid;
+
+    const cycleRef = db.collection("cycles").doc(cycleId);
+
+    try {
+      await db.runTransaction(async (t) => {
+        const cycleDoc = await t.get(cycleRef);
+        if (!cycleDoc.exists) return;
+
+        const data = cycleDoc.data() || {};
+        let recentUids = data.recentParticipantUids || [];
+
+        // 새 UID를 맨 앞에 추가 (중복 방지 및 5명 제한)
+        recentUids = [uid, ...recentUids.filter((id: string) => id !== uid)].slice(0, 5);
+
+        t.update(cycleRef, {
+          participantCount: admin.firestore.FieldValue.increment(1),
+          recentParticipantUids: recentUids
+        });
+      });
+    } catch (err) {
+      console.error(`[onParticipantCreate] Error updating cycle ${cycleId}:`, err);
+    }
     return null;
   });
 
@@ -448,8 +466,27 @@ export const onParticipantDelete = functions
   .firestore.document("cycles/{cycleId}/participants/{uid}")
   .onDelete(async (snapshot, context) => {
     const cycleId = context.params.cycleId;
-    await db.collection("cycles").doc(cycleId).update({
-      participantCount: admin.firestore.FieldValue.increment(-1)
-    });
+    const uid = context.params.uid;
+
+    const cycleRef = db.collection("cycles").doc(cycleId);
+
+    try {
+      await db.runTransaction(async (t) => {
+        const cycleDoc = await t.get(cycleRef);
+        if (!cycleDoc.exists) return;
+
+        const data = cycleDoc.data() || {};
+        let recentUids = data.recentParticipantUids || [];
+
+        recentUids = recentUids.filter((id: string) => id !== uid);
+
+        t.update(cycleRef, {
+          participantCount: admin.firestore.FieldValue.increment(-1),
+          recentParticipantUids: recentUids
+        });
+      });
+    } catch (err) {
+      console.error(`[onParticipantDelete] Error updating cycle ${cycleId}:`, err);
+    }
     return null;
   });

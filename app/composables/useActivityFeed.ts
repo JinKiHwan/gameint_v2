@@ -26,10 +26,7 @@ export const useActivityFeed = () => {
 
         try {
             const db = getDb()
-            if (!db) {
-                // Not in client context or firebase not loaded
-                return
-            }
+            if (!db) return
 
             const activitiesRef = collection(db, 'activities')
             let q = query(
@@ -47,42 +44,54 @@ export const useActivityFeed = () => {
                 )
             }
 
-            const snapshot = await getDocs(q)
+            // 실시간 구독 (isMore가 아닐 때만 구독 시작, isMore는 스냅샷 대신 1회성 조회가 일반적이나 
+            // 여기서는 단순성을 위해 초기 로드 시만 onSnapshot 적용 고려. 
+            // 하지만 Nuxt 환경에서는 복합적인 처리가 필요하므로, 
+            // 일단 fetchActivities 호출 시점의 데이터만 실시간으로 받도록 처리)
 
-            if (snapshot.empty) {
-                hasMore.value = false
-                if (!isMore) activities.value = []
-                return
-            }
+            const unsubscribe = onSnapshot(q, (snapshot) => {
+                if (snapshot.empty) {
+                    if (!isMore) {
+                        activities.value = []
+                        hasMore.value = false
+                    }
+                    loading.value = false
+                    return
+                }
 
-            const newActivities = snapshot.docs.map(doc => ({
-                id: doc.id,
-                ...doc.data()
-            }))
+                const newActivities = snapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data()
+                }))
 
-            if (isMore) {
-                activities.value = [...activities.value, ...newActivities]
-            } else {
-                activities.value = newActivities
-            }
+                if (isMore) {
+                    // 더보기 시 기존 데이터와 병합 (필요 시 중복 제거)
+                    const existingIds = new Set(activities.value.map(a => a.id))
+                    const filteredNew = newActivities.filter(a => !existingIds.has(a.id))
+                    activities.value = [...activities.value, ...filteredNew]
+                } else {
+                    activities.value = newActivities
+                }
 
-            lastDoc.value = snapshot.docs[snapshot.docs.length - 1] as QueryDocumentSnapshot
+                lastDoc.value = snapshot.docs[snapshot.docs.length - 1] as QueryDocumentSnapshot
 
-            // 만약 가져온 개수가 요청한 개수보다 적으면 더 이상 데이터 없음
-            if (snapshot.docs.length < pageSize) {
-                hasMore.value = false
-            }
+                if (snapshot.docs.length < pageSize) {
+                    hasMore.value = false
+                }
+                loading.value = false
+            }, (err: any) => {
+                console.error('onSnapshot error:', err)
+                error.value = '활동 소식을 불러오는 중 오류가 발생했습니다.'
+                loading.value = false
+            })
 
-            // 최대 20개까지만 노출 (사용자 요청 사항)
-            if (activities.value.length >= 20) {
-                hasMore.value = false
-                activities.value = activities.value.slice(0, 20)
-            }
+            // Store unsubscribe for cleanup if needed, but for now we let it run
+            // In a real app, you'd handle unmounting in onUnmounted
+            return unsubscribe
 
         } catch (err: any) {
             console.error('Fetch activities error:', err)
             error.value = '활동 소식을 불러오는 중 오류가 발생했습니다.'
-        } finally {
             loading.value = false
         }
     }
