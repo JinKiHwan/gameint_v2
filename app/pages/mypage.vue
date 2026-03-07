@@ -259,7 +259,7 @@
           <h3 class="text-h6 font-black text-grey-dark flex items-center gap-2">
             <i class="mdi mdi-account-group text-blue-dark"></i> 멤버 목록
           </h3>
-          <span class="text-caption font-bold text-grey-2">{{ filteredUsers.length }}명</span>
+          <span class="text-caption font-bold text-grey-2">{{ allUsers.length }}명</span>
         </div>
 
         <div v-if="loadingUsers" class="text-center pa-8">
