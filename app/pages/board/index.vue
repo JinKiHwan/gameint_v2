@@ -97,8 +97,10 @@
               </div>
               <div class="flex items-center gap-3 text-caption font-medium text-grey-2">
                 <div class="flex items-center gap-1 font-bold text-grey-3">
-                  <img :src="getProfileImagePath(post.author?.profileImageId)" alt="프로필" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;" />
-                  <span>{{ post.author?.nickname || '알수없음' }}</span>
+                  <template v-let="author = resolveUser(post.author?.uid, post.author)">
+                    <img :src="getProfileImagePath(author.profileImageId)" alt="프로필" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;" />
+                    <span>{{ author.nickname }}</span>
+                  </template>
                 </div>
                 <span>{{ formatDate(post.createdAt) }}</span>
                 <span class="flex items-center gap-1"><i class="mdi mdi-eye" style="font-size:.8em;"></i>{{ post.viewCount || 0 }}</span>
@@ -138,6 +140,7 @@ import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const router = useRouter()
 const { fetchPosts, fetchHotPosts, loading } = useBoard()
+const { resolveUser } = useUserMapper()
 
 const boardTag = ref('전체')
 const boardSort = ref('최신순')

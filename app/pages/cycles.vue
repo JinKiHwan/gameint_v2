@@ -46,8 +46,8 @@
               <div>
                 <div class="text-h5 font-black text-white mb-1">{{ cycle.commonBook?.title }}</div>
                 <div class="text-body-2 font-medium" style="color:rgba(255,255,255,0.8);">{{ cycle.commonBook?.authors?.join(', ') }}</div>
-                <div v-if="recommenderNickname" class="text-caption mt-1" style="color:rgba(255,255,255,0.65);">
-                  추천인: @{{ recommenderNickname }}
+                <div v-if="recommenderUser" class="text-caption mt-1" style="color:rgba(255,255,255,0.65);">
+                  추천인: @{{ recommenderUser.nickname }}
                 </div>
               </div>
             </div>
@@ -211,8 +211,10 @@
                     <img v-if="p.book?.thumbnail" :src="p.book.thumbnail" class="master-book-thumb" alt="표지" />
                     <div v-else class="master-book-thumb-placeholder"><i class="mdi mdi-book"></i></div>
                     <div class="min-w-0">
-                      <div class="text-subtitle-2 font-black text-grey-dark line-clamp-1">{{ p.book?.title }}</div>
-                      <div class="text-caption text-grey-2">@{{ p.nickname }}</div>
+                      <template v-let="u = resolveUser(p.uid, p)">
+                        <div class="text-subtitle-2 font-black text-grey-dark line-clamp-1">{{ p.book?.title }}</div>
+                        <div class="text-caption text-grey-2">@{{ u.nickname }}</div>
+                      </template>
                     </div>
                     <i v-if="masterSelectedUid === p.uid" class="mdi mdi-check-circle" style="color:#1E88E5;flex-shrink:0;"></i>
                   </div>
@@ -247,12 +249,14 @@
                 :key="p.uid"
                 class="master-review-item"
               >
-                <div class="avatar avatar--xs">
-                  <img :src="getProfileImagePath(p.profileImageId)" alt="프로필" />
-                </div>
-                <span class="text-caption font-medium text-grey-dark flex-1">
-                  {{ p.nickname }}
-                </span>
+                <template v-let="u = resolveUser(p.uid, p)">
+                  <div class="avatar avatar--xs">
+                    <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
+                  </div>
+                  <span class="text-caption font-medium text-grey-dark flex-1">
+                    {{ u.nickname }}
+                  </span>
+                </template>
                 <span
                   class="chip chip--sm"
                   :class="reviews.some(r => r.authorUid === p.uid && r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1')) ? 'chip--green' : 'chip--grey'"
@@ -317,8 +321,8 @@
                 <div class="text-subtitle-1 font-black text-grey-dark">{{ cycle.commonBook.title }}</div>
                 <div class="text-caption text-grey-2 mt-1">{{ cycle.commonBook.authors?.join(', ') }}</div>
                 <div class="text-caption text-grey-2">{{ cycle.commonBook.publisher }}</div>
-                <div class="text-caption font-bold mt-2" style="color:#1E88E5;">
-                  추천인: @{{ recommenderNickname }}
+                <div v-if="recommenderUser" class="text-caption font-bold mt-2" style="color:#1E88E5;">
+                  추천인: @{{ recommenderUser.nickname }}
                 </div>
               </div>
             </div>
@@ -345,7 +349,7 @@
               <div v-else class="card">
                 <div class="card-body text-center text-grey-2 font-bold pa-6">
                   <i class="mdi mdi-book-clock-outline" style="font-size:2rem;display:block;margin-bottom:8px;"></i>
-                  추천인 @{{ recommenderNickname }}님이 자율책을 선정 중입니다...
+                  추천인 @{{ recommenderUser?.nickname || '알수없음' }}님이 자율책을 선정 중입니다...
                 </div>
               </div>
             </template>
@@ -387,10 +391,12 @@
                 <div class="text-subtitle-2 font-black text-grey-dark line-clamp-2 mb-1">{{ p.book?.title }}</div>
                 <div class="text-caption text-grey-2 font-medium mb-2">{{ p.book?.authors?.join(', ') }}</div>
                 <div class="flex items-center gap-2 mb-3">
-                  <div class="avatar avatar--xs">
-                    <img :src="getProfileImagePath(p.profileImageId)" alt="프로필" />
-                  </div>
-                  <span class="text-caption font-bold text-grey-dark">{{ p.nickname }}</span>
+                  <template v-let="u = resolveUser(p.uid, p)">
+                    <div class="avatar avatar--xs">
+                      <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
+                    </div>
+                    <span class="text-caption font-bold text-grey-dark">{{ u.nickname }}</span>
+                  </template>
                 </div>
                 <div v-if="p.reason" class="participant-reason text-caption text-grey-2 line-clamp-2">
                   "{{ p.reason }}"
@@ -429,13 +435,15 @@
             >
               <div class="card-body">
                 <div class="flex items-center gap-3 mb-3">
-                  <div class="avatar avatar--sm">
-                    <img :src="getProfileImagePath(r.profileImageId)" alt="프로필" />
-                  </div>
-                  <div>
-                    <div class="text-subtitle-2 font-bold text-grey-dark">{{ r.nickname }}</div>
-                    <div class="text-caption text-grey-2">{{ formatDate(r.createdAt) }}</div>
-                  </div>
+                  <template v-let="u = resolveUser(r.authorUid, r)">
+                    <div class="avatar avatar--sm">
+                      <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
+                    </div>
+                    <div>
+                      <div class="text-subtitle-2 font-bold text-grey-dark">{{ u.nickname }}</div>
+                      <div class="text-caption text-grey-2">{{ formatDate(r.createdAt) }}</div>
+                    </div>
+                  </template>
                   <div class="ml-auto">
                     <StarRating :modelValue="r.rating" :readonly="true" />
                   </div>
@@ -631,8 +639,8 @@
             <div v-for="r in historyReviews.filter(r => r.phase === 'phase1')" :key="r.id" class="card card--flat">
               <div class="card-body pa-4">
                 <div class="flex gap-2 items-center mb-2">
-                  <div class="avatar avatar--xs"><img :src="getProfileImagePath(r.profileImageId)" alt="프로필" /></div>
-                  <span class="text-caption font-bold text-grey-dark">{{ r.nickname }}</span>
+                  <div class="avatar avatar--xs"><img :src="getProfileImagePath(resolveUser(r.authorUid, r).profileImageId)" alt="프로필" /></div>
+                  <span class="text-caption font-bold text-grey-dark">{{ resolveUser(r.authorUid, r).nickname }}</span>
                   <div class="ml-auto text-amber text-caption flex"><i v-for="s in 5" :key="s" class="mdi" :class="s <= r.rating ? 'mdi-star' : 'mdi-star-outline'"></i></div>
                 </div>
                 <p class="text-caption text-grey-3 line-clamp-3">{{ r.content }}</p>
@@ -646,8 +654,8 @@
             <div v-for="r in historyReviews.filter(r => r.phase === 'phase2')" :key="r.id" class="card card--flat">
               <div class="card-body pa-4">
                 <div class="flex gap-2 items-center mb-2">
-                  <div class="avatar avatar--xs"><img :src="getProfileImagePath(r.profileImageId)" alt="프로필" /></div>
-                  <span class="text-caption font-bold text-grey-dark">{{ r.nickname }}</span>
+                  <div class="avatar avatar--xs"><img :src="getProfileImagePath(resolveUser(r.authorUid, r).profileImageId)" alt="프로필" /></div>
+                  <span class="text-caption font-bold text-grey-dark">{{ resolveUser(r.authorUid, r).nickname }}</span>
                   <div class="ml-auto text-amber text-caption flex"><i v-for="s in 5" :key="s" class="mdi" :class="s <= r.rating ? 'mdi-star' : 'mdi-star-outline'"></i></div>
                 </div>
                 <p class="text-caption text-grey-3 line-clamp-3">{{ r.content }}</p>
@@ -691,6 +699,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useCycle } from '~/composables/useCycle'
+import { useUserMapper } from '~/composables/useUserMapper'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 import { useRuntimeConfig } from '#app'
 import StarRating from '~/components/StarRating.vue'
@@ -704,6 +713,7 @@ const {
   fetchReviews, submitReview, fetchMyReview,
   fetchMeetingRecords, addMeetingRecord, fetchClosedCycles
 } = useCycle()
+const { resolveUser } = useUserMapper()
 
 // ── 기본 상태 ────────────────────────────────────────────────────
 const cycle = ref(null)
@@ -779,11 +789,11 @@ const avgRating = computed(() => {
 const meetings = ref([])
 const loadingMeetings = ref(false)
 
-// ── 추천인 닉네임 ──────────────────────────────────────────────────
-const recommenderNickname = computed(() => {
+// ── 추천인 사용자 객체 ──────────────────────────────────────────────────
+const recommenderUser = computed(() => {
   if (!cycle.value?.commonBookRecommenderUid) return null
   const p = participants.value.find(p => p.uid === cycle.value.commonBookRecommenderUid)
-  return p?.nickname || null
+  return resolveUser(cycle.value.commonBookRecommenderUid, p)
 })
 
 // ── 탭 별 데이터 로딩 ─────────────────────────────────────────────

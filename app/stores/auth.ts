@@ -1,13 +1,13 @@
 import { defineStore } from 'pinia'
-import { 
-  onAuthStateChanged, 
-  signInWithEmailAndPassword, 
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   updatePassword,
   confirmPasswordReset,
   signOut,
-  type User 
+  type User
 } from 'firebase/auth'
 import { getDoc, doc, setDoc, serverTimestamp, collection, query, where, getDocs, writeBatch, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore'
 
@@ -20,23 +20,23 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     initAuth() {
       if (this.isInitialized) return
-      
+
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
       const firestore = ($firebase as any).firestore
 
       onAuthStateChanged(auth, async (firebaseUser) => {
         this.user = firebaseUser
-        
+
         if (firebaseUser) {
           const userDocRef = doc(firestore, 'users', firebaseUser.uid)
-          
+
           // 실시간 데이터 구독 (경험치, 레벨 등 실시간 반영을 위해)
           onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
               const newData = docSnap.data()
               this.userData = newData
-              
+
               // ── 출석 체크 로직 (최초 1회 실행 유도) ──
               const today = new Date().toLocaleDateString('en-CA')
               if (newData.expTracker?.lastAttendanceDate !== today) {
@@ -57,11 +57,11 @@ export const useAuthStore = defineStore('auth', {
     async checkIdDuplicate(username: string) {
       const { $firebase } = useNuxtApp()
       const firestore = ($firebase as any).firestore
-      
+
       const usersRef = collection(firestore, 'users')
       const q = query(usersRef, where('username', '==', username))
       const querySnapshot = await getDocs(q)
-      
+
       return !querySnapshot.empty // true 면 중복
     },
 
@@ -73,7 +73,7 @@ export const useAuthStore = defineStore('auth', {
       const usersRef = collection(firestore, 'users')
       const q = query(usersRef, where('username', '==', username))
       const querySnapshot = await getDocs(q)
-      
+
       if (querySnapshot.empty) {
         throw new Error('존재하지 않는 아이디입니다.')
       }
@@ -111,7 +111,7 @@ export const useAuthStore = defineStore('auth', {
           email: payload.email,
           realName: payload.realName,
           nickname: payload.nickname,
-          profileImageId: 'avatar_bronze_01', 
+          profileImageId: 'avatar_bronze_01',
           tier: 'Bronze',
           exp: 0,
           level: 1,
@@ -123,13 +123,13 @@ export const useAuthStore = defineStore('auth', {
             commentCountToday: 0,
             lastCommentDate: '',
           },
-          role: 'user', 
-          status: 'pending', 
+          role: 'user',
+          status: 'pending',
           securityQuestion: payload.securityQuestion,
           securityAnswer: payload.securityAnswer,
           createdAt: serverTimestamp()
         }
-        
+
         const userDocRef = doc(firestore, 'users', user.uid)
         await setDoc(userDocRef, newUserData)
         this.userData = newUserData
@@ -138,7 +138,7 @@ export const useAuthStore = defineStore('auth', {
       } catch (error: any) {
         console.error('Signup profile error:', error)
         if (error.code === 'auth/email-already-in-use') {
-           throw new Error('이미 가입된 회사 이메일입니다.')
+          throw new Error('이미 가입된 회사 이메일입니다.')
         }
         throw new Error('회원가입 처리 중 오류가 발생했습니다.')
       }
@@ -148,11 +148,11 @@ export const useAuthStore = defineStore('auth', {
     async findIdByEmail(securityQuestion: string, securityAnswer: string, email: string) {
       const { $firebase } = useNuxtApp()
       const firestore = ($firebase as any).firestore
-      
+
       const usersRef = collection(firestore, 'users')
       const q = query(usersRef, where('email', '==', email))
       const querySnapshot = await getDocs(q)
-      
+
       if (querySnapshot.empty || !querySnapshot.docs[0]) {
         throw new Error('해당 이메일로 가입된 계정이 없습니다.')
       }
@@ -161,7 +161,7 @@ export const useAuthStore = defineStore('auth', {
       if (userDoc.securityQuestion !== securityQuestion || userDoc.securityAnswer !== securityAnswer) {
         throw new Error('입력하신 답변이 가입 정보와 일치하지 않습니다.')
       }
-      
+
       return userDoc.username
     },
 
@@ -176,7 +176,7 @@ export const useAuthStore = defineStore('auth', {
         const usersRef = collection(firestore, 'users')
         const q = query(usersRef, where('email', '==', email))
         const querySnapshot = await getDocs(q)
-        
+
         if (querySnapshot.empty || !querySnapshot.docs[0]) {
           throw new Error('해당 이메일로 가입된 계정이 없습니다.')
         }
@@ -209,7 +209,7 @@ export const useAuthStore = defineStore('auth', {
     async confirmResetPassword(oobCode: string, newPassword: string) {
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
-      
+
       try {
         await confirmPasswordReset(auth, oobCode, newPassword)
         return true
@@ -229,7 +229,7 @@ export const useAuthStore = defineStore('auth', {
     async changePassword(newPassword: string) {
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
-      
+
       const user = auth.currentUser
       if (!user) throw new Error('로그아웃 상태입니다.')
 
@@ -254,92 +254,14 @@ export const useAuthStore = defineStore('auth', {
       try {
         const uid = this.user.uid
 
-        // ── 1. users 문서 업데이트 ──────────────────────────────
+        // ── 1. users 문서만 업데이트 (게시글/댓글은 프론트엔드에서 매핑 처리) ──
         const userDocRef = doc(firestore, 'users', uid)
-        await setDoc(userDocRef, { nickname: newNickname }, { merge: true })
+        await updateDoc(userDocRef, {
+          nickname: newNickname,
+          updatedAt: serverTimestamp()
+        })
 
-        // ── 2. 해당 유저의 게시글 목록 조회 ─────────────────────
-        const postsRef = collection(firestore, 'posts')
-        const postsQuery = query(postsRef, where('author.uid', '==', uid))
-        const postsSnapshot = await getDocs(postsQuery)
-
-        // ── 3. 게시글별로 author.nickname 업데이트 + 댓글 업데이트 ─
-        for (const postDoc of postsSnapshot.docs) {
-          const postId = postDoc.id
-
-          // 3-2. 해당 게시글의 댓글 중 본인 작성 댓글 조회
-          const commentsRef = collection(firestore, 'posts', postId, 'comments')
-          const commentsQuery = query(commentsRef, where('author.uid', '==', uid))
-          const commentsSnapshot = await getDocs(commentsQuery)
-
-          // 배치에 담을 업데이트 목록 구성
-          const writes: Array<{ ref: any; data: any }> = []
-
-          // 게시글 자체
-          writes.push({
-            ref: doc(firestore, 'posts', postId),
-            data: { 'author.nickname': newNickname }
-          })
-
-          // 해당 게시글의 내 댓글들
-          for (const commentDoc of commentsSnapshot.docs) {
-            writes.push({
-              ref: doc(firestore, 'posts', postId, 'comments', commentDoc.id),
-              data: { 'author.nickname': newNickname }
-            })
-          }
-
-          // 500건 단위로 나눠 배치 커밋
-          const CHUNK_SIZE = 490
-          for (let i = 0; i < writes.length; i += CHUNK_SIZE) {
-            const chunk = writes.slice(i, i + CHUNK_SIZE)
-            const batch = writeBatch(firestore)
-            for (const w of chunk) {
-              batch.update(w.ref, w.data)
-            }
-            await batch.commit()
-          }
-        }
-
-        // ── 3-2. 사이클(월간 주제) 내 정보 업데이트 ──────────────────
-        const cyclesRef = collection(firestore, 'cycles')
-        const cyclesSnapshot = await getDocs(cyclesRef)
-
-        for (const cycleDoc of cyclesSnapshot.docs) {
-          const cycleId = cycleDoc.id
-          const cycleBatch = writeBatch(firestore)
-          let hasChange = false
-
-          // 1) 참여자 정보 (participants/{uid})
-          const participantRef = doc(firestore, 'cycles', cycleId, 'participants', uid)
-          const participantSnap = await getDoc(participantRef)
-          if (participantSnap.exists()) {
-            cycleBatch.update(participantRef, { nickname: newNickname })
-            hasChange = true
-          }
-
-          // 2) 리뷰들 (reviews where authorUid == uid)
-          const reviewsRef = collection(firestore, 'cycles', cycleId, 'reviews')
-          const reviewsQuery = query(reviewsRef, where('authorUid', '==', uid))
-          const reviewsSnap = await getDocs(reviewsQuery)
-          reviewsSnap.docs.forEach(rd => {
-            cycleBatch.update(rd.ref, { nickname: newNickname })
-            hasChange = true
-          })
-
-          // 3) 모임 기록들 (meetings where authorUid == uid)
-          const meetingsRef = collection(firestore, 'cycles', cycleId, 'meetings')
-          const meetingsQuery = query(meetingsRef, where('authorUid', '==', uid))
-          const meetingsSnap = await getDocs(meetingsQuery)
-          meetingsSnap.docs.forEach(md => {
-            cycleBatch.update(md.ref, { authorNickname: newNickname })
-            hasChange = true
-          })
-
-          if (hasChange) await cycleBatch.commit()
-        }
-
-        // ── 4. 로컬 상태 업데이트 ───────────────────────────────
+        // ── 2. 로컬 상태 업데이트 ──
         this.userData.nickname = newNickname
         return true
       } catch (error: any) {
@@ -357,73 +279,14 @@ export const useAuthStore = defineStore('auth', {
       try {
         const uid = this.user.uid
 
-        // 1. users 문서 profileImageId 업데이트
+        // ── 1. users 문서만 업데이트 ──
         const userDocRef = doc(firestore, 'users', uid)
-        await setDoc(userDocRef, { profileImageId: newImageId }, { merge: true })
+        await updateDoc(userDocRef, {
+          profileImageId: newImageId,
+          updatedAt: serverTimestamp()
+        })
 
-        // 2. 해당 유저 게시글의 author.profileImageId 일괄 업데이트
-        const postsRef = collection(firestore, 'posts')
-        const postsQuery = query(postsRef, where('author.uid', '==', uid))
-        const postsSnapshot = await getDocs(postsQuery)
-
-        for (const postDoc of postsSnapshot.docs) {
-          const postId = postDoc.id
-
-          // 댓글 조회
-          const commentsRef = collection(firestore, 'posts', postId, 'comments')
-          const commentsQuery = query(commentsRef, where('author.uid', '==', uid))
-          const commentsSnapshot = await getDocs(commentsQuery)
-
-          // 배치 목록 구성
-          const writes: Array<{ ref: any; data: any }> = [
-            { ref: doc(firestore, 'posts', postId), data: { 'author.profileImageId': newImageId } }
-          ]
-          for (const commentDoc of commentsSnapshot.docs) {
-            writes.push({
-              ref: doc(firestore, 'posts', postId, 'comments', commentDoc.id),
-              data: { 'author.profileImageId': newImageId }
-            })
-          }
-
-          // 490건 단위 청크 커밋
-          const CHUNK = 490
-          for (let i = 0; i < writes.length; i += CHUNK) {
-            const batch = writeBatch(firestore)
-            for (const w of writes.slice(i, i + CHUNK)) batch.update(w.ref, w.data)
-            await batch.commit()
-          }
-        }
-
-        // ── 2-2. 사이클(월간 주제) 내 정보 업데이트 ─────────────────
-        const cyclesRef = collection(firestore, 'cycles')
-        const cyclesSnapshot = await getDocs(cyclesRef)
-
-        for (const cycleDoc of cyclesSnapshot.docs) {
-          const cycleId = cycleDoc.id
-          const cycleBatch = writeBatch(firestore)
-          let hasChange = false
-
-          // 1) 참여자 정보 (participants/{uid})
-          const participantRef = doc(firestore, 'cycles', cycleId, 'participants', uid)
-          const participantSnap = await getDoc(participantRef)
-          if (participantSnap.exists()) {
-            cycleBatch.update(participantRef, { profileImageId: newImageId })
-            hasChange = true
-          }
-
-          // 2) 리뷰들 (reviews where authorUid == uid)
-          const reviewsRef = collection(firestore, 'cycles', cycleId, 'reviews')
-          const reviewsQuery = query(reviewsRef, where('authorUid', '==', uid))
-          const reviewsSnap = await getDocs(reviewsQuery)
-          reviewsSnap.docs.forEach(rd => {
-            cycleBatch.update(rd.ref, { profileImageId: newImageId })
-            hasChange = true
-          })
-
-          if (hasChange) await cycleBatch.commit()
-        }
-
-        // 3. 로컬 상태 업데이트
+        // ── 2. 로컬 상태 업데이트 ──
         this.userData.profileImageId = newImageId
         return true
       } catch (error: any) {
@@ -435,7 +298,7 @@ export const useAuthStore = defineStore('auth', {
     async logout() {
       const { $firebase } = useNuxtApp()
       const auth = ($firebase as any).auth
-      
+
       try {
         await signOut(auth)
         this.user = null
@@ -446,7 +309,7 @@ export const useAuthStore = defineStore('auth', {
     },
 
     // ── 멤버 관리 ────────────────────────────────────────────────────
-    
+
     // 전체 멤버 목록 조회
     async fetchAllUsers() {
       const { $firebase } = useNuxtApp()

@@ -37,54 +37,60 @@
           <div class="podium">
             <!-- 2위 -->
             <div v-if="topUsers[1]" class="podium-item podium-item--2nd">
-              <div class="podium-item__rank">2</div>
-              <div class="podium-avatar-wrap">
-                <img :src="getProfileImagePath(topUsers[1].profileImageId)" class="podium-avatar" alt="2nd profile" />
-                <div class="tier-badge" :class="getTierClass(topUsers[1].tier)">
-                  <i class="mdi mdi-trophy"></i>
+              <template v-let="u = resolveUser(topUsers[1].uid, topUsers[1])">
+                <div class="podium-item__rank">2</div>
+                <div class="podium-avatar-wrap">
+                  <img :src="getProfileImagePath(u.profileImageId)" class="podium-avatar" alt="2nd profile" />
+                  <div class="tier-badge" :class="getTierClass(u.tier)">
+                    <i class="mdi mdi-trophy"></i>
+                  </div>
                 </div>
-              </div>
-              <div class="podium-info mt-2">
-                <div class="podium-name line-clamp-1 text-subtitle-2 font-black">{{ topUsers[1].nickname }}</div>
-                <div class="podium-dna text-caption font-bold opacity-70">{{ topUsers[1].dna?.dnaName || '분석 중' }}</div>
-                <div class="podium-exp text-body-2 font-black text-primary-color mt-1">{{ topUsers[1].exp || 0 }} EXP</div>
-              </div>
+                <div class="podium-info mt-2">
+                  <div class="podium-name line-clamp-1 text-subtitle-2 font-black">{{ u.nickname }}</div>
+                  <div class="podium-dna text-caption font-bold opacity-70">{{ u.dna?.dnaName || '분석 중' }}</div>
+                  <div class="podium-exp text-body-2 font-black text-primary-color mt-1">{{ u.exp || 0 }} EXP</div>
+                </div>
+              </template>
               <div class="podium-base"></div>
             </div>
 
             <!-- 1위 -->
             <div v-if="topUsers[0]" class="podium-item podium-item--1st">
-              <div class="podium-item__rank">
-                <i class="mdi mdi-crown text-amber-400"></i>
-              </div>
-              <div class="podium-avatar-wrap">
-                <img :src="getProfileImagePath(topUsers[0].profileImageId)" class="podium-avatar" alt="1st profile" />
-                <div class="tier-badge" :class="getTierClass(topUsers[0].tier)">
-                  <i class="mdi mdi-trophy"></i>
+              <template v-let="u = resolveUser(topUsers[0].uid, topUsers[0])">
+                <div class="podium-item__rank">
+                  <i class="mdi mdi-crown text-amber-400"></i>
                 </div>
-              </div>
-              <div class="podium-info">
-                <div class="podium-name line-clamp-1 text-amber-500 font-black">{{ topUsers[0].nickname }}</div>
-                <div class="podium-dna">{{ topUsers[0].dna?.dnaName || '분석 중' }}</div>
-                <div class="podium-exp text-h6 font-black">{{ topUsers[0].exp || 0 }} EXP</div>
-              </div>
+                <div class="podium-avatar-wrap">
+                  <img :src="getProfileImagePath(u.profileImageId)" class="podium-avatar" alt="1st profile" />
+                  <div class="tier-badge" :class="getTierClass(u.tier)">
+                    <i class="mdi mdi-trophy"></i>
+                  </div>
+                </div>
+                <div class="podium-info">
+                  <div class="podium-name line-clamp-1 text-amber-500 font-black">{{ u.nickname }}</div>
+                  <div class="podium-dna">{{ u.dna?.dnaName || '분석 중' }}</div>
+                  <div class="podium-exp text-h6 font-black">{{ u.exp || 0 }} EXP</div>
+                </div>
+              </template>
               <div class="podium-base"></div>
             </div>
 
             <!-- 3위 -->
             <div v-if="topUsers[2]" class="podium-item podium-item--3rd">
-              <div class="podium-item__rank">3</div>
-              <div class="podium-avatar-wrap">
-                <img :src="getProfileImagePath(topUsers[2].profileImageId)" class="podium-avatar" alt="3rd profile" />
-                <div class="tier-badge" :class="getTierClass(topUsers[2].tier)">
-                  <i class="mdi mdi-trophy"></i>
+              <template v-let="u = resolveUser(topUsers[2].uid, topUsers[2])">
+                <div class="podium-item__rank">3</div>
+                <div class="podium-avatar-wrap">
+                  <img :src="getProfileImagePath(u.profileImageId)" class="podium-avatar" alt="3rd profile" />
+                  <div class="tier-badge" :class="getTierClass(u.tier)">
+                    <i class="mdi mdi-trophy"></i>
+                  </div>
                 </div>
-              </div>
-              <div class="podium-info mt-2">
-                <div class="podium-name line-clamp-1 text-subtitle-2 font-black">{{ topUsers[2].nickname }}</div>
-                <div class="podium-dna text-caption font-bold opacity-70">{{ topUsers[2].dna?.dnaName || '분석 중' }}</div>
-                <div class="podium-exp text-body-2 font-black text-primary-color mt-1">{{ topUsers[2].exp || 0 }} EXP</div>
-              </div>
+                <div class="podium-info mt-2">
+                  <div class="podium-name line-clamp-1 text-subtitle-2 font-black">{{ u.nickname }}</div>
+                  <div class="podium-dna text-caption font-bold opacity-70">{{ u.dna?.dnaName || '분석 중' }}</div>
+                  <div class="podium-exp text-body-2 font-black text-primary-color mt-1">{{ u.exp || 0 }} EXP</div>
+                </div>
+              </template>
               <div class="podium-base"></div>
             </div>
           </div>
@@ -100,18 +106,20 @@
             </div>
             <div v-for="(user, index) in topUsers.slice(3)" :key="user.uid" class="ranking-item flex items-center px-6 py-4 border-b last:border-0 hover:bg-grey-50 transition-colors">
               <div class="w-12 text-center font-bold text-grey-dark">{{ index + 4 }}위</div>
-              <div class="flex items-center flex-grow ml-4 min-w-0">
-                <div class="avatar avatar--sm flex-shrink-0">
-                  <img :src="getProfileImagePath(user.profileImageId)" alt="profile" />
-                </div>
-                <div class="ml-3 min-w-0">
-                  <div class="flex items-center gap-2">
-                    <span class="text-subtitle-1 font-black text-grey-dark line-clamp-1">{{ user.nickname }}</span>
-                    <span :class="`chip chip--xs chip--${getTierChipClass(user.tier)}`">{{ user.tier || 'Bronze' }}</span>
+              <template v-let="u = resolveUser(user.uid, user)">
+                <div class="flex items-center flex-grow ml-4 min-w-0">
+                  <div class="avatar avatar--sm flex-shrink-0">
+                    <img :src="getProfileImagePath(u.profileImageId)" alt="profile" />
                   </div>
-                  <div class="text-caption font-bold text-grey-2">{{ user.dna?.dnaName || '독서 DNA 분석 중' }}</div>
+                  <div class="ml-3 min-w-0">
+                    <div class="flex items-center gap-2">
+                      <span class="text-subtitle-1 font-black text-grey-dark line-clamp-1">{{ u.nickname }}</span>
+                      <span :class="`chip chip--xs chip--${getTierChipClass(u.tier)}`">{{ u.tier || 'Bronze' }}</span>
+                    </div>
+                    <div class="text-caption font-bold text-grey-2">{{ u.dna?.dnaName || '독서 DNA 분석 중' }}</div>
+                  </div>
                 </div>
-              </div>
+              </template>
               <div class="w-24 text-right font-black text-blue-dark">{{ user.exp || 0 }} <span class="text-caption text-grey-3 font-medium">EXP</span></div>
             </div>
           </div>
@@ -126,15 +134,17 @@
           <div class="my-rank-num">
             {{ userRank > 0 ? `${userRank}위` : '-' }}
           </div>
-          <div class="flex items-center gap-3">
-            <div class="avatar avatar--xs">
-              <img :src="getProfileImagePath(authStore.userData.profileImageId)" alt="my profile" />
+          <template v-let="me = resolveUser(authStore.userData.uid, authStore.userData)">
+            <div class="flex items-center gap-3">
+              <div class="avatar avatar--xs">
+                <img :src="getProfileImagePath(me.profileImageId)" alt="my profile" />
+              </div>
+              <div>
+                <div class="text-caption font-black text-white line-clamp-1">{{ me.nickname }}</div>
+                <div class="text-[10px] text-white opacity-70">{{ me.tier }} · {{ me.exp }} EXP</div>
+              </div>
             </div>
-            <div>
-              <div class="text-caption font-black text-white line-clamp-1">{{ authStore.userData.nickname }}</div>
-              <div class="text-[10px] text-white opacity-70">{{ authStore.userData.tier }} · {{ authStore.userData.exp }} EXP</div>
-            </div>
-          </div>
+          </template>
         </div>
         <div class="flex-grow mx-8 hidden sm:block">
           <div class="progress-bar progress-bar--sm bg-white/20">
@@ -154,12 +164,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useRanking } from '~/composables/useRanking'
+import { useUserMapper } from '~/composables/useUserMapper'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 import { EXP_CONFIG } from '~/utils/expConfig'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const { loading, error, topUsers, fetchTopUsersByExp } = useRanking()
+const { resolveUser } = useUserMapper()
 
 const loadData = async () => {
   await fetchTopUsersByExp(10)

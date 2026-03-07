@@ -78,8 +78,10 @@
           <hr class="divider mt-auto mb-3" />
           <div class="flex items-center justify-between text-caption">
             <div class="flex items-center gap-2">
-              <img :src="getProfileImagePath(post.author?.profileImageId)" alt="프로필" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" />
-              <span class="font-bold text-grey-3 text-truncate" style="max-width:80px;">{{ post.author?.nickname || '알수없음' }}</span>
+              <template v-let="author = resolveUser(post.author?.uid, post.author)">
+                <img :src="getProfileImagePath(author.profileImageId)" alt="프로필" style="width:20px;height:20px;border-radius:50%;object-fit:cover;" />
+                <span class="font-bold text-grey-3 text-truncate" style="max-width:80px;">{{ author.nickname }}</span>
+              </template>
             </div>
             <span class="chip chip--blue-lt chip--sm flex items-center gap-1 font-bold">
               <i class="mdi mdi-heart" style="color: #E91E63; font-size: 1.1em;"></i> {{ post.likeCount || 0 }}
@@ -107,10 +109,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBoard } from '~/composables/useBoard'
+import { useUserMapper } from '~/composables/useUserMapper'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const router = useRouter()
 const { fetchPosts, loading } = useBoard()
+const { resolveUser } = useUserMapper()
 const page = ref(1)
 const itemsPerPage = 16
 const recommendSort = ref('최신순')

@@ -13,85 +13,13 @@ const getKstDate = () => {
 };
 
 // 1. 프로필 업데이트 시 과거 게시글/댓글 동기화
+/*
 export const onUserProfileUpdate = functions
   .region("asia-northeast3") // 서울 리전
-  .firestore.document("users/{userId}")
-  .onUpdate(async (change, context) => {
-    const userId = context.params.userId;
-    const beforeData = change.before.data();
-    const afterData = change.after.data();
-
-    if (!beforeData || !afterData) return null;
-
-    // 변경된 항목 체크
-    const nicknameChanged = beforeData.nickname !== afterData.nickname;
-    const avatarChanged = beforeData.profileImageId !== afterData.profileImageId;
-
-    if (!nicknameChanged && !avatarChanged) {
-      return null;
-    }
-
-    const newNickname = afterData.nickname;
-    const newAvatar = afterData.profileImageId;
-
-    let batch = db.batch();
-    let currentBatchSize = 0;
-    let totalUpdated = 0;
-
-    const commitBatchIfNeeded = async () => {
-      // firestore 배치는 최대 500개이므로 안전하게 450개에서 커밋
-      if (currentBatchSize >= 450) {
-        await batch.commit();
-        batch = db.batch();
-        currentBatchSize = 0;
-      }
-    };
-
-    const pushUpdate = async (docRef: admin.firestore.DocumentReference, updateData: Record<string, any>) => {
-      batch.update(docRef, updateData);
-      currentBatchSize++;
-      totalUpdated++;
-      await commitBatchIfNeeded();
-    };
-
-    try {
-      // 1-1. 내가 쓴 게시판 글 업데이트
-      const postsSnapshot = await db.collection("posts")
-        .where("author.uid", "==", userId)
-        .get();
-
-      for (const doc of postsSnapshot.docs) {
-        const updateData: Record<string, any> = {};
-        if (nicknameChanged) updateData["author.nickname"] = newNickname;
-        if (avatarChanged) updateData["author.profileImageId"] = newAvatar;
-        
-        await pushUpdate(doc.ref, updateData);
-      }
-
-      // 1-2. 내가 쓴 댓글 업데이트 (collectionGroup 사용)
-      const commentsSnapshot = await db.collectionGroup("comments")
-        .where("author.uid", "==", userId)
-        .get();
-
-      for (const doc of commentsSnapshot.docs) {
-        const updateData: Record<string, any> = {};
-        if (nicknameChanged) updateData["author.nickname"] = newNickname;
-        if (avatarChanged) updateData["author.profileImageId"] = newAvatar;
-        
-        await pushUpdate(doc.ref, updateData);
-      }
-
-      if (currentBatchSize > 0) {
-        await batch.commit();
-      }
-
-      console.log(`Successfully synced profile changes for userId: ${userId}. Total documents updated: ${totalUpdated}`);
-    } catch (error) {
-      console.error(`Error syncing profile changes for userId ${userId}:`, error);
-    }
-
+  ...
     return null;
   });
+*/
 
 // ── 알림 생성 헬퍼 ──────────────────────────────────────────────
 async function createNotification(params: {
@@ -120,11 +48,11 @@ async function createNotification(params: {
 /**
  * 2. Helper function to reward EXP to a user and handle level-ups.
  */
-async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS | 'MANUAL', manualAmount?: number) {
+async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS | 'MANUAL', manualAmount?: number, bookGenre?: string) {
   console.log(`[rewardExp] Starting reward for userId: ${userId}, action: ${action}`);
   const userRef = db.collection("users").doc(userId);
   const today = getKstDate();
-  
+
   try {
     await db.runTransaction(async (transaction) => {
       const userDoc = await transaction.get(userRef);
@@ -137,81 +65,65 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
       let currentExp = typeof userData.exp === "number" ? userData.exp : 0;
       let currentLevel = typeof userData.level === "number" ? userData.level : 1;
       const expTracker = userData.expTracker || {};
-      let oldTier = userData.tier || 'Bronze'; // Capture old tier before any updates
 
       let expAmount = manualAmount || 0;
       if (action !== 'MANUAL') {
         expAmount = EXP_CONFIG.REWARDS[action];
-        
-        // 제한 로직 체크
+
         if (action === 'ATTENDANCE') {
-          if (expTracker.lastAttendanceDate === today) {
-            console.log(`[rewardExp] Attendance already rewarded for today: ${today}`);
-            return;
-          }
+          if (expTracker.lastAttendanceDate === today) return;
           expTracker.lastAttendanceDate = today;
         } else if (action === 'POST_GENERAL') {
-          if (expTracker.lastPostDate === today) {
-            console.log(`[rewardExp] General post already rewarded for today: ${today}`);
-            return;
-          }
+          if (expTracker.lastPostDate === today) return;
           expTracker.lastPostDate = today;
         } else if (action === 'POST_RECOMMEND') {
-          if (expTracker.lastRecommendBookDate === today) {
-            console.log(`[rewardExp] Recommend book already rewarded for today: ${today}`);
-            return;
-          }
+          if (expTracker.lastRecommendBookDate === today) return;
           expTracker.lastRecommendBookDate = today;
         } else if (action === 'COMMENT') {
           const lastDate = expTracker.lastCommentDate || "";
           let countToday = (lastDate === today) ? (expTracker.commentCountToday || 0) : 0;
-          if (countToday >= EXP_CONFIG.LIMITS.COMMENT_PER_DAY) {
-            console.log(`[rewardExp] Comment limit reached for today: ${today}`);
-            return;
-          }
-          
+          if (countToday >= EXP_CONFIG.LIMITS.COMMENT_PER_DAY) return;
+
           expTracker.lastCommentDate = today;
           expTracker.commentCountToday = countToday + 1;
         }
       }
 
-      if (expAmount <= 0) return;
-
-      currentExp += expAmount;
-      console.log(`[rewardExp] Adding ${expAmount} XP to userId: ${userId}. New total: ${currentExp}`);
-      
-      // 레벨업 로직 (비선형 테이블 적용)
-      let nextLevelExp = EXP_CONFIG.getNextLevelExp(currentLevel + 1);
-
-      while (currentExp >= nextLevelExp && currentLevel < 100) {
-        currentExp -= nextLevelExp;
-        currentLevel++;
-        console.log(`[rewardExp] Level Up! New Level: ${currentLevel}`);
-        nextLevelExp = EXP_CONFIG.getNextLevelExp(currentLevel + 1);
-      }
-
-      const currentTier = EXP_CONFIG.getTier(currentLevel);
-
       const updateData: any = {
-        exp: currentExp,
-        level: currentLevel,
-        tier: currentTier,
         expTracker: expTracker
       };
-      
+
+      if (expAmount > 0) {
+        currentExp += expAmount;
+        while (currentExp >= EXP_CONFIG.getNextLevelExp(currentLevel + 1) && currentLevel < 100) {
+          currentExp -= EXP_CONFIG.getNextLevelExp(currentLevel + 1);
+          currentLevel++;
+        }
+        updateData.exp = currentExp;
+        updateData.level = currentLevel;
+        updateData.tier = EXP_CONFIG.getTier(currentLevel);
+      }
+
+      // DNA 증분 업데이트 (Read 없이 처리)
+      if (bookGenre || action === 'POST_RECOMMEND' || action === 'CYCLE_REVIEW') {
+        const genreToMap = bookGenre || (action === 'POST_RECOMMEND' ? '도서 추천' : ''); // 실제 장르값이 필요함
+        if (genreToMap) {
+          const CATEGORY_MAPPING: Record<string, string> = {
+            '소설': 'I', '자기계발': 'G', '경제/경영': 'G', '인문/사회': 'K', '과학/기술': 'K', '시/에세이': 'E'
+          };
+          const axis = CATEGORY_MAPPING[genreToMap];
+          if (axis) {
+            updateData[`dna.scores.${axis}`] = admin.firestore.FieldValue.increment(1);
+          }
+        }
+      }
+
       transaction.update(userRef, updateData);
 
-      // 티어 승급 알림 (전역)
-      if (currentTier !== oldTier) {
-        await createNotification({
-          type: 'TIER_UP',
-          title: '🏆 티어 승급 소식!',
-          message: `${userData.nickname}님의 티어가 '${currentTier}'로 승급하셨습니다!`,
-          link: '/board' // 혹은 랭킹 페이지
-        });
-      }
+      // 보상 후 DNA 한 줄 평/타입 재계산 (Update 트리거에서 처리할 수도 있지만, transaction 내에서 snapshot 데이터 기반으로 미리 계산 시도 가능)
+      // 단, FieldValue.increment는 즉시 값을 알 수 없으므로, onUpdate 트리거에서 dna.scores 변경 시 type만 계산하는 게 더 정확할 수 있음.
+      // 여기서는 일단 scores 업데이트만 수행하고, DNA 타입 계산은 별도 트리거로 분리하여 Read 최소화.
     });
-    console.log(`[rewardExp] Successfully completed reward for userId: ${userId}`);
   } catch (error) {
     console.error(`[rewardExp] Error in transaction for userId: ${userId}`, error);
   }
@@ -221,15 +133,18 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
 /**
  * 3. 트리거: 게시글 작성 시 (도서 추천 vs 일반)
  */
-export const onPostCreate = functions
+export const onPostCreateMerged = functions
   .region("asia-northeast3")
   .firestore.document("posts/{postId}")
-  .onCreate(async (snapshot, context) => {
+  .onCreate(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
     const data = snapshot.data();
     if (!data || !data.author || !data.author.uid) return null;
-    
+
+    // 1. 경험치 보상 & DNA 증분 업데이트 호출
     const action = data.category === '도서 추천' ? 'POST_RECOMMEND' : 'POST_GENERAL';
-    await rewardExp(data.author.uid, action);
+    const genre = data.bookGenre || (data.category === '도서 추천' ? '자기계발' : null);
+
+    await rewardExp(data.author.uid, action, undefined, genre);
     return null;
   });
 
@@ -240,10 +155,10 @@ export const onPostCreate = functions
 export const onCommentCreate = functions
   .region("asia-northeast3")
   .firestore.document("posts/{postId}/comments/{commentId}")
-  .onCreate(async (snapshot, context) => {
+  .onCreate(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
     const data = snapshot.data();
     if (!data || !data.author || !data.author.uid) return null;
-    
+
     await rewardExp(data.author.uid, 'COMMENT');
 
     // 알림: 게시글 작성자에게
@@ -268,13 +183,13 @@ export const onCommentCreate = functions
 export const onLikeCreate = functions
   .region("asia-northeast3")
   .firestore.document("posts/{postId}/likes/{userId}")
-  .onCreate(async (snapshot, context) => {
+  .onCreate(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
     const postId = context.params.postId;
     const postSnap = await db.collection("posts").doc(postId).get();
     const postData = postSnap.data();
-    
+
     if (!postData || !postData.author || !postData.author.uid) return null;
-    
+
     const likerId = context.params.userId;
     if (likerId === postData.author.uid) return null;
 
@@ -299,15 +214,15 @@ export const onLikeCreate = functions
 /**
  * 6. 트리거: 사이클 리뷰 작성 시
  */
-export const onReviewCreate = functions
+export const onReviewCreateMerged = functions
   .region("asia-northeast3")
   .firestore.document("cycles/{cycleId}/reviews/{reviewId}")
-  .onCreate(async (snapshot, context) => {
+  .onCreate(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
     const data = snapshot.data();
     if (!data || !data.authorUid) return null;
-    
-    await rewardExp(data.authorUid, 'CYCLE_REVIEW');
-    await updateUserDNA(data.authorUid);
+
+    // 리뷰 작성 시 경험치 + DNA 증분 (리뷰 카테고리를 장르로 매핑)
+    await rewardExp(data.authorUid, 'CYCLE_REVIEW', undefined, data.category);
     return null;
   });
 
@@ -317,67 +232,31 @@ export const onReviewCreate = functions
 export const onReviewUpdate = functions
   .region("asia-northeast3")
   .firestore.document("cycles/{cycleId}/reviews/{reviewId}")
-  .onUpdate(async (change, context) => {
-    const before = change.before.data();
-    const after = change.after.data();
-    if (before.category !== after.category) {
-      await updateUserDNA(after.authorUid);
-    }
+  .onUpdate(async (change: functions.Change<admin.firestore.DocumentSnapshot>, context: functions.EventContext) => {
+    // const before = change.before.data();
+    // const after = change.after.data();
+    // DNA 증분 업데이트는 onReviewCreateMerged에서 처리하므로 여기서는 생략
     return null;
   });
 
 export const onReviewDelete = functions
   .region("asia-northeast3")
   .firestore.document("cycles/{cycleId}/reviews/{reviewId}")
-  .onDelete(async (snapshot, context) => {
-    const data = snapshot.data();
-    if (data && data.authorUid) {
-      await updateUserDNA(data.authorUid);
-    }
+  .onDelete(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
+    // const data = snapshot.data();
+    // DNA 삭제 시 보정 로직은 비용 대비 실익이 적어 생략
     return null;
   });
 
 /**
  * 트리거: 게시판 글 작성/수정/삭제 시 (DNA 갱신용)
  */
-export const onPostCreate = functions
-  .region("asia-northeast3")
-  .firestore.document("posts/{postId}")
-  .onCreate(async (snapshot, context) => {
-    const data = snapshot.data();
-    if (data && data.author?.uid && ['도서 추천', '책 리뷰'].includes(data.category)) {
-      await updateUserDNA(data.author.uid);
-    }
-    return null;
-  });
-
-export const onPostUpdate = functions
-  .region("asia-northeast3")
-  .firestore.document("posts/{postId}")
-  .onUpdate(async (change, context) => {
-    const before = change.before.data();
-    const after = change.after.data();
-    if (!after || !after.author?.uid) return null;
-    
-    // 카테고리나 장르가 변경된 경우에만 갱신
-    if (before.category !== after.category || before.bookGenre !== after.bookGenre) {
-      if (['도서 추천', '책 리뷰'].includes(before.category) || ['도서 추천', '책 리뷰'].includes(after.category)) {
-        await updateUserDNA(after.author.uid);
-      }
-    }
-    return null;
-  });
-
-export const onPostDelete = functions
-  .region("asia-northeast3")
-  .firestore.document("posts/{postId}")
-  .onDelete(async (snapshot, context) => {
-    const data = snapshot.data();
-    if (data && data.author?.uid && ['도서 추천', '책 리뷰'].includes(data.category)) {
-      await updateUserDNA(data.author.uid);
-    }
-    return null;
-  });
+// 기존 DNA 스캔 로직들 비활성화 (비용 방어)
+/*
+export const onPostCreate = functions ...
+export const onPostUpdate = functions ...
+export const onPostDelete = functions ...
+*/
 
 /**
  * 7. 트리거: 출석 체크 (userData.expTracker.lastAttendanceDate 필드 업데이트 시)
@@ -385,10 +264,10 @@ export const onPostDelete = functions
 export const onAttendanceUpdate = functions
   .region("asia-northeast3")
   .firestore.document("users/{userId}")
-  .onUpdate(async (change, context) => {
+  .onUpdate(async (change: functions.Change<admin.firestore.DocumentSnapshot>, context: functions.EventContext) => {
     const before = change.before.data()?.expTracker?.lastAttendanceDate;
     const after = change.after.data()?.expTracker?.lastAttendanceDate;
-    
+
     if (after && before !== after) {
       await rewardExp(context.params.userId, 'ATTENDANCE');
     }
@@ -441,7 +320,7 @@ export const onCycleCreate = functions
 export const onCycleUpdate = functions
   .region("asia-northeast3")
   .firestore.document("cycles/{cycleId}")
-  .onUpdate(async (change, context) => {
+  .onUpdate(async (change: functions.Change<admin.firestore.DocumentSnapshot>, context: functions.EventContext) => {
     const before = change.before.data();
     const after = change.after.data();
     await handleCycleNotification(context.params.cycleId, before, after);
@@ -449,77 +328,43 @@ export const onCycleUpdate = functions
   });
 
 /**
- * DNA 분석 및 업데이트 (공용)
+ * DNA 타입 재계산 트리거 (최적화 버전)
+ * scores가 변경될 때마다 전체를 다시 읽지 않고, 이미 유저 문서에 있는 scores 객체만 사용하여 타입을 갱신합니다.
  */
-async function updateUserDNA(uid: string) {
-  try {
-    const reviewsSnap = await db.collectionGroup("reviews")
-      .where("authorUid", "==", uid)
-      .get();
-    
-    const postsSnap = await db.collection("posts")
-      .where("author.uid", "==", uid)
-      .get();
-    
-    const reviews = reviewsSnap.docs.map(d => d.data());
-    const posts = postsSnap.docs.map(d => d.data())
-      .filter(p => ['도서 추천', '책 리뷰'].includes(p.category));
+export const onUserScoresUpdate = functions
+  .region("asia-northeast3")
+  .firestore.document("users/{userId}")
+  .onUpdate(async (change) => {
+    const after: any = change.after.data();
+    if (!after) return null;
 
-    const allRecords = [...reviews, ...posts];
+    // dna.scores 필드가 변경되었을 때만 실행
+    const scoresAfter = after.dna?.scores;
+    const scoresBefore = change.before.data()?.dna?.scores;
+    if (JSON.stringify(scoresAfter) === JSON.stringify(scoresBefore)) return null;
 
-    if (allRecords.length === 0) {
-      await db.collection("users").doc(uid).set({
-        dna: null,
-        dnaTitle: '미분석'
-      }, { merge: true });
-      return;
-    }
+    const scores: Record<string, number> = scoresAfter || { I: 0, K: 0, G: 0, E: 0 };
+    const totalValid = Object.values(scores).reduce((a: number, b: number) => a + b, 0);
 
-    const CATEGORY_MAPPING: Record<string, string> = {
-      '소설': 'I',
-      '자기계발': 'G',
-      '경제/경영': 'G',
-      '인문/사회': 'K',
-      '과학/기술': 'K',
-      '시/에세이': 'E'
-    };
-
-    const scores: Record<string, number> = { I: 0, K: 0, G: 0, E: 0 };
-    let totalValid = 0;
-
-    allRecords.forEach(r => {
-      // Review는 category, Post는 bookGenre 필드에 장르가 있음
-      const genre = r.bookGenre || r.category;
-      const axis = CATEGORY_MAPPING[genre];
-      if (axis) {
-        scores[axis]++;
-        totalValid++;
-      }
-    });
-
-    if (totalValid === 0) return;
+    if (totalValid === 0) return null;
 
     const ratios: Record<string, number> = {};
     Object.keys(scores).forEach(key => {
-      const score = scores[key] || 0;
-      ratios[key] = Number((score / totalValid).toFixed(2));
+      ratios[key] = Number((scores[key] / totalValid).toFixed(2));
     });
 
     const sortedAxes = Object.entries(ratios)
       .sort((a: any, b: any) => {
-        const valA = a[1] || 0;
-        const valB = b[1] || 0;
-        if (valB !== valA) return valB - valA;
+        if (b[1] !== a[1]) return b[1] - a[1];
         const priority: Record<string, number> = { K: 4, I: 3, E: 2, G: 1 };
-        return (priority[b[0]] || 0) - (priority[a[0]] || 0);
+        return priority[b[0]] - priority[a[0]];
       });
 
     const first = sortedAxes[0];
     const second = sortedAxes[1];
-    
     const minRatio = Math.min(...Object.values(ratios) as number[]);
     const maxRatio = Math.max(...Object.values(ratios) as number[]);
-    
+
     let dnaType = '';
     let dnaName = '';
 
@@ -534,28 +379,26 @@ async function updateUserDNA(uid: string) {
       } else {
         dnaType = first[0] + first[0];
       }
-      
+
       const DNA_NAMES: Record<string, string> = {
         'IE': '인간 문학가', 'IK': '세계관 설계자', 'IG': '인생 서사형',
         'KE': '철학 탐험가', 'KG': '전략적 사고가', 'KI': '스토리 분석가',
         'EE': '감성 기록자', 'EK': '예술 사색가', 'EG': '인생 탐색가',
-        'GK': '인생 전략가', 'GE': '자기 탐구자', 'GG': '목표 설계자', 'KK': '지식 수집가'
+        'GK': '인생 전략가', 'GE': '자기 탐구자', 'GG': '목표 설계자', 'KK': '지식 수집가',
+        'II': '몰입 독서가'
       };
       dnaName = DNA_NAMES[dnaType] || '일반 독서가';
     }
 
-    await db.collection("users").doc(uid).set({
+    await change.after.ref.set({
       dna: {
-         dnaType,
-         dnaName,
-         scores,
-         ratios,
-         updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        dnaType,
+        dnaName,
+        ratios,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
       },
       dnaTitle: dnaName
     }, { merge: true });
 
-  } catch (err) {
-    console.error('updateUserDNA error:', err);
-  }
-}
+    return null;
+  });

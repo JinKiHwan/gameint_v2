@@ -271,37 +271,39 @@
         </div>
 
         <ul v-else class="list pa-0">
-          <template v-for="(u, index) in filteredUsers" :key="u.uid">
-            <li class="list-item flex items-center gap-3 py-3">
-              <div class="avatar avatar--sm">
-                <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
-              </div>
-              <div class="flex-grow min-w-0">
-                <div class="flex items-center gap-2 mb-1">
-                  <span class="text-subtitle-2 font-bold text-grey-dark">{{ u.nickname }}</span>
-                  <span v-if="u.role === 'master'" class="chip chip--amber chip--xs">MASTER</span>
-                  <span v-if="u.status === 'pending'" class="chip chip--orange chip--xs">승인 대기</span>
+          <template v-for="(u_raw, index) in filteredUsers" :key="u_raw.uid">
+            <template v-let="u = resolveUser(u_raw.uid, u_raw)">
+              <li class="list-item flex items-center gap-3 py-3">
+                <div class="avatar avatar--sm">
+                  <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
                 </div>
-                <div class="text-caption text-grey-2">{{ u.realName || '이름 미등록' }} · {{ u.tier }}</div>
-              </div>
+                <div class="flex-grow min-w-0">
+                  <div class="flex items-center gap-2 mb-1">
+                    <span class="text-subtitle-2 font-bold text-grey-dark">{{ u.nickname }}</span>
+                    <span v-if="u.role === 'master'" class="chip chip--amber chip--xs">MASTER</span>
+                    <span v-if="u.status === 'pending'" class="chip chip--orange chip--xs">승인 대기</span>
+                  </div>
+                  <div class="text-caption text-grey-2">{{ u.realName || '이름 미등록' }} · {{ u.tier }}</div>
+                </div>
 
-              <!-- 마스터 전용 작업 버튼 -->
-              <div v-if="isMaster && u.uid !== authStore.user?.uid" class="flex gap-1">
-                <button 
-                  v-if="u.status === 'pending'"
-                  class="btn btn--primary btn--sm py-1 px-3 text-xs font-black rounded-sm"
-                  @click="handleApproveUser(u)"
-                >
-                  승인
-                </button>
-                <button 
-                  class="btn btn--red-lt btn--sm py-1 px-3 text-xs font-black rounded-sm"
-                  @click="handleRemoveUser(u)"
-                >
-                  탈퇴
-                </button>
-              </div>
-            </li>
+                <!-- 마스터 전용 작업 버튼 -->
+                <div v-if="isMaster && u.uid !== authStore.user?.uid" class="flex gap-1">
+                  <button 
+                    v-if="u.status === 'pending'"
+                    class="btn btn--primary btn--sm py-1 px-3 text-xs font-black rounded-sm"
+                    @click="handleApproveUser(u)"
+                  >
+                    승인
+                  </button>
+                  <button 
+                    class="btn btn--red-lt btn--sm py-1 px-3 text-xs font-black rounded-sm"
+                    @click="handleRemoveUser(u)"
+                  >
+                    탈퇴
+                  </button>
+                </div>
+              </li>
+            </template>
             <hr v-if="index !== filteredUsers.length - 1" class="divider" />
           </template>
         </ul>
@@ -450,6 +452,7 @@ import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
 import { useCycle } from '~/composables/useCycle'
 import { useDNA } from '~/composables/useDNA'
+import { useUserMapper } from '~/composables/useUserMapper'
 import { PROFILE_IMAGES, isImageUnlocked, getProfileImagePath } from '~/composables/useProfileImages'
 import { EXP_CONFIG } from '~/utils/expConfig'
 import DnaCard from '~/components/DnaCard.vue'
@@ -465,6 +468,7 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { fetchUserPosts } = useBoard()
 const { fetchUserReviews } = useCycle()
+const { resolveUser } = useUserMapper()
 
 const isMaster = computed(() => authStore.userData?.role === 'master')
 const activeTab = ref('posts') // 'posts' | 'reviews' | 'members'

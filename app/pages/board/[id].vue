@@ -33,10 +33,12 @@
 
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
-              <div class="avatar avatar--sm border bg-white">
-                <img :src="getProfileImagePath(post.author.profileImageId)" alt="프로필" />
-              </div>
-              <span class="text-subtitle-2 font-bold text-grey-dark">{{ post.author.nickname }}</span>
+              <template v-let="author = resolveUser(post.author.uid, post.author)">
+                <div class="avatar avatar--sm border bg-white">
+                  <img :src="getProfileImagePath(author.profileImageId)" alt="프로필" />
+                </div>
+                <span class="text-subtitle-2 font-bold text-grey-dark">{{ author.nickname }}</span>
+              </template>
             </div>
             <div class="flex gap-4 text-body-2 text-grey-2 font-bold">
               <span class="flex items-center gap-1"><i class="mdi mdi-eye-outline" style="font-size:.9em;"></i>{{ post.viewCount || 0 }}</span>
@@ -106,11 +108,13 @@
             </div>
             <div class="flex-grow">
               <div class="flex justify-between items-center mb-1">
-                <div class="flex items-center gap-2">
-                  <span class="text-subtitle-2 font-bold text-grey-dark">{{ comment.author.nickname }}</span>
-                  <span class="text-caption text-grey-2">{{ formatDate(comment.createdAt) }}</span>
-                  <span v-if="comment.isEdited" class="text-caption text-grey-2 font-italic">(수정됨)</span>
-                </div>
+                <template v-let="cAuthor = resolveUser(comment.author.uid, comment.author)">
+                  <div class="flex items-center gap-2">
+                    <span class="text-subtitle-2 font-bold text-grey-dark">{{ cAuthor.nickname }}</span>
+                    <span class="text-caption text-grey-2">{{ formatDate(comment.createdAt) }}</span>
+                    <span v-if="comment.isEdited" class="text-caption text-grey-2 font-italic">(수정됨)</span>
+                  </div>
+                </template>
                 <div v-if="authStore.user?.uid === comment.author.uid && editingCommentId !== comment.id" class="flex items-center gap-1">
                   <button class="btn btn--text btn--icon-sm" @click="startEditComment(comment)"><i class="mdi mdi-pencil"></i></button>
                   <button class="btn btn--text-danger btn--icon-sm" @click="handleDeleteComment(comment.id)"><i class="mdi mdi-close"></i></button>
@@ -178,12 +182,14 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
+import { useUserMapper } from '~/composables/useUserMapper'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { fetchPost, incrementViewCount, deletePost, loading, fetchComments, createComment, updateComment, deleteComment, checkUserLiked, toggleLike } = useBoard()
+const { resolveUser } = useUserMapper()
 
 const post = ref(null)
 const confirmDelete = ref(false)
