@@ -78,34 +78,34 @@
         <button class="btn btn--text text-grey-2 font-bold" @click="router.push('/recommend')">전체보기</button>
       </div>
 
-      <div class="scroll-x gap-4 py-2">
+      <div class="scroll-x gap-6 py-2">
         <div v-if="boardLoading" v-for="i in 3" :key="`skel-book-${i}`" class="card book-card-skeleton">
           <div class="skeleton" style="height: 100%; border-radius: 16px;"></div>
         </div>
         
         <div v-else-if="latestRecommendations.length > 0" v-for="post in latestRecommendations" :key="post.id" class="card book-card hover-shadow" @click="router.push(`/board/${post.id}`)">
           <div class="card-body flex flex-col h-full">
-            <span class="chip chip--blue-lt mb-4" style="align-self: flex-start;">{{ post.bookGenre || '도서 추천' }}</span>
-            <div class="flex items-center flex-grow mb-4">
+            <div class="flex justify-between items-start mb-4">
+              <span class="chip chip--blue-lt">{{ post.bookGenre || '도서 추천' }}</span>
+              <span class="text-[11px] text-grey-3 font-bold">{{ formatDate(post.createdAt) }}</span>
+            </div>
+            
+            <div class="flex items-start flex-grow mb-4">
               <div class="book-thumb mr-4 overflow-hidden bg-grey-100">
                 <img v-if="post.attachedBook?.thumbnail" :src="post.attachedBook.thumbnail" alt="cover" class="w-full h-full object-cover" />
                 <i v-else class="mdi mdi-book-open-variant text-grey-300"></i>
               </div>
-              <div class="min-w-0">
-                <h4 class="text-subtitle-2 font-bold text-grey-dark line-clamp-2">{{ post.title }}</h4>
-                <p class="text-caption text-grey-2 mt-1 line-clamp-1">
+              <div class="min-w-0 flex-grow">
+                <h4 class="text-body-1 font-black text-grey-dark line-clamp-2 mb-1">{{ post.title }}</h4>
+                <p class="text-caption text-grey-2 line-clamp-1">
                   {{ post.attachedBook?.title || '정보 없음' }}
                 </p>
               </div>
             </div>
-            <hr class="divider mb-3" />
-            <div class="flex items-center justify-between text-[11px] text-grey-2">
-              <div class="flex items-center gap-1">
-                <i class="mdi mdi-heart text-red"></i>
-                <span class="font-bold">{{ post.likeCount || 0 }}</span>
-              </div>
-              <span class="opacity-70">{{ formatDate(post.createdAt) }}</span>
-            </div>
+            
+            <p class="text-body-2 text-grey-2 line-clamp-2 mb-0 opacity-80" style="min-height: 3em;">
+              {{ post.content }}
+            </p>
           </div>
         </div>
 
@@ -115,54 +115,68 @@
       </div>
     </div>
 
-    <!-- 실시간 활동 -->
+    <!-- 커뮤니티 대시보드 (활동 피드 대체) -->
     <div class="mb-12">
-      <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2 px-1">
-        💬 실시간 멤버 소식
-      </h3>
-      <div class="card shadow-sm border-0">
-        <ul class="list pa-0">
-          <template v-for="(activity, i) in activities" :key="activity.id">
-            <li class="list-item activity-item hover:bg-grey-50 transition-colors" @click="router.push(activity.link)">
-              <template v-for="user in [resolveUser(activity.uid)]" :key="'feed_user_' + activity.id">
-                <div class="avatar avatar--md border flex-shrink-0 mr-4">
+      <div class="flex flex-col lg:flex-row gap-8">
+        <!-- 🏆 명예의 전당 (실시간 랭킹 요약) -->
+        <div class="flex-grow">
+          <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2 px-1">
+            🏆 이달의 명예의 전당
+          </h3>
+          <div class="card shadow-sm border-0 pa-6 h-full">
+            <div v-if="rankingLoading" class="flex flex-col gap-4">
+              <div v-for="i in 3" :key="i" class="skeleton" style="height: 60px; border-radius: 12px;"></div>
+            </div>
+            <div v-else class="flex flex-col gap-5">
+              <div v-for="(user, idx) in topRankers" :key="user.uid" class="flex items-center gap-4 group">
+                <div class="rank-num" :class="`rank-${idx+1}`">{{ idx + 1 }}</div>
+                <div class="avatar avatar--md" :class="getTierAvatarClass(user.tier)">
                   <img :src="getProfileImagePath(user.profileImageId)" alt="profile" />
                 </div>
                 <div class="flex-grow min-w-0">
-                  <div class="text-body-2 text-grey-dark">
-                    <span class="font-black mr-1">{{ user.nickname }}</span>
-                    <span class="text-grey-2">{{ activity.type === 'POST' ? '님이 새로운 글을 남겼습니다.' : '님이 댓글을 작성했습니다.' }}</span>
+                  <div class="flex justify-between items-end mb-1">
+                    <span class="text-body-2 font-black text-grey-dark">{{ user.nickname }}</span>
+                    <span class="text-[10px] text-grey-2 font-bold">{{ user.exp }} EXP</span>
                   </div>
-                  <div class="text-caption font-bold text-primary-color mt-1 line-clamp-1 opacity-80">
-                    "{{ activity.targetTitle }}"
-                  </div>
-                  <div class="mt-2 text-[10px] text-grey-3 flex items-center gap-2">
-                    <span>{{ formatRelativeTime(activity.createdAt) }}</span>
+                  <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" :class="`fill-${idx+1}`" :style="{width: `${Math.min(100, (user.exp / 1000) * 100)}%`}"></div>
                   </div>
                 </div>
-                <div class="mdi mdi-chevron-right text-grey-300"></div>
-              </template>
-            </li>
-            <hr v-if="i !== activities.length - 1" class="divider mx-5" />
-          </template>
+              </div>
+            </div>
+          </div>
+        </div>
 
-          <li v-if="activities.length === 0 && !feedLoading" class="pa-10 text-center text-grey-3 text-body-2">
-            활동 소식이 아직 없습니다.
-          </li>
-
-          <li v-if="feedLoading" class="pa-10 text-center">
-            <div class="spinner spinner--sm"></div>
-          </li>
-        </ul>
-        
-        <div v-if="hasMore" class="card-footer border-t bg-grey-50/50 pa-0">
-          <button 
-            class="btn btn--text btn--block py-4 text-grey-2 font-bold hover:text-primary-color transition-colors"
-            :class="{'is-loading': feedLoading}"
-            @click="fetchActivities(5, true)"
-          >
-            활동 더보기 ({{ activities.length }}/20)
-          </button>
+        <!-- ⚡ 퀵 액션 & 내 상태 -->
+        <div class="lg:w-[320px]">
+          <h3 class="text-h6 font-black text-grey-dark mb-4 flex items-center gap-2 px-1">
+            ⚡ 퀵 링크
+          </h3>
+          <div class="flex flex-col gap-4">
+            <button class="action-card action-card--primary" @click="router.push('/write')">
+              <div class="action-card__icon"><i class="mdi mdi-pencil-plus"></i></div>
+              <div class="text-left">
+                <div class="text-body-2 font-black">추천글 작성</div>
+                <div class="text-[10px] opacity-80">좋은 책을 동료에게 추천하세요</div>
+              </div>
+            </button>
+            <button class="action-card action-card--secondary" @click="router.push('/cycles')">
+              <div class="action-card__icon"><i class="mdi mdi-book-open-page-variant"></i></div>
+              <div class="text-left">
+                <div class="text-body-2 font-black">독서 리뷰 쓰기</div>
+                <div class="text-[10px] opacity-80">이번 사이클 리뷰를 남겨보세요</div>
+              </div>
+            </button>
+            <div v-if="authStore.isLoggedIn" class="card shadow-sm border-0 pa-5 mt-2 bg-primary-lt">
+              <div class="text-caption font-bold text-primary-color mb-1">내 성장 목표</div>
+              <div class="text-body-2 font-black text-grey-dark mb-3">
+                다음 티어까지 {{ 1000 - (authStore.userData?.exp % 1000 || 0) }} EXP 남음!
+              </div>
+              <div class="progress-bar-bg" style="height: 6px;">
+                <div class="progress-bar-fill" :style="{width: `${(authStore.userData?.exp % 1000 || 0) / 10}%`}"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -175,7 +189,7 @@ import { useRouter } from 'vue-router'
 import { useAuthStore } from '~/stores/auth'
 import { useCycle } from '~/composables/useCycle'
 import { useBoard } from '~/composables/useBoard'
-import { useActivityFeed } from '~/composables/useActivityFeed'
+import { useRanking } from '~/composables/useRanking'
 import { useUserMapper } from '~/composables/useUserMapper'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 
@@ -183,19 +197,19 @@ const router = useRouter()
 const authStore = useAuthStore()
 const { fetchActiveCycle, fetchMyParticipation, fetchParticipants, loading: cycleLoading } = useCycle()
 const { fetchPosts, loading: boardLoading } = useBoard()
-const { activities, loading: feedLoading, hasMore, fetchActivities } = useActivityFeed()
+const { fetchTopUsersByExp, loading: rankingLoading } = useRanking()
 const { resolveUser } = useUserMapper()
 
 const activeCycle = ref(null)
 const myParticipation = ref(null)
 const latestRecommendations = ref([])
+const topRankers = ref([])
 
 onMounted(async () => {
   // 1. 사이클 데이터 로드
   activeCycle.value = await fetchActiveCycle()
   
   if (activeCycle.value) {
-    // [Fix] 기존 사이클의 인원수가 0인 경우(새 필드 도입 전 데이터) 동기화 시도
     if (!activeCycle.value.participantCount || activeCycle.value.participantCount === 0) {
       const p = await fetchParticipants(activeCycle.value.id)
       if (p.length > 0) {
@@ -209,15 +223,13 @@ onMounted(async () => {
   }
 
   // 2. 최신 추천 도서 로드 (3개)
-  // [Fix] fetchPosts는 객체가 아닌 카테고리 문자열을 인자로 받음
   const posts = await fetchPosts('도서 추천')
   latestRecommendations.value = (posts || []).slice(0, 3)
 
-  // 3. 활동 피드 초기 로드
-  await fetchActivities(5)
+  // 3. 랭킹 데이터 로드 (TOP 3)
+  topRankers.value = await fetchTopUsersByExp(3)
 })
 
-// [Fix] Firebase Auth 초기화 시점이 마운트 이후일 수 있으므로 유저 상태 감시
 watch(() => authStore.user, async (newUser) => {
   if (newUser && activeCycle.value && !myParticipation.value) {
     myParticipation.value = await fetchMyParticipation(activeCycle.value.id)
@@ -242,22 +254,10 @@ const getTierAvatarClass = (tier) => {
 const formatDate = (timestamp) => {
   if (!timestamp) return ''
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  return `${date.getMonth() + 1}.${date.getDate()}`
-}
-
-const formatRelativeTime = (timestamp) => {
-  if (!timestamp) return ''
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
-  const diff = Date.now() - date.getTime()
-  
-  const minutes = Math.floor(diff / (1000 * 60))
-  if (minutes < 1) return '방금 전'
-  if (minutes < 60) return `${minutes}분 전`
-  
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  if (hours < 24) return `${hours}시간 전`
-  
-  return formatDate(timestamp)
+  const Y = date.getFullYear()
+  const M = String(date.getMonth() + 1).padStart(2, '0')
+  const D = String(date.getDate()).padStart(2, '0')
+  return `${Y}.${M}.${D}`
 }
 </script>
 
@@ -285,19 +285,20 @@ const formatRelativeTime = (timestamp) => {
 }
 
 .book-card { 
-  width: 260px; 
+  width: 320px; 
   flex-shrink: 0; 
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
   &:hover { transform: translateY(-4px); }
+  border: 1px solid #f0f0f0;
 }
-.book-card-skeleton { width: 260px; height: 160px; flex-shrink: 0; }
+.book-card-skeleton { width: 320px; height: 180px; flex-shrink: 0; }
 
 .book-thumb {
-  width: 56px; height: 80px; border-radius: 6px; flex-shrink: 0;
+  width: 64px; height: 90px; border-radius: 8px; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   border: 1px solid #f0f0f0;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.08);
 }
 
 .hero-banner {
@@ -335,17 +336,32 @@ const formatRelativeTime = (timestamp) => {
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
 }
 
-.hero-avatars { display: flex; }
-.avatar--stacked { 
-  border: 2px solid rgba(255,255,255,0.2); 
-  margin-left: -8px; 
-  &:first-child { margin-left: 0; }
+.rank-num {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; color: #fff; background: #BDC3C7;
 }
+.rank-1 { background: #F1C40F; box-shadow: 0 0 12px rgba(241,196,15,0.4); }
+.rank-2 { background: #BDC3C7; }
+.rank-3 { background: #E67E22; }
 
-.activity-item { 
-  padding: 20px 24px; 
-  align-items: center; 
-  cursor: pointer;
+.progress-bar-bg { width: 100%; height: 8px; background: #f0f0f0; border-radius: 10px; overflow: hidden; }
+.progress-bar-fill { height: 100%; border-radius: 10px; transition: width 1s ease-out; }
+.fill-1 { background: linear-gradient(90deg, #F1C40F, #F39C12); }
+.fill-2 { background: linear-gradient(90deg, #BDC3C7, #95A5A6); }
+.fill-3 { background: linear-gradient(90deg, #E67E22, #D35400); }
+
+.action-card {
+  display: flex; align-items: center; gap: 16px; width: 100%; padding: 16px 20px;
+  border-radius: 18px; border: 0; cursor: pointer; transition: all 0.2s;
+  color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.action-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(0,0,0,0.15); }
+.action-card--primary { background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); }
+.action-card--secondary { background: linear-gradient(135deg, #ec4899 0%, #db2777 100%); }
+.action-card__icon { 
+  width: 40px; height: 40px; border-radius: 12px; background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center; font-size: 20px;
 }
 
 .scroll-x {
@@ -359,12 +375,7 @@ const formatRelativeTime = (timestamp) => {
 .mb-4 { margin-bottom: 16px; }
 .mb-10 { margin-bottom: 40px; }
 .mb-12 { margin-bottom: 48px; }
-.mr-1 { margin-right: 4px; }
-.mr-4 { margin-right: 16px; }
-.mt-1 { margin-top: 4px; }
-.mt-2 { margin-top: 8px; }
-.pa-0 { padding: 0 !important; }
-.pa-10 { padding: 40px !important; }
-.gap-2 { gap: 8px; }
-.gap-4 { gap: 16px; }
+.pa-6 { padding: 24px !important; }
+.bg-primary-lt { background: #eef2ff !important; }
+.text-primary-color { color: #4f46e5 !important; }
 </style>
