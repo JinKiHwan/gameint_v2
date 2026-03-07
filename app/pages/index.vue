@@ -177,7 +177,7 @@ import { useCycle } from '~/composables/useCycle'
 import { useBoard } from '~/composables/useBoard'
 import { useActivityFeed } from '~/composables/useActivityFeed'
 import { useUserMapper } from '~/composables/useUserMapper'
-import { getProfileImagePath } from '~/utils/profile'
+import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const router = useRouter()
 const authStore = useAuthStore()
