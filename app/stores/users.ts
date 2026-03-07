@@ -29,9 +29,8 @@ export const useUsersStore = defineStore('users', {
             const firestore = ($firebase as any).firestore
             const usersRef = collection(firestore, 'users')
 
-            // 실시간 구독 (닉네임/이미지 변경 시 모든 페이지에 즉시 반영하기 위함)
-            // 비용 최적화를 위해 active 상태인 유저만 가져옴
-            const q = query(usersRef, where('status', '==', 'active'))
+            // 닉네임/이미지 변경 시 반영 및 멤버 관리 실시간 반영을 위해 active/pending 유저 구독
+            const q = query(usersRef, where('status', 'in', ['active', 'pending']))
 
             onSnapshot(q, (snapshot) => {
                 snapshot.docs.forEach(doc => {

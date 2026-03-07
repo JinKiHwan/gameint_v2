@@ -16,19 +16,31 @@ export const useUserMapper = () => {
         const latestUser = usersStore.getUser(uid)
 
         if (latestUser) {
-            // 중요한 필드(nickname, profileImageId 등)는 스토어의 최신 정보를 우선하되, 
-            // 스토어에 없는 나머지 필드(exp, dna 등)는 원본(fallbackData)을 유지하도록 병합
             return {
                 ...fallbackData,
                 ...latestUser,
+                uid,
                 isUnknown: false
             }
         }
 
-        // 탈퇴했거나 정보가 없는 경우
+        // 스토어에 없더라도 fallbackData가 있으면 (예: 멤버 관리 페이지의 pending 유저) 해당 데이터 사용
+        if (fallbackData) {
+            const isPending = fallbackData.status === 'pending'
+            return {
+                ...fallbackData,
+                uid,
+                // pending 유저면 원본 닉네임 사용, 아니면 '알 수 없음' 문구 추가
+                nickname: isPending ? (fallbackData.nickname || '승인 대기 유저') : (fallbackData.nickname ? `${fallbackData.nickname} (알 수 없음)` : '알 수 없는 사용자'),
+                isUnknown: !isPending
+            }
+        }
+
+        // 정말로 정보가 없는 유저
         return {
-            nickname: fallbackData?.nickname ? `${fallbackData.nickname} (알 수 없음)` : '알 수 없는 사용자',
-            profileImageId: fallbackData?.profileImageId || 'avatar_bronze_01',
+            uid,
+            nickname: '알 수 없는 사용자',
+            profileImageId: 'avatar_bronze_01',
             tier: 'Bronze',
             isUnknown: true
         }
