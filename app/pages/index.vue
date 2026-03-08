@@ -130,7 +130,7 @@
     <!-- DNA Showcase (Conveyor Belt Effect) -->
     <div class="mb-12">
       <h3 class="text-h6 font-black text-grey-dark mb-6 flex items-center gap-2 px-1">
-        지능형 독서 진단, 당신의 독서 DNA는?
+        당신의 독서 DNA는?
       </h3>
       <div class="dna-conveyor card relative overflow-hidden">
         <div class="dna-conveyor-inner">
@@ -179,21 +179,21 @@ const myParticipation = ref(null)
 const latestRecommendations = ref([])
 
 const dnaTypes = [
-  { type: 'IE', name: '인간 문학가', desc: '사람의 감정과 삶의 서사에 깊이 몰입하는 독서가', icon: 'mdi-human-greeting' },
-  { type: 'IK', name: '세계관 설계자', desc: '지식의 구조를 파악하고 새로운 세계를 상상하는 독서가', icon: 'mdi-pillar' },
-  { type: 'IG', name: '인생 서사형', desc: '자신의 삶을 한 편의 예술처럼 가꾸는 독서가', icon: 'mdi-book-open-page-variant' },
-  { type: 'KE', name: '철학 탐험가', desc: '세상의 근원적인 원리와 지혜를 탐구하는 독서가', icon: 'mdi-compass-rose' },
-  { type: 'KG', name: '전략적 사고가', desc: '실질적인 해법과 지식을 효율적으로 습득하는 독서가', icon: 'mdi-chess-knight' },
-  { type: 'KI', name: '스토리 분석가', desc: '이야기 속 숨겨진 의미와 구조를 파악하는 독서가', icon: 'mdi-magnify-scan' },
-  { type: 'EE', name: '감성 기록자', desc: '책을 통해 느끼는 감정을 소중히 기록하는 독서가', icon: 'mdi-feather' },
-  { type: 'EK', name: '예술 사색가', desc: '아름다운 문장과 예술적 영감을 즐기는 독서가', icon: 'mdi-palette' },
-  { type: 'EG', name: '인생 탐색가', desc: '다양한 경험과 지식을 통해 자신을 찾아가는 독서가', icon: 'mdi-map-marker-path' },
-  { type: 'GK', name: '인생 전략가', desc: '지식을 바탕으로 더 나은 미래를 설계하는 독서가', icon: 'mdi-trending-up' },
-  { type: 'GE', name: '자기 탐구자', desc: '내면의 목소리에 귀를 기울이고 성장하는 독서가', icon: 'mdi-head-heart' },
-  { type: 'GG', name: '목표 설계자', desc: '뚜렷한 목적을 가지고 지식을 습득하고 실천하는 독서가', icon: 'mdi-target' },
-  { type: 'KK', name: '지식 수집가', desc: '폭넓은 분야의 깊이 있는 지식을 쌓는 것에 즐거움을 느끼는 독서가', icon: 'mdi-database' },
-  { type: 'II', name: '몰입 독서가', desc: '한 권의 책에 깊이 빠져들어 작가의 의도와 하나가 되는 독서가', icon: 'mdi-focus-field' },
-  { type: 'BALANCED', name: '균형 독서가', desc: '다양한 분야를 골고루 섭렵하며 균형 잡힌 시각을 가진 독서가', icon: 'mdi-scale-balance' },
+  { type: 'IE', name: '인간 문학가', desc: '사람의 감정과 삶의 서사에\n깊이 몰입하는 독서가', icon: 'mdi-human-greeting' },
+  { type: 'IK', name: '세계관 설계자', desc: '지식의 구조를 파악하고\n새로운 세계를 상상하는 독서가', icon: 'mdi-pillar' },
+  { type: 'IG', name: '인생 서사형', desc: '자신의 삶을 한 편의 예술처럼\n가꾸는 독서가', icon: 'mdi-book-open-page-variant' },
+  { type: 'KE', name: '철학 탐험가', desc: '세상의 근원적인 원리와 지혜를\n탐구하는 독서가', icon: 'mdi-compass-rose' },
+  { type: 'KG', name: '전략적 사고가', desc: '실질적인 해법과 지식을 효율적으로\n습득하는 독서가', icon: 'mdi-chess-knight' },
+  { type: 'KI', name: '스토리 분석가', desc: '이야기 속 숨겨진 의미와 구조를\n파악하는 독서가', icon: 'mdi-magnify-scan' },
+  { type: 'EE', name: '감성 기록자', desc: '책을 통해 느끼는 감정을\n소중히 기록하는 독서가', icon: 'mdi-feather' },
+  { type: 'EK', name: '예술 사색가', desc: '아름다운 문장과 예술적 영감을\n즐기는 독서가', icon: 'mdi-palette' },
+  { type: 'EG', name: '인생 탐색가', desc: '다양한 경험과 지식을 통해\n자신을 찾아가는 독서가', icon: 'mdi-map-marker-path' },
+  { type: 'GK', name: '인생 전략가', desc: '지식을 바탕으로 더 나은 미래를\n설계하는 독서가', icon: 'mdi-trending-up' },
+  { type: 'GE', name: '자기 탐구자', desc: '내면의 목소리에 귀를 기울이고\n성장하는 독서가', icon: 'mdi-head-heart' },
+  { type: 'GG', name: '목표 설계자', desc: '뚜렷한 목적을 가지고 지식을\n습득하고 실천하는 독서가', icon: 'mdi-target' },
+  { type: 'KK', name: '지식 수집가', desc: '폭넓은 분야의 깊이 있는 지식을\n쌓는 것에 즐거움을 느끼는 독서가', icon: 'mdi-database' },
+  { type: 'II', name: '몰입 독서가', desc: '한 권의 책에 깊이 빠져들어\n작가의 의도와 하나가 되는 독서가', icon: 'mdi-focus-field' },
+  { type: 'BALANCED', name: '균형 독서가', desc: '다양한 분야를 골고루 섭렵하며\n균형 잡힌 시각을 가진 독서가', icon: 'mdi-scale-balance' },
 ]
 
 onMounted(async () => {
@@ -380,6 +380,7 @@ import { onBeforeUnmount } from 'vue'
   flex-direction: column;
   align-items: center;
   gap: 16px;
+  p { white-space: pre-line; }
 }
 .dna-icon-wrap {
   width: 70px;
