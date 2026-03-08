@@ -396,18 +396,28 @@
   }
 
   &--blue {
-    background: $blue-lighten-5;
-    color: $blue-darken-1;
+    background: #E3F2FD;
+    color: #1976D2;
   }
 
   &--grey {
-    background: $grey-lighten-3;
-    color: $grey-darken-2;
+    background: #F5F5F5;
+    color: #616161;
   }
 
   &--amber {
-    background: $amber-lighten-5;
-    color: $amber-darken-2;
+    background: #FFF8E1;
+    color: #F57C00;
+  }
+
+  &--teal {
+    background: #E0F2F1;
+    color: #00796B;
+  }
+
+  &--indigo {
+    background: #E8EAF6;
+    color: #3949AB;
   }
 
   &--white {

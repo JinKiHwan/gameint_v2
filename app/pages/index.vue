@@ -58,12 +58,12 @@
                 </div>
               </template>
               <template v-else>
-                <div v-for="i in 3" :key="'mock-' + i" class="avatar avatar--sm avatar--stacked" :class="getHeroFallbackClass(i)">
+                <div v-for="i in 3" :key="'mock-' + i" class="avatar avatar--sm avatar--stacked" :class="getHeroFallbackClass(i - 1)">
                   <i class="mdi mdi-account" style="font-size: 0.8rem;"></i>
                 </div>
               </template>
-              <div v-if="(activeCycle.participantCount || 0) > (activeCycle.recentParticipantUids?.length || 0)" class="avatar avatar--sm avatar--white avatar--stacked">
-                <span class="text-blue-dark" style="font-size: 0.7rem;">+{{ (activeCycle.participantCount || 0) - (activeCycle.recentParticipantUids?.length || 0) }}</span>
+              <div v-if="(activeCycle.participantCount || 0) > (activeCycle.recentParticipantUids?.length || 0 ? activeCycle.recentParticipantUids.length : 3)" class="avatar avatar--sm avatar--white avatar--stacked">
+                <span class="text-blue-dark" style="font-size: 0.7rem;">+{{ (activeCycle.participantCount || 0) - (activeCycle.recentParticipantUids?.length || 0 ? activeCycle.recentParticipantUids.length : 3) }}</span>
               </div>
             </div>
             <button 
@@ -261,7 +261,7 @@ const formatRelativeTime = (timestamp) => {
 }
 
 const getHeroFallbackClass = (i) => {
-  const classes = ['avatar--blue', 'avatar--amber', 'avatar--cyan', 'avatar--indigo']
+  const classes = ['avatar--blue', 'avatar--amber', 'avatar--teal', 'avatar--indigo']
   return classes[i % classes.length]
 }
 
