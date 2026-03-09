@@ -180,10 +180,8 @@
     }
 
     .logo-text {
-      font-size: 1.0625rem;
+      font-size: 1.3625rem;
       font-weight: 900;
-      background: url('/images/common/gradient.webp') no-repeat center center / contain;
-      background-repeat: no-repeat;
       background-position: center center;
       background-size: cover;
       background-clip: text;
@@ -315,65 +313,4 @@
   align-items: center;
   justify-content: center;
   padding: sp(4);
-}
-
-// ============================
-// Gradient Background
-// ============================
-.gradient-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 800px;
-  height: 800px;
-  background: url('/images/common/gradient_bg.webp') no-repeat center center / contain;
-  z-index: 0;
-  pointer-events: none;
-  animation: gradient-bg-rotate 9s linear infinite;
-}
-
-@keyframes gradient-bg-rotate {
-  0% {
-    transform: rotate(0) scale(1)
-  }
-
-  10% {
-    transform: rotate(36deg) scale(1.5)
-  }
-
-  20% {
-    transform: rotate(72deg) scale(1)
-  }
-
-  30% {
-    transform: rotate(108deg) scale(.75)
-  }
-
-  40% {
-    transform: rotate(144deg) scale(1)
-  }
-
-  50% {
-    transform: rotate(180deg) scale(1.5)
-  }
-
-  60% {
-    transform: rotate(216deg) scale(1)
-  }
-
-  70% {
-    transform: rotate(252deg) scale(.75)
-  }
-
-  80% {
-    transform: rotate(288deg) scale(1)
-  }
-
-  90% {
-    transform: rotate(324deg) scale(1.5)
-  }
-
-  to {
-    transform: rotate(360deg) scale(1)
-  }
 }
