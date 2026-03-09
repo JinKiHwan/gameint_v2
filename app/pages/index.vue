@@ -127,16 +127,11 @@
       </div>
     </div>
 
-    <!-- DNA Showcase (Conveyor Belt Effect) -->
-    <div class="mb-12">
-      <h3 class="text-h6 font-black text-grey-dark mb-6 flex items-center gap-2 px-1">
-        당신의 독서 DNA는?
-      </h3>
-      <div class="dna-conveyor card relative overflow-hidden">
+      <div class="dna-conveyor relative overflow-hidden">
         <div class="dna-conveyor-inner">
           <!-- Double the list for seamless looping -->
           <div v-for="dna in [...dnaTypes, ...dnaTypes]" :key="dna.type + Math.random()" class="dna-item">
-             <div class="dna-item-content">
+             <div class="dna-item-content card">
                <div class="dna-icon-wrap" :class="getDnaColorClass(dna.type)">
                  <i :class="`mdi ${dna.icon}`"></i>
                </div>
@@ -354,9 +349,9 @@ import { onBeforeUnmount } from 'vue'
 }
 
 .dna-conveyor {
-  height: 240px;
-  background: linear-gradient(135deg, #f8f9ff 0%, #ffffff 100%);
-  border: 1px solid #edf0ff;
+  height: 280px;
+  background: transparent;
+  border: none;
   display: flex;
   align-items: center;
 }
@@ -369,18 +364,23 @@ import { onBeforeUnmount } from 'vue'
   }
 }
 .dna-item {
-  width: 280px;
+  width: 320px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 10px;
 }
 .dna-item-content {
+  width: 100%;
+  height: 220px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 16px;
-  p { white-space: pre-line; }
+  padding: 24px;
+  p { white-space: pre-line; font-size: 13px; line-height: 1.5; }
 }
 .dna-icon-wrap {
   width: 70px;
