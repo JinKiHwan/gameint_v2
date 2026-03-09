@@ -127,6 +127,11 @@
       </div>
     </div>
 
+    <!-- DNA Showcase (Conveyor Belt Effect) -->
+    <div class="mb-12">
+      <h3 class="text-h6 font-black text-grey-dark mb-6 flex items-center gap-2 px-1">
+        당신의 독서 DNA는?
+      </h3>
       <div class="dna-conveyor relative overflow-hidden">
         <div class="dna-conveyor-inner">
           <!-- Double the list for seamless looping -->
@@ -144,6 +149,7 @@
         </div>
       </div>
     </div>
+
 
     <!-- Telegram Contact Button -->
     <div class="mb-16 text-center py-6">
