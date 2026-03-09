@@ -50,7 +50,7 @@ async function createNotification(params: {
  * 2. Helper function to reward EXP to a user and handle level-ups.
  */
 async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS | 'MANUAL', manualAmount?: number, bookGenre?: string, isTriggeredByUpdate = false) {
-  console.log(`[rewardExp] Starting reward for userId: ${userId}, action: ${action}, isTriggeredByUpdate: ${isTriggeredByUpdate}`);
+  console.log(`[rewardExp] ENTER: userId=${userId}, action=${action}, isTriggeredByUpdate=${isTriggeredByUpdate}`);
   const userRef = db.collection("users").doc(userId);
   const today = getKstDate();
 
@@ -58,22 +58,28 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
     await db.runTransaction(async (transaction: admin.firestore.Transaction) => {
       const userDoc = await transaction.get(userRef);
       if (!userDoc.exists) {
-        console.warn(`[rewardExp] User document not found for userId: ${userId}`);
+        console.warn(`[rewardExp] User ${userId} not found`);
         return;
       }
 
       const userData = userDoc.data() || {};
-      let currentExp = typeof userData.exp === "number" ? userData.exp : 0;
-      let currentLevel = typeof userData.level === "number" ? userData.level : 1;
+      console.log(`[rewardExp] Current Data: exp=${userData.exp}, level=${userData.level}, lastAttendance=${userData.expTracker?.lastAttendanceDate}`);
+      
+      let currentExp = Number(userData.exp) || 0;
+      let currentLevel = Number(userData.level) || 1;
       const expTracker = userData.expTracker || {};
 
-      let expAmount = manualAmount || 0;
-      if (action !== 'MANUAL') {
-        expAmount = EXP_CONFIG.REWARDS[action];
+      let expAmount = 0;
+      if (action === 'MANUAL') {
+        expAmount = Number(manualAmount) || 0;
+      } else {
+        expAmount = Number(EXP_CONFIG.REWARDS[action]) || 0;
 
         if (action === 'ATTENDANCE') {
-          // 트리거를 통한 업데이트인 경우 날짜 중복 체크를 우회(프론트에서 이미 업데이트했으므로)
-          if (!isTriggeredByUpdate && expTracker.lastAttendanceDate === today) return;
+          if (!isTriggeredByUpdate && expTracker.lastAttendanceDate === today) {
+            console.log(`[rewardExp] Attendance already done (skip)`);
+            return;
+          }
           expTracker.lastAttendanceDate = today;
         } else if (action === 'POST_GENERAL') {
           if (expTracker.lastPostDate === today) return;
@@ -83,22 +89,23 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
           expTracker.lastRecommendBookDate = today;
         } else if (action === 'COMMENT') {
           const lastDate = expTracker.lastCommentDate || "";
-          let countToday = (lastDate === today) ? (expTracker.commentCountToday || 0) : 0;
+          let countToday = (lastDate === today) ? Number(expTracker.commentCountToday || 0) : 0;
           if (countToday >= EXP_CONFIG.LIMITS.COMMENT_PER_DAY) return;
-
           expTracker.lastCommentDate = today;
           expTracker.commentCountToday = countToday + 1;
         }
       }
 
-      const updateData: any = {
-        expTracker: expTracker
-      };
-
+      const updateData: any = {};
+      
+      // Exp / Level 계산
       if (expAmount > 0) {
+        console.log(`[rewardExp] Adding ${expAmount} EXP to ${currentExp}`);
         currentExp += expAmount;
         while (currentExp >= EXP_CONFIG.getNextLevelExp(currentLevel + 1) && currentLevel < 100) {
-          currentExp -= EXP_CONFIG.getNextLevelExp(currentLevel + 1);
+          const reqExp = EXP_CONFIG.getNextLevelExp(currentLevel + 1);
+          console.log(`[rewardExp] Level Up! ${currentLevel} -> ${currentLevel + 1} (Req: ${reqExp})`);
+          currentExp -= reqExp;
           currentLevel++;
         }
         updateData.exp = currentExp;
@@ -106,9 +113,16 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
         updateData.tier = EXP_CONFIG.getTier(currentLevel);
       }
 
-      // DNA 증분 업데이트 (Read 없이 처리)
+      // Tracker 업데이트 (Dot notation)
+      if (expTracker) {
+        Object.keys(expTracker).forEach(key => {
+          updateData[`expTracker.${key}`] = expTracker[key];
+        });
+      }
+
+      // DNA 증분
       if (bookGenre || action === 'POST_RECOMMEND' || action === 'CYCLE_REVIEW') {
-        const genreToMap = bookGenre || (action === 'POST_RECOMMEND' ? '도서 추천' : ''); // 실제 장르값이 필요함
+        const genreToMap = bookGenre || (action === 'POST_RECOMMEND' ? '도서 추천' : ''); 
         if (genreToMap) {
           const CATEGORY_MAPPING: Record<string, string> = {
             '소설': 'I', '자기계발': 'G', '경제/경영': 'G', '인문/사회': 'K', '과학/기술': 'K', '시/에세이': 'E'
@@ -120,14 +134,12 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
         }
       }
 
+      console.log(`[rewardExp] Final Update Object:`, JSON.stringify(updateData));
       transaction.update(userRef, updateData);
-
-      // 보상 후 DNA 한 줄 평/타입 재계산 (Update 트리거에서 처리할 수도 있지만, transaction 내에서 snapshot 데이터 기반으로 미리 계산 시도 가능)
-      // 단, FieldValue.increment는 즉시 값을 알 수 없으므로, onUpdate 트리거에서 dna.scores 변경 시 type만 계산하는 게 더 정확할 수 있음.
-      // 여기서는 일단 scores 업데이트만 수행하고, DNA 타입 계산은 별도 트리거로 분리하여 Read 최소화.
     });
+    console.log(`[rewardExp] Transaction committed for ${userId}`);
   } catch (error) {
-    console.error(`[rewardExp] Error in transaction for userId: ${userId}`, error);
+    console.error(`[rewardExp] CRITICAL ERROR for ${userId}:`, error);
   }
 }
 
