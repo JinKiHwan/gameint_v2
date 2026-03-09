@@ -114,7 +114,7 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
         });
       }
 
-      // DNA 증분
+      // DNA 증분 (기존 로직 복구)
       if (bookGenre || action === 'POST_RECOMMEND' || action === 'CYCLE_REVIEW') {
         const genreToMap = bookGenre || (action === 'POST_RECOMMEND' ? '도서 추천' : ''); 
         if (genreToMap) {
@@ -126,6 +126,19 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
             updateData[`dna.scores.${axis}`] = admin.firestore.FieldValue.increment(1);
           }
         }
+      }
+
+      // 랭킹용 카운터 증분 (서버 부하 방지를 위해 필드 합산 처리)
+      if (action === 'POST_GENERAL' || action === 'POST_RECOMMEND') {
+        updateData.postCount = admin.firestore.FieldValue.increment(1);
+        updateData.activityCount = admin.firestore.FieldValue.increment(1);
+      } else if (action === 'COMMENT') {
+        updateData.commentCount = admin.firestore.FieldValue.increment(1);
+        updateData.activityCount = admin.firestore.FieldValue.increment(1);
+      } else if (action === 'LIKE_RECEIVED') {
+        updateData.likesReceivedCount = admin.firestore.FieldValue.increment(1);
+      } else if (action === 'CYCLE_WIN') {
+        updateData.selectionCount = admin.firestore.FieldValue.increment(1);
       }
 
       console.log(`[rewardExp] Final Update Object:`, JSON.stringify(updateData));
@@ -153,6 +166,24 @@ export const onPostCreate = functions
     const genre = data.bookGenre || (data.category === '도서 추천' ? '자기계발' : null);
     await rewardExp(data.author.uid, action, undefined, genre);
 
+    return null;
+  });
+
+/**
+ * 3-1. 트리거: 게시글 삭제 시 (카운터 감소)
+ */
+export const onPostDelete = functions
+  .region("asia-northeast3")
+  .firestore.document("posts/{postId}")
+  .onDelete(async (snapshot: admin.firestore.QueryDocumentSnapshot) => {
+    const data = snapshot.data();
+    if (!data || !data.author || !data.author.uid) return null;
+
+    const userRef = db.collection("users").doc(data.author.uid);
+    await userRef.update({
+      postCount: admin.firestore.FieldValue.increment(-1),
+      activityCount: admin.firestore.FieldValue.increment(-1)
+    });
     return null;
   });
 
@@ -188,6 +219,24 @@ export const onCommentCreate = functions
     return null;
   });
 
+/**
+ * 4-1. 트리거: 댓글 삭제 시 (카운터 감소)
+ */
+export const onCommentDelete = functions
+  .region("asia-northeast3")
+  .firestore.document("posts/{postId}/comments/{commentId}")
+  .onDelete(async (snapshot: admin.firestore.QueryDocumentSnapshot) => {
+    const data = snapshot.data();
+    if (!data || !data.author || !data.author.uid) return null;
+
+    const userRef = db.collection("users").doc(data.author.uid);
+    await userRef.update({
+      commentCount: admin.firestore.FieldValue.increment(-1),
+      activityCount: admin.firestore.FieldValue.increment(-1)
+    });
+    return null;
+  });
+
 
 /**
  * 5. 트리거: 좋아요 발생 시 (게시글 작성자에게 보상)
@@ -219,6 +268,30 @@ export const onLikeCreate = functions
         link: `/board/${postId}`
       });
     }
+
+    return null;
+  });
+
+/**
+ * 5-1. 트리거: 좋아요 취소 시 (카운터 감소)
+ */
+export const onLikeDelete = functions
+  .region("asia-northeast3")
+  .firestore.document("posts/{postId}/likes/{userId}")
+  .onDelete(async (snapshot: admin.firestore.QueryDocumentSnapshot, context: functions.EventContext) => {
+    const postId = context.params.postId;
+    const postSnap = await db.collection("posts").doc(postId).get();
+    const postData = postSnap.data();
+
+    if (!postData || !postData.author || !postData.author.uid) return null;
+
+    const likerId = context.params.userId;
+    if (likerId === postData.author.uid) return null;
+
+    const userRef = db.collection("users").doc(postData.author.uid);
+    await userRef.update({
+      likesReceivedCount: admin.firestore.FieldValue.increment(-1)
+    });
 
     return null;
   });

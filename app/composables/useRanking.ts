@@ -20,7 +20,6 @@ export const useRanking = () => {
         error.value = null
         try {
             const usersRef = collection(getDb(), 'users')
-            // status: 'active' 필터와 exp: 'desc' 정렬을 사용함 (복합 색인 필요)
             const q = query(
                 usersRef,
                 where('status', '==', 'active'),
@@ -43,10 +42,45 @@ export const useRanking = () => {
         }
     }
 
+    /**
+     * 특정 카테고리별 랭킹 조회
+     * @param category 'selection' | 'activity' | 'empathy'
+     */
+    const fetchTopUsersByCategory = async (category: 'selection' | 'activity' | 'empathy', limitCount = 3) => {
+        loading.value = true
+        error.value = null
+        try {
+            const usersRef = collection(getDb(), 'users')
+            const orderField = 
+                category === 'selection' ? 'selectionCount' :
+                category === 'activity'  ? 'activityCount' :
+                'likesReceivedCount'
+
+            const q = query(
+                usersRef,
+                where('status', '==', 'active'),
+                orderBy(orderField, 'desc'),
+                limit(limitCount)
+            )
+
+            const snapshot = await getDocs(q)
+            return snapshot.docs.map(doc => ({
+                uid: doc.id,
+                ...doc.data()
+            }))
+        } catch (err: any) {
+            console.error(`Fetch top users [${category}] error:`, err)
+            return []
+        } finally {
+            loading.value = false
+        }
+    }
+
     return {
         loading,
         error,
         topUsers,
-        fetchTopUsersByExp
+        fetchTopUsersByExp,
+        fetchTopUsersByCategory
     }
 }
