@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onAttendanceUpdate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeCreate = exports.onCommentCreate = exports.onPostCreateMerged = void 0;
+exports.onParticipantDelete = exports.onParticipantCreate = exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onAttendanceUpdate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeCreate = exports.onCommentCreate = exports.onPostCreate = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const expConfig_1 = require("./shared/expConfig");
@@ -32,8 +32,9 @@ const db = admin.firestore();
 // ── KST 변환 유틸 ──────────────────────────────────────────────
 const getKstDate = () => {
     const now = new Date();
+    const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
     const kstOffset = 9 * 60 * 60 * 1000;
-    return new Date(now.getTime() + kstOffset).toISOString().split("T")[0];
+    return new Date(utc + kstOffset).toISOString().split("T")[0];
 };
 // 1. 프로필 업데이트 시 과거 게시글/댓글 동기화
 /*
@@ -58,8 +59,8 @@ async function createNotification(params) {
 /**
  * 2. Helper function to reward EXP to a user and handle level-ups.
  */
-async function rewardExp(userId, action, manualAmount, bookGenre) {
-    console.log(`[rewardExp] Starting reward for userId: ${userId}, action: ${action}`);
+async function rewardExp(userId, action, manualAmount, bookGenre, isTriggeredByUpdate = false) {
+    console.log(`[rewardExp] Starting reward for userId: ${userId}, action: ${action}, isTriggeredByUpdate: ${isTriggeredByUpdate}`);
     const userRef = db.collection("users").doc(userId);
     const today = getKstDate();
     try {
@@ -77,7 +78,8 @@ async function rewardExp(userId, action, manualAmount, bookGenre) {
             if (action !== 'MANUAL') {
                 expAmount = expConfig_1.EXP_CONFIG.REWARDS[action];
                 if (action === 'ATTENDANCE') {
-                    if (expTracker.lastAttendanceDate === today)
+                    // 트리거를 통한 업데이트인 경우 날짜 중복 체크를 우회(프론트에서 이미 업데이트했으므로)
+                    if (!isTriggeredByUpdate && expTracker.lastAttendanceDate === today)
                         return;
                     expTracker.lastAttendanceDate = today;
                 }
@@ -137,9 +139,9 @@ async function rewardExp(userId, action, manualAmount, bookGenre) {
     }
 }
 /**
- * 3. 트리거: 게시글 작성 시 (도서 추천 vs 일반)
+ * 3. 트리거: 게시글 작성 시 (마일리지, DNA, 활동 피드 통합)
  */
-exports.onPostCreateMerged = functions
+exports.onPostCreate = functions
     .region("asia-northeast3")
     .firestore.document("posts/{postId}")
     .onCreate(async (snapshot, context) => {
@@ -162,10 +164,12 @@ exports.onCommentCreate = functions
     const data = snapshot.data();
     if (!data || !data.author || !data.author.uid)
         return null;
+    // 1. 경험치 보상
     await rewardExp(data.author.uid, 'COMMENT');
-    // 알림: 게시글 작성자에게
+    // 2. 게시글 정보 조회 (알림 및 피드용)
     const postSnap = await db.collection("posts").doc(context.params.postId).get();
     const postData = postSnap.data();
+    // 3. 알림: 게시글 작성자에게 (본인이 아닐 때만)
     if (postData && postData.author && postData.author.uid !== data.author.uid) {
         await createNotification({
             recipientId: postData.author.uid,
@@ -261,7 +265,8 @@ exports.onAttendanceUpdate = functions
     const before = (_b = (_a = change.before.data()) === null || _a === void 0 ? void 0 : _a.expTracker) === null || _b === void 0 ? void 0 : _b.lastAttendanceDate;
     const after = (_d = (_c = change.after.data()) === null || _c === void 0 ? void 0 : _c.expTracker) === null || _d === void 0 ? void 0 : _d.lastAttendanceDate;
     if (after && before !== after) {
-        await rewardExp(context.params.userId, 'ATTENDANCE');
+        // 트리거를 통한 업데이트임을 알리기 위해 true 플래그 전달
+        await rewardExp(context.params.userId, 'ATTENDANCE', undefined, undefined, true);
     }
     return null;
 });
@@ -385,6 +390,62 @@ exports.onUserScoresUpdate = functions
         },
         dnaTitle: dnaName
     }, { merge: true });
+    return null;
+});
+/**
+ * 9. 트리거: 사이클 참여자 증가/감소 시 카운터 업데이트 및 최근 참여자 목록 동기화
+ */
+exports.onParticipantCreate = functions
+    .region("asia-northeast3")
+    .firestore.document("cycles/{cycleId}/participants/{uid}")
+    .onCreate(async (snapshot, context) => {
+    const cycleId = context.params.cycleId;
+    const uid = context.params.uid;
+    const cycleRef = db.collection("cycles").doc(cycleId);
+    try {
+        await db.runTransaction(async (t) => {
+            const cycleDoc = await t.get(cycleRef);
+            if (!cycleDoc.exists)
+                return;
+            const data = cycleDoc.data() || {};
+            let recentUids = data.recentParticipantUids || [];
+            // 새 UID를 맨 앞에 추가 (중복 방지 및 5명 제한)
+            recentUids = [uid, ...recentUids.filter((id) => id !== uid)].slice(0, 5);
+            t.update(cycleRef, {
+                participantCount: admin.firestore.FieldValue.increment(1),
+                recentParticipantUids: recentUids
+            });
+        });
+    }
+    catch (err) {
+        console.error(`[onParticipantCreate] Error updating cycle ${cycleId}:`, err);
+    }
+    return null;
+});
+exports.onParticipantDelete = functions
+    .region("asia-northeast3")
+    .firestore.document("cycles/{cycleId}/participants/{uid}")
+    .onDelete(async (snapshot, context) => {
+    const cycleId = context.params.cycleId;
+    const uid = context.params.uid;
+    const cycleRef = db.collection("cycles").doc(cycleId);
+    try {
+        await db.runTransaction(async (t) => {
+            const cycleDoc = await t.get(cycleRef);
+            if (!cycleDoc.exists)
+                return;
+            const data = cycleDoc.data() || {};
+            let recentUids = data.recentParticipantUids || [];
+            recentUids = recentUids.filter((id) => id !== uid);
+            t.update(cycleRef, {
+                participantCount: admin.firestore.FieldValue.increment(-1),
+                recentParticipantUids: recentUids
+            });
+        });
+    }
+    catch (err) {
+        console.error(`[onParticipantDelete] Error updating cycle ${cycleId}:`, err);
+    }
     return null;
 });
 //# sourceMappingURL=index.js.map
