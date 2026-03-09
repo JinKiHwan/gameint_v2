@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onParticipantDelete = exports.onParticipantCreate = exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeCreate = exports.onCommentCreate = exports.onPostCreate = void 0;
+exports.migrateRankingData = exports.onParticipantDelete = exports.onParticipantCreate = exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeDelete = exports.onLikeCreate = exports.onCommentDelete = exports.onCommentCreate = exports.onPostDelete = exports.onPostCreate = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const expConfig_1 = require("./shared/expConfig");
@@ -122,7 +122,7 @@ async function rewardExp(userId, action, manualAmount, bookGenre, isTriggeredByU
                     updateData[`expTracker.${key}`] = expTracker[key];
                 });
             }
-            // DNA 증분
+            // DNA 증분 (기존 로직 복구)
             if (bookGenre || action === 'POST_RECOMMEND' || action === 'CYCLE_REVIEW') {
                 const genreToMap = bookGenre || (action === 'POST_RECOMMEND' ? '도서 추천' : '');
                 if (genreToMap) {
@@ -134,6 +134,21 @@ async function rewardExp(userId, action, manualAmount, bookGenre, isTriggeredByU
                         updateData[`dna.scores.${axis}`] = admin.firestore.FieldValue.increment(1);
                     }
                 }
+            }
+            // 랭킹용 카운터 증분 (서버 부하 방지를 위해 필드 합산 처리)
+            if (action === 'POST_GENERAL' || action === 'POST_RECOMMEND') {
+                updateData.postCount = admin.firestore.FieldValue.increment(1);
+                updateData.activityCount = admin.firestore.FieldValue.increment(1);
+            }
+            else if (action === 'COMMENT') {
+                updateData.commentCount = admin.firestore.FieldValue.increment(1);
+                updateData.activityCount = admin.firestore.FieldValue.increment(1);
+            }
+            else if (action === 'LIKE_RECEIVED') {
+                updateData.likesReceivedCount = admin.firestore.FieldValue.increment(1);
+            }
+            else if (action === 'CYCLE_WIN') {
+                updateData.selectionCount = admin.firestore.FieldValue.increment(1);
             }
             console.log(`[rewardExp] Final Update Object:`, JSON.stringify(updateData));
             transaction.update(userRef, updateData);
@@ -158,6 +173,23 @@ exports.onPostCreate = functions
     const action = data.category === '도서 추천' ? 'POST_RECOMMEND' : 'POST_GENERAL';
     const genre = data.bookGenre || (data.category === '도서 추천' ? '자기계발' : null);
     await rewardExp(data.author.uid, action, undefined, genre);
+    return null;
+});
+/**
+ * 3-1. 트리거: 게시글 삭제 시 (카운터 감소)
+ */
+exports.onPostDelete = functions
+    .region("asia-northeast3")
+    .firestore.document("posts/{postId}")
+    .onDelete(async (snapshot) => {
+    const data = snapshot.data();
+    if (!data || !data.author || !data.author.uid)
+        return null;
+    const userRef = db.collection("users").doc(data.author.uid);
+    await userRef.update({
+        postCount: admin.firestore.FieldValue.increment(-1),
+        activityCount: admin.firestore.FieldValue.increment(-1)
+    });
     return null;
 });
 /**
@@ -188,6 +220,23 @@ exports.onCommentCreate = functions
     return null;
 });
 /**
+ * 4-1. 트리거: 댓글 삭제 시 (카운터 감소)
+ */
+exports.onCommentDelete = functions
+    .region("asia-northeast3")
+    .firestore.document("posts/{postId}/comments/{commentId}")
+    .onDelete(async (snapshot) => {
+    const data = snapshot.data();
+    if (!data || !data.author || !data.author.uid)
+        return null;
+    const userRef = db.collection("users").doc(data.author.uid);
+    await userRef.update({
+        commentCount: admin.firestore.FieldValue.increment(-1),
+        activityCount: admin.firestore.FieldValue.increment(-1)
+    });
+    return null;
+});
+/**
  * 5. 트리거: 좋아요 발생 시 (게시글 작성자에게 보상)
  */
 exports.onLikeCreate = functions
@@ -215,6 +264,27 @@ exports.onLikeCreate = functions
             link: `/board/${postId}`
         });
     }
+    return null;
+});
+/**
+ * 5-1. 트리거: 좋아요 취소 시 (카운터 감소)
+ */
+exports.onLikeDelete = functions
+    .region("asia-northeast3")
+    .firestore.document("posts/{postId}/likes/{userId}")
+    .onDelete(async (snapshot, context) => {
+    const postId = context.params.postId;
+    const postSnap = await db.collection("posts").doc(postId).get();
+    const postData = postSnap.data();
+    if (!postData || !postData.author || !postData.author.uid)
+        return null;
+    const likerId = context.params.userId;
+    if (likerId === postData.author.uid)
+        return null;
+    const userRef = db.collection("users").doc(postData.author.uid);
+    await userRef.update({
+        likesReceivedCount: admin.firestore.FieldValue.increment(-1)
+    });
     return null;
 });
 /**
@@ -434,5 +504,45 @@ exports.onParticipantDelete = functions
         console.error(`[onParticipantDelete] Error updating cycle ${cycleId}:`, err);
     }
     return null;
+});
+/**
+ * 10. 임시 데이터 마이그레이션 도구
+ * 기존 유저들에게 새로운 랭킹 필드(0점)를 초기화해줍니다.
+ * 브라우저에서 https://.../migrateRankingData 접속 시 실행
+ */
+exports.migrateRankingData = functions
+    .region("asia-northeast3")
+    .https.onRequest(async (req, res) => {
+    try {
+        const usersSnap = await db.collection("users").get();
+        const batch = db.batch();
+        let count = 0;
+        usersSnap.forEach(doc => {
+            const data = doc.data();
+            const updates = {};
+            if (data.selectionCount === undefined)
+                updates.selectionCount = 0;
+            if (data.postCount === undefined)
+                updates.postCount = 0;
+            if (data.commentCount === undefined)
+                updates.commentCount = 0;
+            if (data.activityCount === undefined)
+                updates.activityCount = 0;
+            if (data.likesReceivedCount === undefined)
+                updates.likesReceivedCount = 0;
+            if (Object.keys(updates).length > 0) {
+                batch.update(doc.ref, updates);
+                count++;
+            }
+        });
+        if (count > 0) {
+            await batch.commit();
+        }
+        res.status(200).send(`Successfully initialized ranking fields for ${count} users.`);
+    }
+    catch (error) {
+        console.error("Migration error:", error);
+        res.status(500).send("Migration failed: " + error.message);
+    }
 });
 //# sourceMappingURL=index.js.map
