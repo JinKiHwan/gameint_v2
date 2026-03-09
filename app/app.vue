@@ -13,9 +13,9 @@ onMounted(() => {
     <Aurora 
       :colorStops="['#e8e8e8', '#512eff', '#008cff']" 
       :amplitude="1.0"
-      :blend="0.8"
+      :blend="0.3"
       :speed="1.0"
-      :intensity="1.2"
+      :intensity="1.0"
     />
     <NuxtLayout>
       <NuxtPage />

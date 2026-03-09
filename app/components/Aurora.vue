@@ -23,11 +23,11 @@ const props = defineProps({
   },
   blend: {
     type: Number,
-    default: 0.5,
+    default: 0.1, // Even subtler for light theme to avoid looking like 'dirty' background
   },
   intensity: {
     type: Number,
-    default: 1.0,
+    default: 0.8, // Slightly lower intensity for white bg
   },
 });
 
@@ -189,9 +189,9 @@ onBeforeUnmount(() => {
 .aurora-container {
   position: fixed;
   inset: 0;
-  z-index: 0;
+  z-index: -1; /* Move back to background */
   pointer-events: none;
-  /* filter: blur(40px); */
+  filter: blur(60px); /* Increased blur for smoother light theme feel */
 }
 canvas {
   width: 100%;
