@@ -116,9 +116,12 @@ const fragment = /* glsl */ `
     
     // Calculate final intensity based on warped noise
     float f = fbm(uv + 6.0 * r);
+    f = f * 0.5 + 0.5; // Normalize to 0-1 range
     
     // Create 'ribbon' effect by favoring vertical flow
     float ribbon = snoise(vec2(uv.x * 0.8 + uTime * 0.02, uv.y * 0.1));
+    ribbon = ribbon * 0.5 + 0.5; // Normalize ribbon as well
+    
     f = mix(f, ribbon, 0.4) * uAmplitude;
     
     // Color interaction
@@ -130,9 +133,10 @@ const fragment = /* glsl */ `
     
     // Intensity and alpha
     color *= uIntensity;
-    float alpha = smoothstep(0.0, 1.0, f) * uBlend;
-    // Fade out edges
-    alpha *= smoothstep(0.0, 0.2, uv.y) * smoothstep(1.0, 0.5, uv.y);
+    
+    // Improved edge fade logic
+    float edgeFade = smoothstep(0.0, 0.1, uv.y) * (1.0 - smoothstep(0.9, 1.0, uv.y));
+    float alpha = f * uBlend * edgeFade;
     
     gl_FragColor = vec4(color, alpha);
   }
@@ -187,8 +191,7 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 1.0; /* We handle opacity via uBlend in shader */
-  filter: blur(40px);
+  /* filter: blur(40px); */
 }
 canvas {
   width: 100%;
