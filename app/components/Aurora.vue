@@ -79,15 +79,20 @@ const fragment = /* glsl */ `
 
   void main() {
     vec2 uv = vUv;
-    float noise1 = snoise(uv * 2.0 + uTime * 0.1) * uAmplitude;
-    float noise2 = snoise(uv * 3.0 - uTime * 0.15) * uAmplitude;
+    float noise1 = snoise(uv * 1.5 + uTime * 0.1) * uAmplitude;
+    float noise2 = snoise(uv * 2.0 - uTime * 0.15) * uAmplitude;
     
+    // Normalize to 0-1 range for stable visibility
     float finalNoise = (noise1 + noise2) * 0.5 + 0.5;
     
     vec3 color = mix(uColor1, uColor2, finalNoise);
-    color = mix(color, uColor3, snoise(uv * 1.5 + uTime * 0.05) * 0.5 + 0.5);
+    color = mix(color, uColor3, snoise(uv * 1.0 + uTime * 0.05) * 0.5 + 0.5);
     
-    float alpha = smoothstep(0.1, 0.8, uv.y) * 0.8;
+    // Dynamic distinctness
+    float alpha = smoothstep(0.0, 1.0, finalNoise) * 0.9;
+    // Edge fade
+    alpha *= smoothstep(0.0, 0.2, uv.y) * (1.0 - smoothstep(0.8, 1.0, uv.y));
+    
     gl_FragColor = vec4(color, alpha);
   }
 `;
