@@ -955,6 +955,7 @@ const handleUpdateProfile = async () => {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
+  margin-bottom: 24px;
   @media(min-width:480px) { grid-template-columns: repeat(5, 1fr); }
 }
 
