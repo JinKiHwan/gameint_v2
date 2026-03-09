@@ -11,7 +11,7 @@
   display: flex;
   min-height: 100vh;
   font-family: $font-family;
-  background: transparent;
+  background: $bg-app;
 
   >div {
     width: 100%;
@@ -45,7 +45,6 @@
     padding: sp(4) sp(6);
     border-bottom: 1px solid $grey-lighten-2;
     gap: sp(2);
-    height: 64px;
 
     .logo-icon {
       color: $blue-darken-1;
@@ -183,7 +182,6 @@
     .logo-text {
       font-size: 1.3625rem;
       font-weight: 900;
-      background-image: url('/images/common/gradient.webp') ;
       background-position: center center;
       background-size: cover;
       background-clip: text;

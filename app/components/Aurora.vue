@@ -11,7 +11,7 @@ import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
 const props = defineProps({
   colorStops: {
     type: Array,
-    default: () => ["#0047AB", "#00BFFF", "#1E90FF"],
+    default: () => ["#3A29FF", "#FF94B4", "#FF3232"],
   },
   speed: {
     type: Number,
@@ -20,14 +20,6 @@ const props = defineProps({
   amplitude: {
     type: Number,
     default: 1.0,
-  },
-  blend: {
-    type: Number,
-    default: 0.1, // Even subtler for light theme to avoid looking like 'dirty' background
-  },
-  intensity: {
-    type: Number,
-    default: 0.8, // Slightly lower intensity for white bg
   },
 });
 
@@ -54,8 +46,6 @@ const fragment = /* glsl */ `
   uniform vec3 uColor2;
   uniform vec3 uColor3;
   uniform float uAmplitude;
-  uniform float uIntensity;
-  uniform float uBlend;
   varying vec2 vUv;
 
   vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
@@ -87,57 +77,17 @@ const fragment = /* glsl */ `
     return 130.0 * dot(m, g);
   }
 
-  // FBM for more complex noise
-  float fbm(vec2 uv) {
-    float val = 0.0;
-    float amp = 0.5;
-    for (int i = 0; i < 4; i++) {
-      val += amp * snoise(uv);
-      uv *= 2.01;
-      amp *= 0.5;
-    }
-    return val;
-  }
-
   void main() {
     vec2 uv = vUv;
+    float noise1 = snoise(uv * 2.0 + uTime * 0.1) * uAmplitude;
+    float noise2 = snoise(uv * 3.0 - uTime * 0.15) * uAmplitude;
     
-    // Domain Warping: Layer 1
-    vec2 q = vec2(
-      fbm(uv + uTime * 0.05),
-      fbm(uv + vec2(5.2, 1.3) + uTime * 0.03)
-    );
+    float finalNoise = (noise1 + noise2) * 0.5 + 0.5;
     
-    // Domain Warping: Layer 2 (Distortion)
-    vec2 r = vec2(
-      fbm(uv + 4.0 * q + vec2(1.7, 9.2) + uTime * 0.08),
-      fbm(uv + 4.0 * q + vec2(8.3, 2.8) + uTime * 0.04)
-    );
+    vec3 color = mix(uColor1, uColor2, finalNoise);
+    color = mix(color, uColor3, snoise(uv * 1.5 + uTime * 0.05) * 0.5 + 0.5);
     
-    // Calculate final intensity based on warped noise
-    float f = fbm(uv + 6.0 * r);
-    f = f * 0.5 + 0.5; // Normalize to 0-1 range
-    
-    // Create 'ribbon' effect by favoring vertical flow
-    float ribbon = snoise(vec2(uv.x * 0.8 + uTime * 0.02, uv.y * 0.1));
-    ribbon = ribbon * 0.5 + 0.5; // Normalize ribbon as well
-    
-    f = mix(f, ribbon, 0.4) * uAmplitude;
-    
-    // Color interaction
-    vec3 color = mix(uColor1, uColor2, clamp(f * f * 4.0, 0.0, 1.0));
-    color = mix(color, uColor3, clamp(length(q), 0.0, 1.0));
-    
-    // Dynamic light scattering
-    color += 0.2 * vec3(0.5, 0.7, 1.0) * pow(f, 3.0);
-    
-    // Intensity and alpha
-    color *= uIntensity;
-    
-    // Improved edge fade logic
-    float edgeFade = smoothstep(0.0, 0.1, uv.y) * (1.0 - smoothstep(0.9, 1.0, uv.y));
-    float alpha = f * uBlend * edgeFade;
-    
+    float alpha = smoothstep(0.1, 0.8, uv.y) * 0.8;
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -157,8 +107,6 @@ onMounted(() => {
       uColor2: { value: new Color(props.colorStops[1]) },
       uColor3: { value: new Color(props.colorStops[2]) },
       uAmplitude: { value: props.amplitude },
-      uIntensity: { value: props.intensity },
-      uBlend: { value: props.blend },
     },
     transparent: true,
   });
@@ -189,9 +137,10 @@ onBeforeUnmount(() => {
 .aurora-container {
   position: fixed;
   inset: 0;
-  z-index: -1; /* Move back to background */
+  z-index: 0;
   pointer-events: none;
-  filter: blur(60px); /* Increased blur for smoother light theme feel */
+  opacity: 0.6;
+  filter: blur(40px);
 }
 canvas {
   width: 100%;

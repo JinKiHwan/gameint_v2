@@ -10,13 +10,7 @@ onMounted(() => {
 
 <template>
   <div id="app">
-    <Aurora 
-      :colorStops="['#e8e8e8', '#512eff', '#008cff']" 
-      :amplitude="1.0"
-      :blend="0.3"
-      :speed="1.0"
-      :intensity="1.0"
-    />
+    <Aurora :colorStops="['#e8e8e8', '#512eff', '#008cff']" />
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
