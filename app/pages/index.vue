@@ -153,10 +153,9 @@
 
     <!-- Telegram Contact Button -->
     <div class="mb-16 text-center py-6">
-      <p class="text-caption text-grey-2 mb-4 font-bold">동호회 가입이나 궁금한 점이 있으신가요? 👋</p>
       <a href="https://t.me/asp367" target="_blank" class="telegram-btn btn--indigo">
         <i class="mdi mdi-telegram text-h5"></i>
-        <span class="font-black ml-2">가입문의 @asp367</span>
+        <span class="font-black ml-2">가입문의</span>
       </a>
     </div>
   </div>
@@ -364,10 +363,7 @@ import { onBeforeUnmount } from 'vue'
 .dna-conveyor-inner {
   display: flex;
   width: max-content;
-  animation: infiniteScroll 60s linear infinite;
-  &:hover {
-    animation-play-state: paused;
-  }
+  animation: infiniteScroll 80s linear infinite;
 }
 .dna-item {
   width: 320px;
