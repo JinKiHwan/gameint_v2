@@ -31,7 +31,7 @@
         <button class="btn btn--primary px-8 rounded-sm" @click="loadData">다시 시도</button>
       </div>
 
-      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- 1. 선정왕 -->
         <div class="ranking-card card">
           <div class="ranking-card__header pb-6 border-b border-white/20">
