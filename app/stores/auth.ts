@@ -41,8 +41,15 @@ export const useAuthStore = defineStore('auth', {
               const newData = docSnap.data()
               this.userData = newData
 
-              // ── 출석 체크 로직 (최초 1회 실행 유도) ──
-              const today = new Date().toLocaleDateString('en-CA')
+              // ── 출석 체크 로직 (KST 기준 표준화) ──
+              const getKstDate = () => {
+                const now = new Date();
+                const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+                const kstOffset = 9 * 60 * 60 * 1000;
+                return new Date(utc + kstOffset).toISOString().split("T")[0];
+              };
+              const today = getKstDate();
+
               if (newData.expTracker?.lastAttendanceDate !== today) {
                 updateDoc(userDocRef, { 'expTracker.lastAttendanceDate': today })
                   .catch(err => console.error("Attendance update failed:", err))

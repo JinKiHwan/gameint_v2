@@ -492,8 +492,9 @@ import DnaCard from '~/components/DnaCard.vue'
 // ── KST 날짜 유틸 ──────────────────────────────────────────────
 const getKstDate = () => {
   const now = new Date()
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000)
   const kstOffset = 9 * 60 * 60 * 1000
-  return new Date(now.getTime() + kstOffset).toISOString().split('T')[0]
+  return new Date(utc + kstOffset).toISOString().split('T')[0]
 }
 
 const router = useRouter()

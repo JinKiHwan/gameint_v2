@@ -8,8 +8,9 @@ const db = admin.firestore();
 // ── KST 변환 유틸 ──────────────────────────────────────────────
 const getKstDate = () => {
   const now = new Date();
+  const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
   const kstOffset = 9 * 60 * 60 * 1000;
-  return new Date(now.getTime() + kstOffset).toISOString().split("T")[0];
+  return new Date(utc + kstOffset).toISOString().split("T")[0];
 };
 
 // 1. 프로필 업데이트 시 과거 게시글/댓글 동기화
@@ -48,8 +49,8 @@ async function createNotification(params: {
 /**
  * 2. Helper function to reward EXP to a user and handle level-ups.
  */
-async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS | 'MANUAL', manualAmount?: number, bookGenre?: string) {
-  console.log(`[rewardExp] Starting reward for userId: ${userId}, action: ${action}`);
+async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS | 'MANUAL', manualAmount?: number, bookGenre?: string, isTriggeredByUpdate = false) {
+  console.log(`[rewardExp] Starting reward for userId: ${userId}, action: ${action}, isTriggeredByUpdate: ${isTriggeredByUpdate}`);
   const userRef = db.collection("users").doc(userId);
   const today = getKstDate();
 
@@ -71,7 +72,8 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
         expAmount = EXP_CONFIG.REWARDS[action];
 
         if (action === 'ATTENDANCE') {
-          if (expTracker.lastAttendanceDate === today) return;
+          // 트리거를 통한 업데이트인 경우 날짜 중복 체크를 우회(프론트에서 이미 업데이트했으므로)
+          if (!isTriggeredByUpdate && expTracker.lastAttendanceDate === today) return;
           expTracker.lastAttendanceDate = today;
         } else if (action === 'POST_GENERAL') {
           if (expTracker.lastPostDate === today) return;
@@ -273,7 +275,8 @@ export const onAttendanceUpdate = functions
     const after = change.after.data()?.expTracker?.lastAttendanceDate;
 
     if (after && before !== after) {
-      await rewardExp(context.params.userId, 'ATTENDANCE');
+      // 트리거를 통한 업데이트임을 알리기 위해 true 플래그 전달
+      await rewardExp(context.params.userId, 'ATTENDANCE', undefined, undefined, true);
     }
     return null;
   });
