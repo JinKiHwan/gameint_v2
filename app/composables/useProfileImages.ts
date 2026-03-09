@@ -13,10 +13,11 @@ export interface ProfileImageMeta {
   id: string           // 파일명(확장자 제외), Firestore에 저장
   path: string         // 실제 이미지 경로 (nuxt asset)
   label: string        // 표시 이름
-  unlockType: 'default' | 'tier' | 'quest' | 'level'
+  unlockType: 'default' | 'tier' | 'quest' | 'level' | 'role'
   tier?: string        // unlockType === 'tier' 일 때 필요한 최소 티어
   quest?: { type: 'posts' | 'comments'; count: number }
   level?: number       // unlockType === 'level' 일 때 필요한 최소 레벨
+  role?: string        // unlockType === 'role' 일 때 필요한 최소 역할 (예: 'master')
 }
 
 // 티어 순서 (숫자가 낮을수록 낮은 티어)
@@ -67,7 +68,7 @@ export const PROFILE_IMAGES: ProfileImageMeta[] = [
   { id: 'profile_level_50',  path: '/images/profile_image/level/profile_level_50.webp',  label: '레벨 50 달성',  unlockType: 'level', level: 50 },
   { id: 'profile_level_99',  path: '/images/profile_image/level/profile_level_99.webp',  label: '레벨 99 달성',  unlockType: 'level', level: 99 },
   { id: 'profile_level_100', path: '/images/profile_image/level/profile_level_100.webp', label: '레벨 100 달성', unlockType: 'level', level: 100 },
-  { id: 'profile_master',    path: '/images/profile_image/level/profile_master.webp',    label: '레벨 마스터',   unlockType: 'level', level: 100 },
+  { id: 'profile_master',    path: '/images/profile_image/level/profile_master.webp',    label: '회장 전용',     unlockType: 'role',  role: 'master' },
 
   // ── 랭크 해금 ──────────────────────────────────────────────
   { id: 'profile_rank_bronze',      path: '/images/profile_image/rank/profile_rank_bronze.webp',      label: 'Bronze 달성',      unlockType: 'tier', tier: 'Bronze' },
@@ -84,7 +85,7 @@ export const PROFILE_IMAGES: ProfileImageMeta[] = [
  */
 export function isImageUnlocked(
   image: ProfileImageMeta,
-  userData: { tier?: string; postCount?: number; commentCount?: number; level?: number }
+  userData: { tier?: string; postCount?: number; commentCount?: number; level?: number; role?: string }
 ): boolean {
   if (image.unlockType === 'default') return true
 
@@ -102,6 +103,10 @@ export function isImageUnlocked(
 
   if (image.unlockType === 'level' && image.level !== undefined) {
     return (userData.level ?? 1) >= image.level
+  }
+
+  if (image.unlockType === 'role' && image.role) {
+    return userData.role === image.role
   }
 
   return false

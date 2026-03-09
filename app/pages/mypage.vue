@@ -671,9 +671,11 @@ const isUnlocked = (img) => isImageUnlocked(img, {
   postCount:    authStore.userData?.postCount,
   commentCount: authStore.userData?.commentCount,
   level:        authStore.userData?.level,
+  role:         authStore.userData?.role,
 })
 
 const getLockLabel = (img) => {
+  if (img.unlockType === 'role')  return '회장 전용'
   if (img.unlockType === 'level') return `Lv.${img.level} 달성`
   if (img.unlockType === 'tier')  return `${img.tier} 이상`
   if (img.unlockType === 'quest') {
