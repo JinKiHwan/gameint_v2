@@ -148,7 +148,6 @@
           <template v-for="(post, index) in paginatedUserPosts" :key="post.id">
             <li 
               class="list-item cursor-pointer rounded-sm" 
-              :class="{ 'is-recommend': post.category === '도서 추천' }"
               @click="router.push(`/board/${post.id}`)"
             >
               <span 
@@ -807,12 +806,6 @@ const handleUpdateProfile = async () => {
 }
 
 /* ── 카테고리별 강조 스타일 ────────────────────────── */
-.list-item.is-recommend {
-  background: rgba(30, 136, 229, 0.05);
-}
-.list-item.is-recommend:hover {
-  background: rgba(30, 136, 229, 0.08);
-}
 
 .chip--recommend {
   background: #1E88E5;
