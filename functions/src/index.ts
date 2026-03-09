@@ -76,11 +76,13 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
         expAmount = Number(EXP_CONFIG.REWARDS[action]) || 0;
 
         if (action === 'ATTENDANCE') {
-          if (!isTriggeredByUpdate && expTracker.lastAttendanceDate === today) {
-            console.log(`[rewardExp] Attendance already done (skip)`);
+          // 일일 1회 제한 (KST 오늘 날짜 기준)
+          if (expTracker.lastRewardedDate === today) {
+            console.log(`[rewardExp] Attendance reward already granted for today (skip)`);
             return;
           }
           expTracker.lastAttendanceDate = today;
+          expTracker.lastRewardedDate = today;
         } else if (action === 'POST_GENERAL') {
           if (expTracker.lastPostDate === today) return;
           expTracker.lastPostDate = today;

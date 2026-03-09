@@ -52,6 +52,23 @@
 
             <!-- EXP 바 -->
             <div class="exp-box mt-6">
+              <!-- [NEW] 출석 버튼 영역 -->
+              <div class="flex justify-between items-center mb-3">
+                <button 
+                  v-if="attendanceRemaining > 0"
+                  class="btn btn--orange btn--sm flex items-center gap-1 pulse-animation rounded-sm font-black"
+                  style="box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3);"
+                  :class="{ 'is-loading': attendanceLoading }"
+                  :disabled="attendanceLoading"
+                  @click="handleCheckAttendance"
+                >
+                  <i class="mdi mdi-calendar-check-outline"></i>오늘의 출석체크 (+50 EXP)
+                </button>
+                <div v-else class="flex items-center gap-1 text-blue-dark font-black text-caption bg-blue-50 px-3 py-1 rounded-sm border border-blue-100">
+                  <i class="mdi mdi-check-circle-outline"></i>오늘 출석 완료! ✨
+                </div>
+              </div>
+
               <div class="flex justify-between text-caption font-bold mb-2">
                 <div class="flex items-center gap-1 text-grey-2 info-tooltip-wrap">
                   다음 등급까지 경험치
@@ -504,6 +521,17 @@ const { fetchUserReviews } = useCycle()
 const { resolveUser } = useUserMapper()
 
 const isMaster = computed(() => authStore.userData?.role === 'master')
+const attendanceLoading = ref(false)
+const handleCheckAttendance = async () => {
+  attendanceLoading.value = true
+  try {
+    await authStore.checkAttendance()
+  } catch (err) {
+    alert(err.message || '출석 체크 중 오류가 발생했습니다.')
+  } finally {
+    attendanceLoading.value = false
+  }
+}
 const activeTab = ref('posts') // 'posts' | 'reviews' | 'members'
 
 // ── 일일 한도 계산 ──────────────────────────────────────────────
@@ -767,6 +795,15 @@ const handleUpdateProfile = async () => {
 
 <style scoped>
 /* ── 레이아웃 ───────────────────────────────── */
+@keyframes pulse {
+  0% { transform: scale(1); box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3); }
+  50% { transform: scale(1.03); box-shadow: 0 4px 20px rgba(255, 152, 0, 0.5); }
+  100% { transform: scale(1); box-shadow: 0 4px 15px rgba(255, 152, 0, 0.3); }
+}
+.pulse-animation {
+  animation: pulse 2s infinite ease-in-out;
+}
+
 .profile-layout {
   display: flex; flex-direction: column; align-items: center; text-align: center;
   @media(min-width:600px) { flex-direction:row; align-items:flex-start; text-align:left; }
