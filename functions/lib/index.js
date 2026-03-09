@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onParticipantDelete = exports.onParticipantCreate = exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeDelete = exports.onLikeCreate = exports.onCommentDelete = exports.onCommentCreate = exports.onPostDelete = exports.onPostCreate = void 0;
+exports.migrateRankingDeep = exports.onParticipantDelete = exports.onParticipantCreate = exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeDelete = exports.onLikeCreate = exports.onCommentDelete = exports.onCommentCreate = exports.onPostDelete = exports.onPostCreate = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const expConfig_1 = require("./shared/expConfig");
@@ -504,5 +504,80 @@ exports.onParticipantDelete = functions
         console.error(`[onParticipantDelete] Error updating cycle ${cycleId}:`, err);
     }
     return null;
+});
+/**
+ * 10. 딥 마이그레이션 도구 (데이터 전수 조사 및 실적 복구)
+ * 모든 사이클, 포스트, 댓글, 좋아요를 전수 조사하여 유저별 랭킹 카운터를 정확히 계산합니다.
+ */
+exports.migrateRankingDeep = functions
+    .region("asia-northeast3")
+    .https.onRequest(async (req, res) => {
+    var _a, _b;
+    try {
+        const usersSnap = await db.collection("users").get();
+        const cyclesSnap = await db.collection("cycles").get();
+        const postsSnap = await db.collection("posts").get();
+        const userStats = {};
+        usersSnap.forEach(doc => {
+            userStats[doc.id] = {
+                selectionCount: 0,
+                postCount: 0,
+                commentCount: 0,
+                likesReceivedCount: 0,
+                activityCount: 0
+            };
+        });
+        // 1. 선정왕 집계 (Cycles)
+        cyclesSnap.forEach(doc => {
+            const data = doc.data();
+            const winnerUid = data.commonBookRecommenderUid;
+            if (winnerUid && userStats[winnerUid]) {
+                userStats[winnerUid].selectionCount++;
+            }
+        });
+        // 2. 성실왕 & 공감왕 집계 (Posts & Sub-collections)
+        for (const postDoc of postsSnap.docs) {
+            const postData = postDoc.data();
+            const authorUid = (_a = postData.author) === null || _a === void 0 ? void 0 : _a.uid;
+            if (authorUid && userStats[authorUid]) {
+                userStats[authorUid].postCount++;
+                // 좋아요 집계
+                const likesSnap = await postDoc.ref.collection("likes").get();
+                userStats[authorUid].likesReceivedCount += likesSnap.size;
+                // 댓글 집계
+                const commentsSnap = await postDoc.ref.collection("comments").get();
+                const commentDocs = commentsSnap.docs;
+                for (const commentDoc of commentDocs) {
+                    const commentData = commentDoc.data();
+                    const commentAuthorUid = (_b = commentData.author) === null || _b === void 0 ? void 0 : _b.uid;
+                    if (commentAuthorUid && userStats[commentAuthorUid]) {
+                        userStats[commentAuthorUid].commentCount++;
+                    }
+                }
+            }
+        }
+        // 3. Batch 업데이트
+        const batch = db.batch();
+        let updatedCount = 0;
+        for (const [uid, stats] of Object.entries(userStats)) {
+            stats.activityCount = stats.postCount + stats.commentCount;
+            const userRef = db.collection("users").doc(uid);
+            batch.update(userRef, stats);
+            updatedCount++;
+            // Firestore Batch 한계(500개) 대응을 위해 실제 사용 시 체크 필요하나 
+            // 현재 유저 규모가 작으므로 한 번에 처리.
+        }
+        if (updatedCount > 0) {
+            await batch.commit();
+        }
+        res.status(200).send({
+            message: `Successfully updated ${updatedCount} users with deep migration.`,
+            details: userStats
+        });
+    }
+    catch (error) {
+        console.error("Deep migration error:", error);
+        res.status(500).send("Deep migration failed: " + error.message);
+    }
 });
 //# sourceMappingURL=index.js.map
