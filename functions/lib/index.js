@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.migrateRankingData = exports.onParticipantDelete = exports.onParticipantCreate = exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeDelete = exports.onLikeCreate = exports.onCommentDelete = exports.onCommentCreate = exports.onPostDelete = exports.onPostCreate = void 0;
+exports.onParticipantDelete = exports.onParticipantCreate = exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeDelete = exports.onLikeCreate = exports.onCommentDelete = exports.onCommentCreate = exports.onPostDelete = exports.onPostCreate = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const expConfig_1 = require("./shared/expConfig");
@@ -504,45 +504,5 @@ exports.onParticipantDelete = functions
         console.error(`[onParticipantDelete] Error updating cycle ${cycleId}:`, err);
     }
     return null;
-});
-/**
- * 10. 임시 데이터 마이그레이션 도구
- * 기존 유저들에게 새로운 랭킹 필드(0점)를 초기화해줍니다.
- * 브라우저에서 https://.../migrateRankingData 접속 시 실행
- */
-exports.migrateRankingData = functions
-    .region("asia-northeast3")
-    .https.onRequest(async (req, res) => {
-    try {
-        const usersSnap = await db.collection("users").get();
-        const batch = db.batch();
-        let count = 0;
-        usersSnap.forEach(doc => {
-            const data = doc.data();
-            const updates = {};
-            if (data.selectionCount === undefined)
-                updates.selectionCount = 0;
-            if (data.postCount === undefined)
-                updates.postCount = 0;
-            if (data.commentCount === undefined)
-                updates.commentCount = 0;
-            if (data.activityCount === undefined)
-                updates.activityCount = 0;
-            if (data.likesReceivedCount === undefined)
-                updates.likesReceivedCount = 0;
-            if (Object.keys(updates).length > 0) {
-                batch.update(doc.ref, updates);
-                count++;
-            }
-        });
-        if (count > 0) {
-            await batch.commit();
-        }
-        res.status(200).send(`Successfully initialized ranking fields for ${count} users.`);
-    }
-    catch (error) {
-        console.error("Migration error:", error);
-        res.status(500).send("Migration failed: " + error.message);
-    }
 });
 //# sourceMappingURL=index.js.map
