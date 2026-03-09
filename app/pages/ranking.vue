@@ -119,28 +119,39 @@
 
     </div>
 
-    <!-- 내 랭킹 스티키 바 -->
-    <div v-if="authStore.userData" class="my-rank-sticky">
-      <div class="container mx-auto px-4 h-full flex items-center justify-between">
-        <div class="flex items-center gap-4">
-          <div class="avatar avatar--xs">
-            <img :src="getProfileImagePath(authStore.userData.profileImageId)" alt="my profile" />
+    <!-- 내 랭킹 플로팅 HUD (Premium Redesign) -->
+    <div v-if="authStore.userData" class="my-rank-hud-wrap">
+      <div class="my-rank-hud card">
+        <div class="hud-content">
+          <div class="hud-profile">
+            <div class="avatar avatar--sm border-white/40">
+              <img :src="getProfileImagePath(authStore.userData.profileImageId)" alt="my profile" />
+            </div>
+            <div class="hud-name">
+              <div class="text-caption font-black text-white leading-none">{{ authStore.userData.nickname }}</div>
+              <div class="text-[9px] text-white/60 font-bold uppercase mt-1">{{ authStore.userData.tier }} · LV.{{ authStore.userData.level }}</div>
+            </div>
           </div>
-          <div class="hidden sm:block">
-            <div class="text-caption font-black text-white">{{ authStore.userData.nickname }}</div>
-            <div class="text-[10px] text-white opacity-70">{{ authStore.userData.tier }} · {{ authStore.userData.exp }} EXP</div>
+          
+          <div class="hud-exp">
+            <div class="flex justify-between items-end mb-1 px-1">
+              <span class="text-[10px] font-black text-amber-300">NEXT TIER PROGRESS</span>
+              <span class="text-[10px] font-black text-white/80">{{ userExpPercent }}%</span>
+            </div>
+            <div class="progress-bar progress-bar--xs bg-white/10">
+              <div class="progress-bar__fill bg-gradient-to-r from-amber-400 to-orange-500" :style="`width: ${userExpPercent}%`"></div>
+            </div>
           </div>
-        </div>
-        <div class="flex-grow mx-8">
-          <div class="progress-bar progress-bar--sm bg-white/20">
-            <div class="progress-bar__fill bg-amber-400" :style="`width: ${userExpPercent}%`"></div>
+
+          <div class="hud-actions">
+            <button class="hud-btn" @click="router.push('/mypage')">
+              <i class="mdi mdi-account-circle-outline mr-1"></i>MY
+            </button>
           </div>
-        </div>
-        <div>
-          <button class="btn btn--white btn--sm rounded-xl px-4 font-black" @click="router.push('/mypage')">마이페이지</button>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
@@ -255,76 +266,169 @@ onMounted(() => {
   }
 }
 
-/* ── 랭킹 카드 (Glassmorphism 강제 적용) ────────────────────────── */
+/* ── 랭킹 카드 (Glassmorphism 고도화) ────────────────────────── */
 .ranking-card.card {
-  background: rgba(255, 255, 255, 0.45) !important;
-  backdrop-filter: blur(12px) !important;
-  -webkit-backdrop-filter: blur(12px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.7) !important; /* 투명도를 낮춰 가독성 확보 */
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
+  border-radius: 28px;
   padding: 32px 0;
   text-align: center;
   display: flex;
   flex-direction: column;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.05);
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.06);
 }
 .ranking-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 12px 30px rgba(0,0,0,0.1);
+  transform: translateY(-10px);
+  background: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.1);
 }
 .ranking-card__header {
   padding: 0 24px 20px;
 }
 .icon-wrap {
-  width: 56px; height: 56px;
-  border-radius: 18px;
+  width: 52px; height: 52px;
+  border-radius: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 /* ── 리스트 로우 ──────────────────────────── */
 .ranking-card__list {
-  padding: 20px 16px 0;
+  padding: 20px 20px 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 .ranking-item {
   display: flex;
   align-items: center;
-  padding: 10px 14px;
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.4);
-  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.5);
+  gap: 12px;
   transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.8);
 }
 .ranking-item:hover {
-  background: rgba(255, 255, 255, 0.7);
-  transform: translateX(4px);
+  background: #ffffff;
+  transform: scale(1.02);
+  box-shadow: var(--shadow-sm);
 }
 
+.ranking-item__rank {
+  width: 24px;
+  font-size: 1.125rem;
+  font-weight: 900;
+  font-style: italic;
+  font-family: 'Montserrat', sans-serif;
+}
+.rank-1 { color: #FFB300; text-shadow: 0 0 10px rgba(255,179,0,0.2); }
+.rank-2 { color: #94A3B8; }
+.rank-3 { color: #B45309; }
 
-/* ── 스티키 바 ────────────────────────────── */
-.my-rank-sticky {
+.ranking-item__info {
+  flex: 1;
+  text-align: left;
+}
+.ranking-item__value {
+  text-align: right;
+  line-height: 1;
+}
+.ranking-item__value .num {
+  font-size: 1.25rem;
+  font-weight: 900;
+}
+.ranking-item__value .unit {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #94A3B8;
+  margin-left: 2px;
+}
+
+.empty-state {
+  padding: 40px 0;
+  color: #CBD5E1;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+/* ── 플로팅 HUD (Premium Bar) ───────────────────── */
+.my-rank-hud-wrap {
   position: fixed;
-  bottom: 0; left: 0; right: 0;
-  height: 70px;
-  background: rgba(33, 33, 33, 0.95);
-  backdrop-filter: blur(10px);
-  z-index: 100;
-  border-top: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 800px;
+  padding: 0 20px;
+  z-index: 1000;
+  pointer-events: none;
+}
+.my-rank-hud.card {
+  pointer-events: auto;
+  background: rgba(15, 23, 42, 0.85) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 20px;
+  padding: 12px 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+}
+.hud-content {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.hud-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.hud-name {
+  display: flex;
+  flex-direction: column;
+}
+.hud-exp {
+  flex: 1;
+  min-width: 0;
+}
+.hud-actions {
+  flex-shrink: 0;
+}
+.hud-btn {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  color: white;
+  font-size: 12px;
+  font-weight: 900;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.hud-btn:hover {
+  background: white;
+  color: #0f172a;
+}
+
+@media (max-width: 768px) {
+  .hud-content { gap: 16px; }
+  .hud-exp { display: none; }
 }
 
 @media (max-width: 600px) {
   .cycles-hero__bg { height: 220px; }
   .cycles-hero__glass { padding: 20px; }
-  .ranking-card { padding: 24px 0; }
+  .ranking-card.card { padding: 24px 0; border-radius: 20px; }
   .ranking-card__header { padding: 0 20px 20px; }
-  .my-rank-sticky { bottom: 0px; }
+  .my-rank-hud-wrap { bottom: 12px; padding: 0 12px; }
 }
+
 </style>

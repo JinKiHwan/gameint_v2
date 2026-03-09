@@ -146,8 +146,19 @@
         </div>
         <ul v-else class="list pa-0">
           <template v-for="(post, index) in paginatedUserPosts" :key="post.id">
-            <li class="list-item cursor-pointer rounded-sm" @click="router.push(`/board/${post.id}`)">
-              <span :class="`chip chip--${getCategoryChipClass(post.category)} chip--xs mr-3`">{{ post.category }}</span>
+            <li 
+              class="list-item cursor-pointer rounded-sm" 
+              :class="{ 'is-recommend': post.category === '도서 추천' }"
+              @click="router.push(`/board/${post.id}`)"
+            >
+              <span 
+                :class="[
+                  `chip chip--xs mr-3`,
+                  post.category === '도서 추천' ? 'chip--recommend' : `chip--${getCategoryChipClass(post.category)}`
+                ]"
+              >
+                {{ post.category }}
+              </span>
               <div class="flex-grow min-w-0">
                 <div class="text-subtitle-2 font-bold text-grey-dark text-truncate mb-1">{{ post.title }}</div>
                 <div class="text-caption font-medium text-grey-2 flex items-center gap-2">
@@ -788,6 +799,25 @@ const handleUpdateProfile = async () => {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar { display: none; }
+}
+.tab-btn.is-active {
+  color: #1E88E5;
+  border-bottom: 2px solid #1E88E5;
+  font-weight: 900;
+}
+
+/* ── 카테고리별 강조 스타일 ────────────────────────── */
+.list-item.is-recommend {
+  background: rgba(30, 136, 229, 0.05);
+}
+.list-item.is-recommend:hover {
+  background: rgba(30, 136, 229, 0.08);
+}
+
+.chip--recommend {
+  background: #1E88E5;
+  color: white;
+  box-shadow: 0 2px 6px rgba(30, 136, 229, 0.3);
 }
 .tabs {
   display: flex;
