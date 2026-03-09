@@ -31,7 +31,7 @@
         <button class="btn btn--primary px-8 rounded-sm" @click="loadData">다시 시도</button>
       </div>
 
-      <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div v-else class="ranking-grid">
         <!-- 1. 선정왕 -->
         <div class="ranking-card card">
           <div class="ranking-card__header pb-6 border-b border-white/20">
@@ -235,13 +235,39 @@ onMounted(() => {
   max-width: 600px;
 }
 
-/* ── 랭킹 카드 (Glassmorphism 적용) ────────────────────────────── */
-.ranking-card {
+/* ── 랭킹 그리드 (가로 정렬 강제) ────────────────────────── */
+.ranking-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+@media (max-width: 960px) {
+  .ranking-grid {
+    grid-template-columns: repeat(3, 1fr); /* 960px 이하에서도 가로 유지 시도 */
+    gap: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .ranking-grid {
+    grid-template-columns: 1fr; /* 모바일에서만 세로 */
+  }
+}
+
+/* ── 랭킹 카드 (Glassmorphism 강제 적용) ────────────────────────── */
+.ranking-card.card {
+  background: rgba(255, 255, 255, 0.45) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 24px;
   padding: 32px 0;
   text-align: center;
   display: flex;
   flex-direction: column;
   transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.05);
 }
 .ranking-card:hover {
   transform: translateY(-8px);
