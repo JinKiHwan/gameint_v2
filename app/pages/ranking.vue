@@ -31,15 +31,15 @@
         <button class="btn btn--primary px-8 rounded-sm" @click="loadData">다시 시도</button>
       </div>
 
-      <div v-else class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <div v-else class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- 1. 선정왕 -->
-        <div class="ranking-card bg-white">
-          <div class="ranking-card__header pb-6 border-b">
-            <div class="icon-wrap bg-amber-50 text-amber-500 mb-4">
+        <div class="ranking-card card">
+          <div class="ranking-card__header pb-6 border-b border-white/20">
+            <div class="icon-wrap bg-amber-500/10 text-amber-500 mb-4">
               <i class="mdi mdi-crown text-h4"></i>
             </div>
             <h2 class="text-h6 font-black text-grey-dark">선정왕</h2>
-            <p class="text-caption text-grey-2">이번 달 가장 많은 책이 선정된 멤버</p>
+            <p class="text-[11px] text-grey-2 font-medium">이번 달 가장 많은 책이 선정된 멤버</p>
           </div>
           <div class="ranking-card__list pt-4">
             <div v-for="(u, idx) in selectionKings" :key="u.uid" class="ranking-item">
@@ -48,26 +48,26 @@
                 <img :src="getProfileImagePath(u.profileImageId)" alt="profile" />
               </div>
               <div class="ranking-item__info">
-                <div class="text-subtitle-2 font-black text-grey-dark">{{ u.nickname }}</div>
+                <div class="text-subtitle-2 font-bold text-grey-dark leading-tight">{{ u.nickname }}</div>
                 <div class="text-[10px] font-bold" :class="getTierTextClass(u.tier)">{{ u.tier || 'Bronze' }}</div>
               </div>
               <div class="ranking-item__value">
-                <span class="num text-amber-700">{{ u.selectionCount || 0 }}</span>
+                <span class="num text-amber-600">{{ u.selectionCount || 0 }}</span>
                 <span class="unit">회</span>
               </div>
             </div>
-            <div v-if="selectionKings.length === 0" class="empty-state">집계된 데이터가 없습니다.</div>
+            <div v-if="selectionKings.length === 0" class="empty-state">집계 전</div>
           </div>
         </div>
 
         <!-- 2. 성실왕 -->
-        <div class="ranking-card bg-white">
-          <div class="ranking-card__header pb-6 border-b">
-            <div class="icon-wrap bg-green-50 text-green-600 mb-4">
+        <div class="ranking-card card">
+          <div class="ranking-card__header pb-6 border-b border-white/20">
+            <div class="icon-wrap bg-green-500/10 text-green-600 mb-4">
               <i class="mdi mdi-medal text-h4"></i>
             </div>
             <h2 class="text-h6 font-black text-grey-dark">성실왕</h2>
-            <p class="text-caption text-grey-2">게시글과 댓글로 활발히 소통한 멤버</p>
+            <p class="text-[11px] text-grey-2 font-medium">게시글과 댓글로 활발히 소통한 멤버</p>
           </div>
           <div class="ranking-card__list pt-4">
             <div v-for="(u, idx) in diligenceKings" :key="u.uid" class="ranking-item">
@@ -76,26 +76,26 @@
                 <img :src="getProfileImagePath(u.profileImageId)" alt="profile" />
               </div>
               <div class="ranking-item__info">
-                <div class="text-subtitle-2 font-black text-grey-dark">{{ u.nickname }}</div>
+                <div class="text-subtitle-2 font-bold text-grey-dark leading-tight">{{ u.nickname }}</div>
                 <div class="text-[10px] font-bold text-grey-2">포스트 {{ u.postCount || 0 }} · 댓글 {{ u.commentCount || 0 }}</div>
               </div>
               <div class="ranking-item__value">
-                <span class="num text-green-700">{{ u.activityCount || 0 }}</span>
+                <span class="num text-green-600">{{ u.activityCount || 0 }}</span>
                 <span class="unit">점</span>
               </div>
             </div>
-            <div v-if="diligenceKings.length === 0" class="empty-state">집계된 데이터가 없습니다.</div>
+            <div v-if="diligenceKings.length === 0" class="empty-state">집계 전</div>
           </div>
         </div>
 
         <!-- 3. 공감왕 -->
-        <div class="ranking-card bg-white">
-          <div class="ranking-card__header pb-6 border-b">
-            <div class="icon-wrap bg-red-50 text-red-500 mb-4">
+        <div class="ranking-card card">
+          <div class="ranking-card__header pb-6 border-b border-white/20">
+            <div class="icon-wrap bg-red-500/10 text-red-500 mb-4">
               <i class="mdi mdi-heart text-h4"></i>
             </div>
             <h2 class="text-h6 font-black text-grey-dark">공감왕</h2>
-            <p class="text-caption text-grey-2">작성한 글이 가장 많은 좋아요를 받은 멤버</p>
+            <p class="text-[11px] text-grey-2 font-medium">작성한 글이 가장 많은 좋아요를 받은 멤버</p>
           </div>
           <div class="ranking-card__list pt-4">
             <div v-for="(u, idx) in empathyKings" :key="u.uid" class="ranking-item">
@@ -104,18 +104,19 @@
                 <img :src="getProfileImagePath(u.profileImageId)" alt="profile" />
               </div>
               <div class="ranking-item__info">
-                <div class="text-subtitle-2 font-black text-grey-dark">{{ u.nickname }}</div>
+                <div class="text-subtitle-2 font-bold text-grey-dark leading-tight">{{ u.nickname }}</div>
                 <div class="text-[10px] font-bold" :class="getTierTextClass(u.tier)">{{ u.tier || 'Bronze' }}</div>
               </div>
               <div class="ranking-item__value">
-                <span class="num text-red-700">{{ u.likesReceivedCount || 0 }}</span>
+                <span class="num text-red-600">{{ u.likesReceivedCount || 0 }}</span>
                 <span class="unit">개</span>
               </div>
             </div>
-            <div v-if="empathyKings.length === 0" class="empty-state">집계된 데이터가 없습니다.</div>
+            <div v-if="empathyKings.length === 0" class="empty-state">집계 전</div>
           </div>
         </div>
       </div>
+
     </div>
 
     <!-- 내 랭킹 스티키 바 -->
@@ -234,22 +235,24 @@ onMounted(() => {
   max-width: 600px;
 }
 
-/* ── 랭킹 카드 ────────────────────────────── */
+/* ── 랭킹 카드 (Glassmorphism 적용) ────────────────────────────── */
 .ranking-card {
-  border-radius: 24px;
   padding: 32px 0;
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(0,0,0,0.04);
   text-align: center;
   display: flex;
   flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.ranking-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.1);
 }
 .ranking-card__header {
-  padding: 0 32px 24px;
+  padding: 0 24px 20px;
 }
 .icon-wrap {
-  width: 64px; height: 64px;
-  border-radius: 20px;
+  width: 56px; height: 56px;
+  border-radius: 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -258,61 +261,26 @@ onMounted(() => {
 
 /* ── 리스트 로우 ──────────────────────────── */
 .ranking-card__list {
-  padding: 24px 20px 0;
+  padding: 20px 16px 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 .ranking-item {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
-  border-radius: 16px;
-  background: #fafafa;
-  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.4);
+  gap: 10px;
   transition: all 0.2s ease;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 .ranking-item:hover {
-  background: #f0f0f0;
+  background: rgba(255, 255, 255, 0.7);
   transform: translateX(4px);
 }
 
-.ranking-item__rank {
-  width: 24px;
-  font-size: 1.125rem;
-  font-weight: 900;
-  font-style: italic;
-}
-.rank-1 { color: #FFD700; }
-.rank-2 { color: #C0C0C0; }
-.rank-3 { color: #CD7F32; }
-
-.ranking-item__info {
-  flex: 1;
-  text-align: left;
-}
-
-.ranking-item__value {
-  text-align: right;
-  line-height: 1;
-}
-.ranking-item__value .num {
-  font-size: 1.25rem;
-  font-weight: 900;
-}
-.ranking-item__value .unit {
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #999;
-  margin-left: 2px;
-}
-
-.empty-state {
-  padding: 40px 0;
-  color: #bbb;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
 
 /* ── 스티키 바 ────────────────────────────── */
 .my-rank-sticky {
