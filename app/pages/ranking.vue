@@ -282,7 +282,7 @@ onMounted(() => {
 .ranking-item {
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  padding: 12px 5px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.5);
   gap: 12px;
