@@ -23,7 +23,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.onParticipantDelete = exports.onParticipantCreate = exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onAttendanceUpdate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeCreate = exports.onCommentCreate = exports.onPostCreate = void 0;
+exports.onParticipantDelete = exports.onParticipantCreate = exports.onUserScoresUpdate = exports.onCycleUpdate = exports.onCycleCreate = exports.onReviewDelete = exports.onReviewUpdate = exports.onReviewCreateMerged = exports.onLikeCreate = exports.onCommentCreate = exports.onPostCreate = void 0;
 const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const expConfig_1 = require("./shared/expConfig");
@@ -82,16 +82,7 @@ async function rewardExp(userId, action, manualAmount, bookGenre, isTriggeredByU
             }
             else {
                 expAmount = Number(expConfig_1.EXP_CONFIG.REWARDS[action]) || 0;
-                if (action === 'ATTENDANCE') {
-                    // 일일 1회 제한 (KST 오늘 날짜 기준)
-                    if (expTracker.lastRewardedDate === today) {
-                        console.log(`[rewardExp] Attendance reward already granted for today (skip)`);
-                        return;
-                    }
-                    expTracker.lastAttendanceDate = today;
-                    expTracker.lastRewardedDate = today;
-                }
-                else if (action === 'POST_GENERAL') {
+                if (action === 'POST_GENERAL') {
                     if (expTracker.lastPostDate === today)
                         return;
                     expTracker.lastPostDate = today;
@@ -260,31 +251,12 @@ exports.onReviewDelete = functions
     // DNA 삭제 시 보정 로직은 비용 대비 실익이 적어 생략
     return null;
 });
-/**
- * 트리거: 게시판 글 작성/수정/삭제 시 (DNA 갱신용)
- */
 // 기존 DNA 스캔 로직들 비활성화 (비용 방어)
 /*
 export const onPostCreate = functions ...
 export const onPostUpdate = functions ...
 export const onPostDelete = functions ...
 */
-/**
- * 7. 트리거: 출석 체크 (userData.expTracker.lastAttendanceDate 필드 업데이트 시)
- */
-exports.onAttendanceUpdate = functions
-    .region("asia-northeast3")
-    .firestore.document("users/{userId}")
-    .onUpdate(async (change, context) => {
-    var _a, _b, _c, _d;
-    const before = (_b = (_a = change.before.data()) === null || _a === void 0 ? void 0 : _a.expTracker) === null || _b === void 0 ? void 0 : _b.lastAttendanceDate;
-    const after = (_d = (_c = change.after.data()) === null || _c === void 0 ? void 0 : _c.expTracker) === null || _d === void 0 ? void 0 : _d.lastAttendanceDate;
-    if (after && before !== after) {
-        // 트리거를 통한 업데이트임을 알리기 위해 true 플래그 전달
-        await rewardExp(context.params.userId, 'ATTENDANCE', undefined, undefined, true);
-    }
-    return null;
-});
 /**
  * 8. 트리거: 사이클 공통 도서 확정 및 페이즈 전환 알림
  */

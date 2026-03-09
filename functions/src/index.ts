@@ -75,15 +75,7 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
       } else {
         expAmount = Number(EXP_CONFIG.REWARDS[action]) || 0;
 
-        if (action === 'ATTENDANCE') {
-          // 일일 1회 제한 (KST 오늘 날짜 기준)
-          if (expTracker.lastRewardedDate === today) {
-            console.log(`[rewardExp] Attendance reward already granted for today (skip)`);
-            return;
-          }
-          expTracker.lastAttendanceDate = today;
-          expTracker.lastRewardedDate = today;
-        } else if (action === 'POST_GENERAL') {
+        if (action === 'POST_GENERAL') {
           if (expTracker.lastPostDate === today) return;
           expTracker.lastPostDate = today;
         } else if (action === 'POST_RECOMMEND') {
@@ -268,32 +260,12 @@ export const onReviewDelete = functions
     return null;
   });
 
-/**
- * 트리거: 게시판 글 작성/수정/삭제 시 (DNA 갱신용)
- */
 // 기존 DNA 스캔 로직들 비활성화 (비용 방어)
 /*
 export const onPostCreate = functions ...
 export const onPostUpdate = functions ...
 export const onPostDelete = functions ...
 */
-
-/**
- * 7. 트리거: 출석 체크 (userData.expTracker.lastAttendanceDate 필드 업데이트 시)
- */
-export const onAttendanceUpdate = functions
-  .region("asia-northeast3")
-  .firestore.document("users/{userId}")
-  .onUpdate(async (change: functions.Change<admin.firestore.DocumentSnapshot>, context: functions.EventContext) => {
-    const before = change.before.data()?.expTracker?.lastAttendanceDate;
-    const after = change.after.data()?.expTracker?.lastAttendanceDate;
-
-    if (after && before !== after) {
-      // 트리거를 통한 업데이트임을 알리기 위해 true 플래그 전달
-      await rewardExp(context.params.userId, 'ATTENDANCE', undefined, undefined, true);
-    }
-    return null;
-  });
 
 /**
  * 8. 트리거: 사이클 공통 도서 확정 및 페이즈 전환 알림

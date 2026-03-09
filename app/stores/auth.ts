@@ -115,7 +115,6 @@ export const useAuthStore = defineStore('auth', {
           dnaTitle: '아직 데이터가 부족해요',
           expTracker: {
             lastAttendanceDate: '',
-            lastRewardedDate: '',
             lastPostDate: '',
             lastRecommendBookDate: '',
             commentCountToday: 0,
@@ -290,42 +289,6 @@ export const useAuthStore = defineStore('auth', {
       } catch (error: any) {
         console.error('Update profile image error:', error)
         throw new Error('프로필 이미지 변경 중 오류가 발생했습니다.')
-      }
-    },
-
-    async checkAttendance() {
-      if (!this.user || !this.userData) throw new Error('로그아웃 상태입니다.')
-
-      const { $firebase } = useNuxtApp()
-      const firestore = ($firebase as any).firestore
-
-      // KST 오늘 날짜 구하기
-      const getKstDate = () => {
-        const now = new Date();
-        const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-        const kstOffset = 9 * 60 * 60 * 1000;
-        return new Date(utc + kstOffset).toISOString().split("T")[0];
-      };
-      const today = getKstDate();
-
-      if (this.userData.expTracker?.lastAttendanceDate === today) {
-        throw new Error('오늘의 출석은 이미 완료되었습니다.')
-      }
-
-      try {
-        const uid = this.user.uid
-        const userDocRef = doc(firestore, 'users', uid)
-
-        // 오직 날짜만 업데이트 (EXP는 백엔드 트리거가 처리)
-        await updateDoc(userDocRef, {
-          'expTracker.lastAttendanceDate': today,
-          updatedAt: serverTimestamp()
-        })
-
-        return true
-      } catch (error: any) {
-        console.error('Check attendance error:', error)
-        throw new Error('출석 체크 중 오류가 발생했습니다.')
       }
     },
 

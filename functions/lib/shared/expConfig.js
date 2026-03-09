@@ -51,7 +51,6 @@ exports.EXP_CONFIG = {
     },
     // 경험치 보상 수치
     REWARDS: {
-        ATTENDANCE: 50,
         POST_GENERAL: 30,
         POST_RECOMMEND: 50,
         LIKE_RECEIVED: 10,
@@ -61,7 +60,6 @@ exports.EXP_CONFIG = {
     },
     // 일일 획득 제한
     LIMITS: {
-        ATTENDANCE_PER_DAY: 1,
         POST_GENERAL_PER_DAY: 1,
         POST_RECOMMEND_PER_DAY: 1,
         COMMENT_PER_DAY: 3,
