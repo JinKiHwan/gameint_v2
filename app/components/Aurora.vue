@@ -87,19 +87,52 @@ const fragment = /* glsl */ `
     return 130.0 * dot(m, g);
   }
 
+  // FBM for more complex noise
+  float fbm(vec2 uv) {
+    float val = 0.0;
+    float amp = 0.5;
+    for (int i = 0; i < 4; i++) {
+      val += amp * snoise(uv);
+      uv *= 2.01;
+      amp *= 0.5;
+    }
+    return val;
+  }
+
   void main() {
     vec2 uv = vUv;
-    float noise1 = snoise(uv * 2.0 + uTime * 0.1) * uAmplitude;
-    float noise2 = snoise(uv * 3.0 - uTime * 0.15) * uAmplitude;
     
-    float finalNoise = (noise1 + noise2) * 0.5 + 0.5;
+    // Domain Warping: Layer 1
+    vec2 q = vec2(
+      fbm(uv + uTime * 0.05),
+      fbm(uv + vec2(5.2, 1.3) + uTime * 0.03)
+    );
     
-    vec3 color = mix(uColor1, uColor2, finalNoise);
-    color = mix(color, uColor3, snoise(uv * 1.5 + uTime * 0.05) * 0.5 + 0.5);
+    // Domain Warping: Layer 2 (Distortion)
+    vec2 r = vec2(
+      fbm(uv + 4.0 * q + vec2(1.7, 9.2) + uTime * 0.08),
+      fbm(uv + 4.0 * q + vec2(8.3, 2.8) + uTime * 0.04)
+    );
     
-    // Apply intensity and blend
+    // Calculate final intensity based on warped noise
+    float f = fbm(uv + 6.0 * r);
+    
+    // Create 'ribbon' effect by favoring vertical flow
+    float ribbon = snoise(vec2(uv.x * 0.8 + uTime * 0.02, uv.y * 0.1));
+    f = mix(f, ribbon, 0.4) * uAmplitude;
+    
+    // Color interaction
+    vec3 color = mix(uColor1, uColor2, clamp(f * f * 4.0, 0.0, 1.0));
+    color = mix(color, uColor3, clamp(length(q), 0.0, 1.0));
+    
+    // Dynamic light scattering
+    color += 0.2 * vec3(0.5, 0.7, 1.0) * pow(f, 3.0);
+    
+    // Intensity and alpha
     color *= uIntensity;
-    float alpha = smoothstep(0.1, 0.8, uv.y) * uBlend;
+    float alpha = smoothstep(0.0, 1.0, f) * uBlend;
+    // Fade out edges
+    alpha *= smoothstep(0.0, 0.2, uv.y) * smoothstep(1.0, 0.5, uv.y);
     
     gl_FragColor = vec4(color, alpha);
   }
