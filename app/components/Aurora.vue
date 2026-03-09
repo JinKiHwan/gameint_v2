@@ -21,6 +21,14 @@ const props = defineProps({
     type: Number,
     default: 1.0,
   },
+  blend: {
+    type: Number,
+    default: 0.5,
+  },
+  intensity: {
+    type: Number,
+    default: 1.0,
+  },
 });
 
 const container = ref(null);
@@ -46,6 +54,8 @@ const fragment = /* glsl */ `
   uniform vec3 uColor2;
   uniform vec3 uColor3;
   uniform float uAmplitude;
+  uniform float uIntensity;
+  uniform float uBlend;
   varying vec2 vUv;
 
   vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
@@ -87,7 +97,10 @@ const fragment = /* glsl */ `
     vec3 color = mix(uColor1, uColor2, finalNoise);
     color = mix(color, uColor3, snoise(uv * 1.5 + uTime * 0.05) * 0.5 + 0.5);
     
-    float alpha = smoothstep(0.1, 0.8, uv.y) * 0.8;
+    // Apply intensity and blend
+    color *= uIntensity;
+    float alpha = smoothstep(0.1, 0.8, uv.y) * uBlend;
+    
     gl_FragColor = vec4(color, alpha);
   }
 `;
@@ -107,6 +120,8 @@ onMounted(() => {
       uColor2: { value: new Color(props.colorStops[1]) },
       uColor3: { value: new Color(props.colorStops[2]) },
       uAmplitude: { value: props.amplitude },
+      uIntensity: { value: props.intensity },
+      uBlend: { value: props.blend },
     },
     transparent: true,
   });
@@ -139,7 +154,7 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.6;
+  opacity: 1.0; /* We handle opacity via uBlend in shader */
   filter: blur(40px);
 }
 canvas {
