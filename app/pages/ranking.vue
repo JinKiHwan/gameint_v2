@@ -198,6 +198,9 @@ const getTierClass = (tier) => {
   if (t.includes('gold')) return 'tier--gold'
   if (t.includes('platinum')) return 'tier--platinum'
   if (t.includes('diamond')) return 'tier--diamond'
+  if (t.includes('master')) return 'tier--master'
+  if (t.includes('grandmaster')) return 'tier--grandmaster'
+  if (t.includes('challenger')) return 'tier--challenger'
   return 'tier--bronze'
 }
 
@@ -209,6 +212,9 @@ const getTierChipClass = (tier) => {
   if (t.includes('gold')) return 'amber'
   if (t.includes('platinum')) return 'teal'
   if (t.includes('diamond')) return 'indigo'
+  if (t.includes('master'))   return 'indigo-tonal'
+  if (t.includes('grandmaster')) return 'red'
+  if (t.includes('challenger')) return 'grey'
   return 'amber'
 }
 
@@ -321,6 +327,9 @@ onMounted(() => {
 .tier--gold { background: #FFD700; }
 .tier--platinum { background: #E5E4E2; color: #333; }
 .tier--diamond { background: #B9F2FF; color: #333; }
+.tier--master { background: #3949AB; color: #fff; }
+.tier--grandmaster { background: #EF5350; color: #fff; }
+.tier--challenger { background: #212121; color: #fff; }
 
 .podium-info {
   text-align: center;

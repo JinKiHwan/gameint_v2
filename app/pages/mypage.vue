@@ -701,6 +701,9 @@ const getTierChipClass = (tier) => {
   if (t.includes('gold'))     return 'amber'
   if (t.includes('platinum')) return 'teal'
   if (t.includes('diamond'))  return 'indigo'
+  if (t.includes('master'))    return 'indigo-tonal'
+  if (t.includes('grandmaster')) return 'red'
+  if (t.includes('challenger'))  return 'grey'
   return 'amber'
 }
 const formatDate = (dateValue) => {

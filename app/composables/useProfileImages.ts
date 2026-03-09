@@ -20,7 +20,7 @@ export interface ProfileImageMeta {
 
 // 티어 순서 (숫자가 낮을수록 낮은 티어)
 export const TIER_ORDER: Record<string, number> = {
-  Bronze: 1, Silver: 2, Gold: 3, Platinum: 4, Diamond: 5
+  Bronze: 1, Silver: 2, Gold: 3, Platinum: 4, Diamond: 5, Master: 6, Grandmaster: 7, Challenger: 8
 }
 
 export const PROFILE_IMAGES: ProfileImageMeta[] = [
