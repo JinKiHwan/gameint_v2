@@ -320,19 +320,35 @@ import { onBeforeUnmount } from 'vue'
 
 .hero-banner {
   position: relative;
-  height: 320px;
+  min-height: 320px;
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  @media (max-width: 768px) {
+    height: auto;
+    border-radius: 20px;
+  }
 }
-.hero-banner img { width: 100%; height: 100%; object-fit: cover; }
+.hero-banner img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+  position: absolute;
+  inset: 0;
+}
 .hero-banner__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, rgba(0,0,0,0.1) 100%);
+  background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.2) 100%);
   display: flex;
   align-items: center;
-  padding: 0 40px;
+  padding: 40px;
+  @media (max-width: 768px) {
+    position: relative;
+    background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%);
+    padding: 32px 24px;
+    height: auto;
+  }
 }
 .hero-banner__content {
   display: flex;
@@ -340,17 +356,26 @@ import { onBeforeUnmount } from 'vue'
   align-items: center;
   width: 100%;
   gap: 40px;
+  @media (max-width: 960px) {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 32px;
+  }
 }
 
 .hero-info-card {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 24px;
   padding: 24px;
-  min-width: 260px;
+  min-width: 280px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  @media (max-width: 960px) {
+    width: 100%;
+    min-width: unset;
+  }
 }
 
 .dna-conveyor {
