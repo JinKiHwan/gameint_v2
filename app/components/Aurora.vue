@@ -11,7 +11,7 @@ import { Renderer, Program, Mesh, Color, Triangle } from 'ogl';
 const props = defineProps({
   colorStops: {
     type: Array,
-    default: () => ["#3A29FF", "#FF94B4", "#FF3232"],
+    default: () => ["#0047AB", "#00BFFF", "#1E90FF"],
   },
   speed: {
     type: Number,
@@ -135,7 +135,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .aurora-container {
-  position: absolute;
+  position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
