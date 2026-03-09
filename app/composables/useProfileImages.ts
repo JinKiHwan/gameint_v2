@@ -13,9 +13,10 @@ export interface ProfileImageMeta {
   id: string           // 파일명(확장자 제외), Firestore에 저장
   path: string         // 실제 이미지 경로 (nuxt asset)
   label: string        // 표시 이름
-  unlockType: 'default' | 'tier' | 'quest'
+  unlockType: 'default' | 'tier' | 'quest' | 'level'
   tier?: string        // unlockType === 'tier' 일 때 필요한 최소 티어
   quest?: { type: 'posts' | 'comments'; count: number }
+  level?: number       // unlockType === 'level' 일 때 필요한 최소 레벨
 }
 
 // 티어 순서 (숫자가 낮을수록 낮은 티어)
@@ -57,6 +58,25 @@ export const PROFILE_IMAGES: ProfileImageMeta[] = [
   { id: 'default_26', path: '/images/profile_image/default_26.webp', label: 'Diamond 해금',  unlockType: 'tier', tier: 'Diamond'  },
   { id: 'default_27', path: '/images/profile_image/default_27.webp', label: 'Diamond 해금',  unlockType: 'tier', tier: 'Diamond'  },
   { id: 'default_28', path: '/images/profile_image/default_28.webp', label: 'Diamond 해금',  unlockType: 'tier', tier: 'Diamond'  },
+
+  // ── 레벨 해금 ──────────────────────────────────────────────
+  { id: 'profile_level_01',  path: '/images/profile_image/level/profile_level_01.webp',  label: '레벨 1 달성',   unlockType: 'level', level: 1 },
+  { id: 'profile_level_05',  path: '/images/profile_image/level/profile_level_05.webp',  label: '레벨 5 달성',   unlockType: 'level', level: 5 },
+  { id: 'profile_level_10',  path: '/images/profile_image/level/profile_level_10.webp',  label: '레벨 10 달성',  unlockType: 'level', level: 10 },
+  { id: 'profile_level_15',  path: '/images/profile_image/level/profile_level_15.webp',  label: '레벨 15 달성',  unlockType: 'level', level: 15 },
+  { id: 'profile_level_50',  path: '/images/profile_image/level/profile_level_50.webp',  label: '레벨 50 달성',  unlockType: 'level', level: 50 },
+  { id: 'profile_level_99',  path: '/images/profile_image/level/profile_level_99.webp',  label: '레벨 99 달성',  unlockType: 'level', level: 99 },
+  { id: 'profile_level_100', path: '/images/profile_image/level/profile_level_100.webp', label: '레벨 100 달성', unlockType: 'level', level: 100 },
+  { id: 'profile_master',    path: '/images/profile_image/level/profile_master.webp',    label: '레벨 마스터',   unlockType: 'level', level: 100 },
+
+  // ── 랭크 해금 ──────────────────────────────────────────────
+  { id: 'profile_rank_bronze',      path: '/images/profile_image/rank/profile_rank_bronze.webp',      label: 'Bronze 달성',      unlockType: 'tier', tier: 'Bronze' },
+  { id: 'profile_rank_silver',      path: '/images/profile_image/rank/profile_rank_silver.webp',      label: 'Silver 달성',      unlockType: 'tier', tier: 'Silver' },
+  { id: 'profile_rank_gold',        path: '/images/profile_image/rank/profile_rank_gold.webp',        label: 'Gold 달성',        unlockType: 'tier', tier: 'Gold' },
+  { id: 'profile_rank_platinum',    path: '/images/profile_image/rank/profile_rank_platinum.webp',    label: 'Platinum 달성',    unlockType: 'tier', tier: 'Platinum' },
+  { id: 'profile_rank_diamond',     path: '/images/profile_image/rank/profile_rank_diamond.webp',     label: 'Diamond 달성',     unlockType: 'tier', tier: 'Diamond' },
+  { id: 'profile_rank_master',      path: '/images/profile_image/rank/profile_rank_master.webp',      label: 'Master 달성',      unlockType: 'tier', tier: 'Master' },
+  { id: 'profile_rank_grandmaster', path: '/images/profile_image/rank/profile_rank_grandmaster.webp', label: 'Grandmaster 달성', unlockType: 'tier', tier: 'Grandmaster' },
 ]
 
 /**
@@ -64,7 +84,7 @@ export const PROFILE_IMAGES: ProfileImageMeta[] = [
  */
 export function isImageUnlocked(
   image: ProfileImageMeta,
-  userData: { tier?: string; postCount?: number; commentCount?: number }
+  userData: { tier?: string; postCount?: number; commentCount?: number; level?: number }
 ): boolean {
   if (image.unlockType === 'default') return true
 
@@ -78,6 +98,10 @@ export function isImageUnlocked(
     const { type, count } = image.quest
     if (type === 'posts')    return (userData.postCount    ?? 0) >= count
     if (type === 'comments') return (userData.commentCount ?? 0) >= count
+  }
+
+  if (image.unlockType === 'level' && image.level !== undefined) {
+    return (userData.level ?? 1) >= image.level
   }
 
   return false

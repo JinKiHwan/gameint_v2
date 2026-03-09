@@ -420,6 +420,7 @@
               <!-- 해금 조건 안내 -->
               <div class="unlock-legend mb-4">
                 <span class="legend-item"><span class="legend-dot dot-default"></span>기본 제공</span>
+                <span class="legend-item"><span class="legend-dot dot-level"></span>레벨 해금</span>
                 <span class="legend-item"><span class="legend-dot dot-tier"></span>티어 해금</span>
                 <span class="legend-item"><span class="legend-dot dot-quest"></span>퀘스트 해금</span>
               </div>
@@ -655,8 +656,9 @@ const imageLoading = ref(false)
 const imageTabs = [
   { value: 'all',     label: '전체' },
   { value: 'default', label: '기본 제공' },
-  { value: 'quest',   label: '퀘스트 해금' },
+  { value: 'level',   label: '레벨 해금' },
   { value: 'tier',    label: '티어 해금' },
+  { value: 'quest',   label: '퀘스트 해금' },
 ]
 
 const filteredImages = computed(() => {
@@ -668,9 +670,11 @@ const isUnlocked = (img) => isImageUnlocked(img, {
   tier:         authStore.userData?.tier,
   postCount:    authStore.userData?.postCount,
   commentCount: authStore.userData?.commentCount,
+  level:        authStore.userData?.level,
 })
 
 const getLockLabel = (img) => {
+  if (img.unlockType === 'level') return `Lv.${img.level} 달성`
   if (img.unlockType === 'tier')  return `${img.tier} 이상`
   if (img.unlockType === 'quest') {
     const typeLabel = img.quest.type === 'posts' ? '게시글' : '댓글'
@@ -940,6 +944,7 @@ const handleUpdateProfile = async () => {
 .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.75rem; font-weight: 700; color: #757575; }
 .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .dot-default { background: #4CAF50; }
+.dot-level   { background: #03A9F4; }
 .dot-tier    { background: #FFB300; }
 .dot-quest   { background: #7E57C2; }
 
