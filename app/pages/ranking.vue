@@ -16,7 +16,7 @@
       </div>
     </div>
 
-    <div class="container mx-auto px-4 pb-24">
+    <div class="container pb-24">
       <!-- 로딩 상태 -->
       <div v-if="loading" class="text-center py-20">
         <div class="spinner spinner--lg mb-4"></div>

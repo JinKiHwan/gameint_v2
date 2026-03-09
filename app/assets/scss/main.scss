@@ -54,7 +54,15 @@
     .logo-text {
       font-size: 1.25rem;
       font-weight: 900;
-      color: $grey-darken-4;
+      //background-image: url(/img/common/gradient.webp);
+      background: url('/images/common/gradient.webp') no-repeat center center / contain;
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+      //color: $grey-darken-4;
     }
   }
 
@@ -174,6 +182,13 @@
     .logo-text {
       font-size: 1.0625rem;
       font-weight: 900;
+      background: url('/images/common/gradient.webp') no-repeat center center / contain;
+      background-repeat: no-repeat;
+      background-position: center center;
+      background-size: cover;
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
     }
   }
 
@@ -234,7 +249,11 @@
 .container {
   max-width: 1000px;
   margin: 0 auto;
-  padding: 32px 0; /* 사용자 요청: 32px 0 */
+  padding: sp(4) sp(4) sp(16);
+
+  @include md {
+    padding: sp(8) sp(8) sp(8);
+  }
 }
 
 // ============================

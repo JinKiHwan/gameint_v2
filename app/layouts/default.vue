@@ -4,8 +4,7 @@
     <aside class="sidebar">
     <div class="sidebar__logo">
       <NuxtLink to="/" style="text-decoration:none; color:inherit; display:flex; align-items:center; gap:8px;">
-        <i class="mdi mdi-book-open-page-variant logo-icon"></i>
-        <span class="logo-text">Game Int</span>
+        <span class="logo-text">GAMEINT</span>
       </NuxtLink>
     </div>
 
@@ -66,8 +65,7 @@
       <!-- 모바일 -->
       <div class="app-bar__mobile">
         <NuxtLink to="/" style="text-decoration:none; color:inherit; display:flex; align-items:center;">
-          <i class="mdi mdi-book-open-page-variant logo-icon"></i>
-          <span class="logo-text">Game Int</span>
+          <span class="logo-text">GAMEINT</span>
         </NuxtLink>
         <div class="spacer"></div>
 
