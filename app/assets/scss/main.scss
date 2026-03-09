@@ -234,11 +234,7 @@
 .container {
   max-width: 1000px;
   margin: 0 auto;
-  padding: sp(4) sp(4) sp(16);
-
-  @include md {
-    padding: sp(8) sp(8) sp(8);
-  }
+  padding: 32px 0; /* 사용자 요청: 32px 0 */
 }
 
 // ============================

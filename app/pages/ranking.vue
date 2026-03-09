@@ -119,38 +119,7 @@
 
     </div>
 
-    <!-- 내 랭킹 플로팅 HUD (Premium Redesign) -->
-    <div v-if="authStore.userData" class="my-rank-hud-wrap">
-      <div class="my-rank-hud card">
-        <div class="hud-content">
-          <div class="hud-profile">
-            <div class="avatar avatar--sm border-white/40">
-              <img :src="getProfileImagePath(authStore.userData.profileImageId)" alt="my profile" />
-            </div>
-            <div class="hud-name">
-              <div class="text-caption font-black text-white leading-none">{{ authStore.userData.nickname }}</div>
-              <div class="text-[9px] text-white/60 font-bold uppercase mt-1">{{ authStore.userData.tier }} · LV.{{ authStore.userData.level }}</div>
-            </div>
-          </div>
-          
-          <div class="hud-exp">
-            <div class="flex justify-between items-end mb-1 px-1">
-              <span class="text-[10px] font-black text-amber-300">NEXT TIER PROGRESS</span>
-              <span class="text-[10px] font-black text-white/80">{{ userExpPercent }}%</span>
-            </div>
-            <div class="progress-bar progress-bar--xs bg-white/10">
-              <div class="progress-bar__fill bg-gradient-to-r from-amber-400 to-orange-500" :style="`width: ${userExpPercent}%`"></div>
-            </div>
-          </div>
 
-          <div class="hud-actions">
-            <button class="hud-btn" @click="router.push('/mypage')">
-              <i class="mdi mdi-account-circle-outline mr-1"></i>MY
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
 
   </div>
 </template>
@@ -212,6 +181,11 @@ onMounted(() => {
 .ranking-page {
   min-height: 100vh;
   background: var(--bg-light);
+}
+
+/* 컨테이너 패딩 조정 (32px 0) */
+.ranking-page :deep(.container) {
+  padding: 32px 0 !important;
 }
 
 /* ── 히어로 배너 (cycles.vue 스타일링) ──────────────────────────── */
@@ -300,7 +274,7 @@ onMounted(() => {
 
 /* ── 리스트 로우 ──────────────────────────── */
 .ranking-card__list {
-  padding: 20px 20px 0;
+  padding: 20px 5px 0; /* 사용자 요청: 20px 5px 0 */
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -358,77 +332,12 @@ onMounted(() => {
   font-weight: 700;
 }
 
-/* ── 플로팅 HUD (Premium Bar) ───────────────────── */
-.my-rank-hud-wrap {
-  position: fixed;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 800px;
-  padding: 0 20px;
-  z-index: 1000;
-  pointer-events: none;
-}
-.my-rank-hud.card {
-  pointer-events: auto;
-  background: rgba(15, 23, 42, 0.85) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  border-radius: 20px;
-  padding: 12px 20px;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-}
-.hud-content {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-.hud-profile {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-shrink: 0;
-}
-.hud-name {
-  display: flex;
-  flex-direction: column;
-}
-.hud-exp {
-  flex: 1;
-  min-width: 0;
-}
-.hud-actions {
-  flex-shrink: 0;
-}
-.hud-btn {
-  padding: 8px 16px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 12px;
-  color: white;
-  font-size: 12px;
-  font-weight: 900;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-.hud-btn:hover {
-  background: white;
-  color: #0f172a;
-}
-
-@media (max-width: 768px) {
-  .hud-content { gap: 16px; }
-  .hud-exp { display: none; }
-}
-
 @media (max-width: 600px) {
   .cycles-hero__bg { height: 220px; }
   .cycles-hero__glass { padding: 20px; }
   .ranking-card.card { padding: 24px 0; border-radius: 20px; }
   .ranking-card__header { padding: 0 20px 20px; }
-  .my-rank-hud-wrap { bottom: 12px; padding: 0 12px; }
 }
+
 
 </style>
