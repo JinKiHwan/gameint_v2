@@ -339,14 +339,14 @@ import { onBeforeUnmount } from 'vue'
   inset: 0;
 }
 .hero-banner__overlay {
-  position: absolute;
-  inset: 0;
+  position: relative; /* PC에서도 상대 위치를 보장하여 자식 요소(content)가 정상 노출되도록 수정 */
+  min-height: 240px;
   background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
   display: flex;
   align-items: flex-end;
   padding: 40px;
   @media (max-width: 768px) {
-    position: relative;
+    min-height: 320px;
     background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%);
     padding: 32px 24px;
     height: auto;

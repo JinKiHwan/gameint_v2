@@ -182,8 +182,8 @@ const paginatedPosts = computed(() => {
   @media (max-width: 768px) { height: 320px; }
 }
 .recommend-hero__overlay {
-  position: absolute;
-  inset: 0;
+  position: relative; /* 자식 요소 안정성을 위해 relative로 수정 */
+  min-height: 240px;
   background: linear-gradient(to top, rgba(10, 25, 41, 0.8) 0%, rgba(10, 25, 41, 0.2) 60%, transparent 100%);
   display: flex;
   align-items: flex-end;
