@@ -47,23 +47,13 @@
               <i class="mdi mdi-account-group"></i> 현재 {{ activeCycle.participantCount || 0 }}명 참여중
             </div>
             <div class="hero-avatars mb-5">
-              <template v-if="activeCycle.recentParticipantUids && activeCycle.recentParticipantUids.length > 0">
-                <div 
-                  v-for="(uid, idx) in activeCycle.recentParticipantUids" 
-                  :key="uid" 
-                  class="avatar avatar--sm avatar--stacked"
-                  :style="{ zIndex: 10 - idx }"
-                >
-                  <img :src="getProfileImagePath(resolveUser(uid).profileImageId)" alt="profile" />
-                </div>
-              </template>
-              <template v-else>
-                <div v-for="i in 3" :key="'mock-' + i" class="avatar avatar--sm avatar--stacked" :class="getHeroFallbackClass(i - 1)">
-                  <i class="mdi mdi-account" style="font-size: 0.8rem;"></i>
-                </div>
-              </template>
-              <div v-if="(activeCycle.participantCount || 0) > (activeCycle.recentParticipantUids?.length || 0 ? activeCycle.recentParticipantUids.length : 3)" class="avatar avatar--sm avatar--white avatar--stacked">
-                <span class="text-blue-dark" style="font-size: 0.7rem;">+{{ (activeCycle.participantCount || 0) - (activeCycle.recentParticipantUids?.length || 0 ? activeCycle.recentParticipantUids.length : 3) }}</span>
+              <!-- 실제 프로필 노출 대신 기본 아바타 3개만 고정 노출 (개인정보 보호 및 디자인 일관성) -->
+              <div v-for="i in 3" :key="'mock-' + i" class="avatar avatar--sm avatar--stacked" :class="getHeroFallbackClass(i - 1)">
+                <i class="mdi mdi-account" style="font-size: 0.8rem;"></i>
+              </div>
+              <!-- 3명을 초과하는 인원만 +N으로 표기 -->
+              <div v-if="(activeCycle.participantCount || 0) > 3" class="avatar avatar--sm avatar--white avatar--stacked">
+                <span class="text-blue-dark" style="font-size: 0.7rem;">+{{ (activeCycle.participantCount || 0) - 3 }}</span>
               </div>
             </div>
             <button 
