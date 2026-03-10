@@ -1172,9 +1172,16 @@ const formatDate = (dateValue) => {
 .participant-info { padding: 12px; }
 .participant-reason {
   background: #F5F5F5;
-  padding: 8px;
+  padding: 8px 10px;
   border-radius: 8px;
   font-style: italic;
+  max-height: 80px; /* 고정 높이 또는 최대 높이 설정 */
+  overflow-y: auto; /* 내용이 길어지면 스크롤 바 생성 */
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  /* 스크롤바 디자인 살짝 정돈 */
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: #E0E0E0; border-radius: 4px; }
 }
 
 /* ── 책 등록 모달 ────────────────────────── */
