@@ -38,7 +38,7 @@ export default defineNuxtConfig({
       short_name: 'GAMEINT',
       description: '독서 그 이상의 경험, 게임인 독서 클럽',
       theme_color: '#1E88E5',
-      background_color: '#F5F5F5',
+      background_color: '#FFFFFF',
       icons: [
         {
           src: '/icon-192.png',
