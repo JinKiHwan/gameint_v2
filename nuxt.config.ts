@@ -16,7 +16,38 @@ export default defineNuxtConfig({
   },
   modules: [
     '@pinia/nuxt',
+    '@vite-pwa/nuxt'
   ],
+  pwa: {
+    manifest: {
+      name: 'GAMEINT',
+      short_name: 'GAMEINT',
+      description: '독서 그 이상의 경험, 게임인 독서 클럽',
+      theme_color: '#1E88E5',
+      background_color: '#F5F5F5',
+      icons: [
+        {
+          src: 'icon-192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any maskable'
+        },
+        {
+          src: 'icon-512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any maskable'
+        }
+      ]
+    },
+    workbox: {
+      navigateFallback: '/'
+    },
+    devOptions: {
+      enabled: true,
+      type: 'module'
+    }
+  },
   css: ['~/assets/scss/main.scss'],
   vite: {
     css: {

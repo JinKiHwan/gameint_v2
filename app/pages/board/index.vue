@@ -206,6 +206,7 @@ const formatDate = (dateValue) => {
   height: 300px; /* cycles.vue와 동일하게 300px로 복구 */
   object-fit: cover;
   display: block;
+  @media (max-width: 768px) { height: 240px; }
 }
 .board-hero__overlay {
   position: absolute;

@@ -187,6 +187,32 @@
       </div>
     </main>
 
+    <!-- PWA 설치 유도 배너 (PWA 환경이 아닐 때만 노출) -->
+    <div v-if="showInstallBanner" class="pwa-banner" :class="{ 'is-ios': isIOS }">
+      <div class="pwa-banner__content">
+        <div class="pwa-banner__icon">
+          <img :src="'/icon-192.png'" alt="App Icon" />
+        </div>
+        <div class="pwa-banner__text">
+          <div class="pwa-banner__title">GAMEINT 앱 설치</div>
+          <div class="pwa-banner__desc">
+            <template v-if="isIOS">
+              공유 버튼 <i class="mdi mdi-export-variant"></i> 누르고 <strong>'홈 화면에 추가'</strong>를 선택해 주세요!
+            </template>
+            <template v-else>
+              바탕화면에 설치하고 더 편하게 즐겨보세요!
+            </template>
+          </div>
+        </div>
+        <div class="pwa-banner__actions">
+          <button v-if="!isIOS" class="btn btn--primary btn--sm" @click="installApp">설치하기</button>
+          <button class="btn btn--text btn--icon pwa-banner__close" @click="closeBanner">
+            <i class="mdi mdi-close"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- 모바일 하단 네비게이션 -->
     <nav class="bottom-nav">
       <NuxtLink
@@ -248,6 +274,9 @@ import { useNotificationStore } from '~/stores/notifications'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 import { useRouter } from 'vue-router'
 import { EXP_CONFIG } from '~/utils/expConfig'
+import { usePWAInstall } from '~/composables/usePWAInstall'
+
+const { isInstallable, isPWA, isIOS, showInstallBanner, installApp, closeBanner } = usePWAInstall()
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
@@ -390,7 +419,7 @@ watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
 })
 </script>
 
-<style scoped>
+<style lang="scss" scoped>
 .mobile-menu { position: relative; }
 
 .mobile-dropdown {
@@ -622,6 +651,80 @@ watch(() => authStore.userData?.level, (newLevel, oldLevel) => {
 .lv-badge-new { background: #FFD54F; color: #1A237E; border-color: #FFD54F; transform: scale(1.2); box-shadow: 0 0 20px rgba(255,213,79,0.5); }
 .tier-up-box { background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); }
 .pa-10 { padding: 40px; }
+
+/* ── PWA 설치 배너 ────────────────────────────── */
+.pwa-banner {
+  position: fixed;
+  bottom: 84px; /* 바텀바 바로 위 */
+  left: 16px;
+  right: 16px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(30, 136, 229, 0.2);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  z-index: 1001;
+  padding: 12px 16px;
+  animation: slide-up 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  @include md {
+    display: none;
+  }
+}
+
+.pwa-banner__content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pwa-banner__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  background: #fff;
+  img { width: 100%; height: 100%; object-fit: cover; }
+}
+
+.pwa-banner__text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pwa-banner__title {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #212121;
+}
+
+.pwa-banner__desc {
+  font-size: 0.75rem;
+  color: #616161;
+  line-height: 1.4;
+  strong { color: #1E88E5; font-weight: 800; }
+}
+
+.pwa-banner__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pwa-banner__close {
+  color: #9e9e9e !important;
+  i { font-size: 1.2rem !important; }
+}
+
+.is-ios .pwa-banner__desc {
+  font-size: 0.7rem; /* iOS 가이드는 텍스트가 기므로 조절 */
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 @keyframes bounce { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-10px); } }
 </style>

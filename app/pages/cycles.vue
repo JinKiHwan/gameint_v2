@@ -1073,6 +1073,7 @@ const formatDate = (dateValue) => {
   height: 300px;
   object-fit: cover;
   display: block;
+  @media (max-width: 768px) { height: 240px; }
 }
 .cycles-hero__overlay {
   position: absolute;
