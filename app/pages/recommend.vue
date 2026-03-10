@@ -9,13 +9,13 @@
       />
       <div class="recommend-hero__overlay">
         <div class="recommend-hero__glass">
-          <div class="flex justify-between items-center w-100">
-            <div>
+          <div class="recommend-hero__content">
+            <div class="recommend-hero__text-wrap">
               <div class="text-caption font-bold text-white mb-1 opacity-80">도서 큐레이션</div>
               <h1 class="text-h4 font-black text-white mb-1">인생 도서 추천 💡</h1>
-              <p class="text-body-2 text-white opacity-80">내 인생을 바꾼 소중한 책들을 소개하고 공유하는 공간입니다.</p>
+              <p class="text-body-2 text-white opacity-80 mb-0">내 인생을 바꾼 소중한 책들을 소개하고 공유하는 공간입니다.</p>
             </div>
-            <button class="btn btn--white rounded-xl font-bold flex items-center gap-2" @click="router.push('/board/write?category=도서 추천&openSearch=true')">
+            <button class="btn btn--white rounded-xl font-bold flex items-center gap-2 recommend-hero__btn" @click="router.push('/board/write?category=도서 추천&openSearch=true')">
               <i class="mdi mdi-pencil"></i>새 추천글 쓰기
             </button>
           </div>
@@ -197,6 +197,30 @@ const paginatedPosts = computed(() => {
   border-radius: 16px;
   padding: 24px;
   width: 100%;
+  @media (max-width: 600px) { padding: 16px; }
+}
+.recommend-hero__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+.recommend-hero__text-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.recommend-hero__btn {
+  flex-shrink: 0;
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
 }
 .btn--white { background: #fff; color: #1E88E5; border: none; }
 .btn--white:hover { background: #f5f5f5; }

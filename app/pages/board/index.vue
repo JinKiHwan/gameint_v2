@@ -9,13 +9,13 @@
       />
       <div class="board-hero__overlay">
         <div class="board-hero__glass">
-          <div class="flex justify-between items-center w-100">
-            <div>
+          <div class="board-hero__content">
+            <div class="board-hero__text-wrap">
               <div class="text-caption font-bold text-white mb-1 opacity-80">커뮤니티</div>
               <h1 class="text-h4 font-black text-white mb-1">자유 게시판 💬</h1>
-              <p class="text-body-2 text-white opacity-80">멤버들과 자유롭게 소통하는 공간입니다.</p>
+              <p class="text-body-2 text-white opacity-80 mb-0">멤버들과 자유롭게 소통하는 공간입니다.</p>
             </div>
-            <NuxtLink to="/board/write" class="btn btn--white rounded-xl font-bold flex items-center gap-2">
+            <NuxtLink to="/board/write" class="btn btn--white rounded-xl font-bold flex items-center gap-2 board-hero__btn">
               <i class="mdi mdi-pencil"></i>글쓰기
             </NuxtLink>
           </div>
@@ -224,6 +224,30 @@ const formatDate = (dateValue) => {
   border-radius: 16px;
   padding: 24px;
   width: 100%;
+  @media (max-width: 600px) { padding: 16px; }
+}
+.board-hero__content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 16px;
+  @media (max-width: 600px) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+.board-hero__text-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.board-hero__btn {
+  flex-shrink: 0;
+  @media (max-width: 600px) {
+    width: 100%;
+    justify-content: center;
+    margin-top: 8px;
+  }
 }
 .btn--white { background: #fff; color: #1E88E5; border: none; }
 .btn--white:hover { background: #f5f5f5; }
