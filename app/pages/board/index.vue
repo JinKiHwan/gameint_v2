@@ -148,7 +148,7 @@ const posts = ref([])
 const hotPosts = ref([])
 const page = ref(1)
 const itemsPerPage = 10
-const categoryTags = ['전체', '도서 추천', '책 리뷰', '만화', '자유글', '정보/팁', '건의사항']
+const categoryTags = ['전체', '도서 추천', '책 리뷰', '자유글', '정보/팁', '건의사항']
 
 const loadPosts = async () => { posts.value = await fetchPosts(boardTag.value) }
 const loadHotPosts = async () => {
