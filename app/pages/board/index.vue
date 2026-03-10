@@ -203,22 +203,18 @@ const formatDate = (dateValue) => {
 }
 .board-hero__bg {
   width: 100%;
-  height: 240px;
+  height: 300px; /* cycles.vue와 동일하게 300px로 복구 */
   object-fit: cover;
   display: block;
-  @media (max-width: 768px) { height: 320px; }
 }
 .board-hero__overlay {
-  position: relative; /* 자식 요소 안정성을 위해 relative로 수정 */
-  min-height: 240px;
-  background: linear-gradient(to top, rgba(10, 25, 41, 0.8) 0%, rgba(10, 25, 41, 0.2) 60%, transparent 100%);
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(10, 25, 41, 0.85) 0%, rgba(10, 25, 41, 0.3) 60%, transparent 100%);
   display: flex;
   align-items: flex-end;
   padding: 32px;
-  @media (max-width: 768px) {
-    padding: 20px;
-    align-items: center;
-  }
+  @media (max-width: 768px) { padding: 20px; }
 }
 .board-hero__glass {
   background: rgba(255, 255, 255, 0.12);
@@ -226,9 +222,8 @@ const formatDate = (dateValue) => {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 16px;
-  padding: 24px;
+  padding: 20px 24px; /* cycles.vue와 동일한 패딩 */
   width: 100%;
-  @media (max-width: 600px) { padding: 16px; }
 }
 .board-hero__content {
   display: flex;
@@ -238,8 +233,8 @@ const formatDate = (dateValue) => {
   gap: 16px;
   @media (max-width: 768px) {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
+    text-align: left;
     gap: 12px;
   }
 }
