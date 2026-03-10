@@ -2,7 +2,7 @@ import { ref } from 'vue'
 import { useNuxtApp } from '#app'
 import {
     collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
-    query, where, orderBy, serverTimestamp, increment, setDoc
+    query, where, orderBy, serverTimestamp, increment, setDoc, limit
 } from 'firebase/firestore'
 import { useAuthStore } from '~/stores/auth'
 
@@ -25,12 +25,18 @@ export const useCycle = () => {
         error.value = null
         try {
             const cyclesRef = collection(getDb(), 'cycles')
-            const q = query(cyclesRef, orderBy('createdAt', 'desc'))
+            // closed가 아닌 가장 최신 사이클 1개만 가져옴
+            const q = query(
+                cyclesRef, 
+                where('phase', 'in', ['phase1_reading', 'voting', 'phase2_reading']),
+                orderBy('createdAt', 'desc'),
+                limit(1)
+            )
             const snapshot = await getDocs(q)
-            const cycles = snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[]
-            // closed가 아닌 첫 번째 사이클 반환
-            const active = cycles.find((c: any) => c.phase !== 'closed')
-            return active || null
+            if (snapshot.empty) return null
+            const docSnap = snapshot.docs[0]
+            if (!docSnap) return null
+            return { id: docSnap.id, ...docSnap.data() } as any
         } catch (err: any) {
             console.error('Fetch cycle error:', err)
             error.value = '사이클 정보를 불러오는데 실패했습니다.'

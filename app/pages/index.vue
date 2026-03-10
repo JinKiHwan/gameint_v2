@@ -210,9 +210,9 @@ onMounted(async () => {
     }
   }
 
-  // 2. 최신 추천 도서 로드
-  const posts = await fetchPosts('도서 추천')
-  latestRecommendations.value = (posts || []).slice(0, 3)
+  // 2. 최신 추천 도서 로드 (3개만)
+  const posts = await fetchPosts('도서 추천', 3)
+  latestRecommendations.value = posts || []
 })
 
 watch(() => authStore.user, async (newUser) => {

@@ -16,6 +16,7 @@ export const useAuthStore = defineStore('auth', {
     user: null as User | null,
     userData: null as any, // Firestore user document
     isInitialized: false,
+    unsubProfile: null as any
   }),
   getters: {
     isLoggedIn: (state) => !!state.user,
@@ -36,7 +37,8 @@ export const useAuthStore = defineStore('auth', {
           const userDocRef = doc(firestore, 'users', firebaseUser.uid)
 
           // 실시간 데이터 구독 (경험치, 레벨 등 실시간 반영을 위해)
-          onSnapshot(userDocRef, (docSnap) => {
+          if (this.unsubProfile) this.unsubProfile()
+          this.unsubProfile = onSnapshot(userDocRef, (docSnap) => {
             if (docSnap.exists()) {
               const newData = docSnap.data()
               this.userData = newData
@@ -45,6 +47,8 @@ export const useAuthStore = defineStore('auth', {
             }
           })
         } else {
+          if (this.unsubProfile) this.unsubProfile()
+          this.unsubProfile = null
           this.userData = null
         }
         this.isInitialized = true

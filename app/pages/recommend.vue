@@ -179,6 +179,7 @@ const paginatedPosts = computed(() => {
   height: 240px;
   object-fit: cover;
   display: block;
+  @media (max-width: 600px) { height: 320px; }
 }
 .recommend-hero__overlay {
   position: absolute;
@@ -187,7 +188,10 @@ const paginatedPosts = computed(() => {
   display: flex;
   align-items: flex-end;
   padding: 32px;
-  @media (max-width: 600px) { padding: 20px; }
+  @media (max-width: 600px) {
+    padding: 20px;
+    align-items: center;
+  }
 }
 .recommend-hero__glass {
   background: rgba(255, 255, 255, 0.12);
@@ -207,7 +211,9 @@ const paginatedPosts = computed(() => {
   gap: 16px;
   @media (max-width: 600px) {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
   }
 }
 .recommend-hero__text-wrap {

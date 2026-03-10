@@ -18,7 +18,8 @@ export interface UserProfile {
 export const useUsersStore = defineStore('users', {
     state: () => ({
         users: {} as Record<string, UserProfile>,
-        isInitialized: false
+        isInitialized: false,
+        unsubUsers: null as any
     }),
 
     actions: {
@@ -32,7 +33,8 @@ export const useUsersStore = defineStore('users', {
             // 닉네임/이미지 변경 시 반영 및 멤버 관리 실시간 반영을 위해 active/pending 유저 구독
             const q = query(usersRef, where('status', 'in', ['active', 'pending']))
 
-            onSnapshot(q, (snapshot) => {
+            if (this.unsubUsers) this.unsubUsers()
+            this.unsubUsers = onSnapshot(q, (snapshot) => {
                 snapshot.docs.forEach(doc => {
                     const data = doc.data() as UserProfile
                     this.users[doc.id] = {
@@ -50,6 +52,15 @@ export const useUsersStore = defineStore('users', {
             }, (error) => {
                 console.error('Error subscribing to users:', error)
             })
+        },
+
+        stopSubscriptions() {
+            if (this.unsubUsers) {
+                this.unsubUsers()
+                this.unsubUsers = null
+            }
+            this.users = {}
+            this.isInitialized = false
         },
 
         getUser(uid: string): UserProfile | undefined {

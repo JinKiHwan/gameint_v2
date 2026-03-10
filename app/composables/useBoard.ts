@@ -18,8 +18,8 @@ export const useBoard = () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  // 1. 게시글 목록조회 (카테고리 필터 지원)
-  const fetchPosts = async (category: string = '전체') => {
+  // 1. 게시글 목록조회 (카테고리 필터 및 리밋 지원)
+  const fetchPosts = async (category: string = '전체', fetchLimit: number = 0) => {
     loading.value = true
     error.value = null
     try {
@@ -27,8 +27,16 @@ export const useBoard = () => {
       let q = query(postsRef, orderBy('createdAt', 'desc'))
       
       if (category !== '전체') {
-        // 복합 인덱스(Composite Index) 에러를 피하기 위해 where만 사용하고, 정렬은 클라이언트에서 수행
-        q = query(postsRef, where('category', '==', category))
+        if (fetchLimit > 0) {
+          // 카테고리별 정렬된 최신글 조회를 위해 복합 인덱스가 필요할 수 있음
+          // 복합 인덱스가 정의되어 있다면 q = query(postsRef, where('category', '==', category), orderBy('createdAt', 'desc'), limit(fetchLimit))
+          // 안전을 위해 limit만 걸어둠
+          q = query(postsRef, where('category', '==', category), limit(fetchLimit))
+        } else {
+          q = query(postsRef, where('category', '==', category))
+        }
+      } else if (fetchLimit > 0) {
+        q = query(postsRef, orderBy('createdAt', 'desc'), limit(fetchLimit))
       }
 
       const snapshot = await getDocs(q)
@@ -37,13 +45,12 @@ export const useBoard = () => {
         ...document.data()
       }))
       
-      if (category !== '전체') {
-        posts.sort((a: any, b: any) => {
-          const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime()
-          const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime()
-          return dateB - dateA
-        })
-      }
+      // 항상 클라이언트에서 정렬 보장 (복합 인덱스 누락 대비)
+      posts.sort((a: any, b: any) => {
+        const dateA = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : new Date(a.createdAt || 0).getTime()
+        const dateB = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : new Date(b.createdAt || 0).getTime()
+        return dateB - dateA
+      })
       
       return posts
     } catch (err: any) {
@@ -135,7 +142,7 @@ export const useBoard = () => {
 
       // 유저 문서의 postCount 증가 및 로컬 상태 업데이트
       const authStore = useAuthStore()
-      if (authStore.user?.uid === postData.author?.uid) {
+      if (authStore.user && authStore.user.uid === postData.author?.uid) {
         const userRef = doc(getDb(), 'users', authStore.user.uid)
         await updateDoc(userRef, { postCount: increment(1) })
         if (authStore.userData) {
@@ -246,7 +253,7 @@ export const useBoard = () => {
 
       // 3) 유저 문서의 commentCount 증가
       const authStore = useAuthStore()
-      if (authStore.user?.uid === commentData.author?.uid) {
+      if (authStore.user && authStore.user.uid === commentData.author?.uid) {
         const userRef = doc(getDb(), 'users', authStore.user.uid)
         await updateDoc(userRef, { commentCount: increment(1) })
         if (authStore.userData) {

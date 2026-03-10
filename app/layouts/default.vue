@@ -251,6 +251,7 @@ import { EXP_CONFIG } from '~/utils/expConfig'
 
 const authStore = useAuthStore()
 const notificationStore = useNotificationStore()
+const usersStore = useUsersStore()
 const router = useRouter()
 
 const handleLogout = async () => {
@@ -360,14 +361,18 @@ onMounted(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
   notificationStore.stopSubscriptions()
+  usersStore.stopSubscriptions()
+  if (authStore.unsubProfile) authStore.unsubProfile()
 })
 
-// 로그인 상태에 따른 알림 구독 관리
+// 로그인 상태에 따른 알림/유저 구독 관리
 watch(() => authStore.user, (user) => {
   if (user) {
     notificationStore.initNotifications()
+    usersStore.initUsers()
   } else {
     notificationStore.stopSubscriptions()
+    usersStore.stopSubscriptions()
   }
 })
 

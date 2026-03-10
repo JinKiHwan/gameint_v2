@@ -206,6 +206,7 @@ const formatDate = (dateValue) => {
   height: 240px;
   object-fit: cover;
   display: block;
+  @media (max-width: 600px) { height: 320px; }
 }
 .board-hero__overlay {
   position: absolute;
@@ -214,7 +215,10 @@ const formatDate = (dateValue) => {
   display: flex;
   align-items: flex-end;
   padding: 32px;
-  @media (max-width: 600px) { padding: 20px; }
+  @media (max-width: 600px) {
+    padding: 20px;
+    align-items: center;
+  }
 }
 .board-hero__glass {
   background: rgba(255, 255, 255, 0.12);
@@ -234,7 +238,9 @@ const formatDate = (dateValue) => {
   gap: 16px;
   @media (max-width: 600px) {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
+    gap: 12px;
   }
 }
 .board-hero__text-wrap {
