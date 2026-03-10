@@ -119,7 +119,7 @@ const page = ref(1)
 const itemsPerPage = 16
 const recommendSort = ref('최신순')
 
-const tags = ['전체', '소설', '자기계발', '경제/경영', '인문/사회', '과학/기술', '시/에세이', '기타']
+const tags = ['전체', '소설', '자기계발', '경제/경영', '인문/사회', '과학/기술', '시/에세이', '만화', '기타']
 const recommendTag = ref('전체')
 const posts = ref([])
 

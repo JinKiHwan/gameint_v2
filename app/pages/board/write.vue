@@ -115,7 +115,7 @@ const showBookSearchModal = ref(false)
 const attachedBook = ref(null)
 const loading = ref(false)
 const errorMsg = ref('')
-const categories = ['도서 추천', '책 리뷰', '만화', '자유글', '정보/팁', '건의사항']
+const categories = ['도서 추천', '책 리뷰', '자유글', '정보/팁', '건의사항']
 const bookGenres = ['소설', '자기계발', '경제/경영', '인문/사회', '과학/기술', '시/에세이', '만화', '기타']
 const formData = ref({ category: '자유글', bookGenre: '', title: '', content: '' })
 const isEditMode = computed(() => !!route.query.edit)
