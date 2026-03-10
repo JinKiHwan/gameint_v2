@@ -264,13 +264,14 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height: 60px;
-  background: rgba(255, 255, 255, 0.7);
+  height: 84px; /* 기존 60px에서 증대 */
+  padding-bottom: 24px; /* 하단 세이프 영역 확보 */
+  background: rgba(255, 255, 255, 0.85); /* 가독성 위해 투명도 살짝 조절 */
   backdrop-filter: blur(12px);
   border-top: 1px solid rgba(255, 255, 255, 0.5);
   display: flex;
   z-index: 100;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.08);
 
   @include md {
     display: none;
