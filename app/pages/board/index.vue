@@ -206,7 +206,7 @@ const formatDate = (dateValue) => {
   height: 240px;
   object-fit: cover;
   display: block;
-  @media (max-width: 600px) { height: 320px; }
+  @media (max-width: 768px) { height: 320px; }
 }
 .board-hero__overlay {
   position: absolute;
@@ -215,7 +215,7 @@ const formatDate = (dateValue) => {
   display: flex;
   align-items: flex-end;
   padding: 32px;
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     padding: 20px;
     align-items: center;
   }
@@ -236,7 +236,7 @@ const formatDate = (dateValue) => {
   align-items: center;
   width: 100%;
   gap: 16px;
-  @media (max-width: 600px) {
+  @media (max-width: 768px) {
     flex-direction: column;
     align-items: center;
     text-align: center;

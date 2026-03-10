@@ -172,6 +172,7 @@ import { getProfileImagePath } from '~/composables/useProfileImages'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const { resolveUser } = useUserMapper()
 const { fetchActiveCycle, fetchMyParticipation, fetchParticipants, loading: cycleLoading } = useCycle()
 const { fetchPosts, loading: boardLoading } = useBoard()
 const activeCycle = ref(null)
@@ -320,11 +321,12 @@ import { onBeforeUnmount } from 'vue'
 
 .hero-banner {
   position: relative;
-  min-height: 320px;
+  min-height: 240px;
   border-radius: 24px;
   overflow: hidden;
   box-shadow: 0 10px 30px rgba(0,0,0,0.1);
   @media (max-width: 768px) {
+    min-height: 320px;
     height: auto;
     border-radius: 20px;
   }
@@ -339,15 +341,16 @@ import { onBeforeUnmount } from 'vue'
 .hero-banner__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.5) 50%, rgba(0,0,0,0.2) 100%);
+  background: linear-gradient(90deg, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.4) 50%, transparent 100%);
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   padding: 40px;
   @media (max-width: 768px) {
     position: relative;
     background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.9) 100%);
     padding: 32px 24px;
     height: auto;
+    align-items: center;
   }
 }
 .hero-banner__content {
@@ -356,9 +359,10 @@ import { onBeforeUnmount } from 'vue'
   align-items: center;
   width: 100%;
   gap: 40px;
-  @media (max-width: 960px) {
+  @media (max-width: 768px) {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: center;
+    text-align: center;
     gap: 32px;
   }
 }
