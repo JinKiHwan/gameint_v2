@@ -116,13 +116,12 @@
           <i class="mdi mdi-comment-account mr-1"></i>나의 리뷰
         </button>
         <button 
-          v-if="isMaster"
           class="tab-btn" 
           :class="{ 'is-active': activeTab === 'members' }"
           @click="activeTab = 'members'"
         >
-          <i class="mdi mdi-account-group mr-1"></i>멤버 관리 
-          <span class="chip chip--xs chip--orange ml-1" v-if="pendingUsers.length > 0">{{ pendingUsers.length }}</span>
+          <i class="mdi mdi-account-group mr-1"></i>멤버
+          <span class="chip chip--xs chip--orange ml-1" v-if="isMaster && pendingUsers.length > 0">{{ pendingUsers.length }}</span>
         </button>
       </div>
     </div>
@@ -274,8 +273,8 @@
         </div>
 
         <div v-else>
-          <!-- 1. 승인 대기 유저 -->
-          <div v-if="pendingUsers.length > 0" class="mb-8">
+          <!-- 1. 승인 대기 유저 (마스터 전용) -->
+          <div v-if="isMaster && pendingUsers.length > 0" class="mb-8">
             <h4 class="text-subtitle-2 font-black text-orange mb-3 flex items-center gap-2">
               <i class="mdi mdi-account-clock"></i> 승인 대기 중 ({{ pendingUsers.length }})
             </h4>
