@@ -196,8 +196,14 @@ const paginatedPosts = computed(() => {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 16px;
-  padding: 20px 24px; /* cycles.vue와 동일한 패딩 */
+  padding: 20px 24px;
   width: 100%;
+  @media (max-width: 768px) {
+    padding: 16px 20px;
+    .text-h4 { font-size: 1.5rem !important; margin-bottom: 4px !important; }
+    .text-body-2 { font-size: 0.8rem !important; }
+    .text-caption { margin-bottom: 2px !important; }
+  }
 }
 .recommend-hero__content {
   display: flex;

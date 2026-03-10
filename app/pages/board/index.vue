@@ -12,7 +12,7 @@
           <div class="board-hero__content">
             <div class="board-hero__text-wrap">
               <div class="text-caption font-bold text-white mb-1 opacity-80">커뮤니티</div>
-              <h1 class="text-h4 font-black text-white mb-1">자유 게시판 💬</h1>
+              <h1 class="text-h4 font-black text-white mb-1">통합 게시판 💬</h1>
               <p class="text-body-2 text-white opacity-80 mb-0">멤버들과 자유롭게 소통하는 공간입니다.</p>
             </div>
             <NuxtLink to="/board/write" class="btn btn--white rounded-xl font-bold flex items-center gap-2 board-hero__btn">
@@ -223,8 +223,14 @@ const formatDate = (dateValue) => {
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.25);
   border-radius: 16px;
-  padding: 20px 24px; /* cycles.vue와 동일한 패딩 */
+  padding: 20px 24px;
   width: 100%;
+  @media (max-width: 768px) {
+    padding: 16px 20px;
+    .text-h4 { font-size: 1.5rem !important; margin-bottom: 4px !important; }
+    .text-body-2 { font-size: 0.8rem !important; }
+    .text-caption { margin-bottom: 2px !important; }
+  }
 }
 .board-hero__content {
   display: flex;
