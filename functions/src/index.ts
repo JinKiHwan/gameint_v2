@@ -119,7 +119,7 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
         const genreToMap = bookGenre || (action === 'POST_RECOMMEND' ? '도서 추천' : ''); 
         if (genreToMap) {
           const CATEGORY_MAPPING: Record<string, string> = {
-            '소설': 'I', '자기계발': 'G', '경제/경영': 'G', '인문/사회': 'K', '과학/기술': 'K', '시/에세이': 'E'
+            '소설': 'I', '자기계발': 'G', '경제/경영': 'G', '인문/사회': 'K', '과학/기술': 'K', '시/에세이': 'E', '만화': 'I'
           };
           const axis = CATEGORY_MAPPING[genreToMap];
           if (axis) {
@@ -163,7 +163,7 @@ export const onPostCreate = functions
 
     // 1. 경험치 보상 & DNA 증분 업데이트 호출
     const action = data.category === '도서 추천' ? 'POST_RECOMMEND' : 'POST_GENERAL';
-    const genre = data.bookGenre || (data.category === '도서 추천' ? '자기계발' : null);
+    const genre = data.bookGenre || (data.category === '만화' ? '만화' : (data.category === '도서 추천' ? '자기계발' : null));
     await rewardExp(data.author.uid, action, undefined, genre);
 
     return null;

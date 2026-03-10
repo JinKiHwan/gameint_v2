@@ -148,7 +148,7 @@ const posts = ref([])
 const hotPosts = ref([])
 const page = ref(1)
 const itemsPerPage = 10
-const categoryTags = ['전체', '도서 추천', '책 리뷰', '자유글', '정보/팁', '건의사항']
+const categoryTags = ['전체', '도서 추천', '책 리뷰', '만화', '자유글', '정보/팁', '건의사항']
 
 const loadPosts = async () => { posts.value = await fetchPosts(boardTag.value) }
 const loadHotPosts = async () => {
@@ -173,7 +173,7 @@ const paginatedPosts = computed(() => {
 })
 
 const getCategoryChipClass = (cat) => {
-  const map = { '도서 추천': 'light-green', '책 리뷰': 'green', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
+  const map = { '도서 추천': 'light-green', '책 리뷰': 'green', '만화': 'pink', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
   return map[cat] || 'grey'
 }
 const formatDate = (dateValue) => {

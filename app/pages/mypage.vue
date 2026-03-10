@@ -706,7 +706,7 @@ const handleSaveImage = async () => {
 
 // ── 기타 유틸 ────────────────────────────────────────────────────
 const getCategoryChipClass = (cat) => {
-  const map = { '도서 추천': 'deep-purple', '책 리뷰': 'green', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
+  const map = { '도서 추천': 'deep-purple', '책 리뷰': 'green', '만화': 'pink', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
   return map[cat] || 'grey'
 }
 const getTierChipClass = (tier) => {

@@ -320,7 +320,7 @@ const handleDelete = async () => {
 }
 
 const getCategoryChipClass = (cat) => {
-  const map = { '책 리뷰': 'green', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
+  const map = { '도서 추천': 'light-green', '책 리뷰': 'green', '만화': 'pink', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
   return map[cat] || 'grey'
 }
 const formatDate = (dateValue) => {
