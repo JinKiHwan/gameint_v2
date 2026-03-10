@@ -18,6 +18,20 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@vite-pwa/nuxt'
   ],
+  app: {
+    head: {
+      title: 'GAMEINT',
+      meta: [
+        { name: 'theme-color', content: '#1E88E5' },
+        { name: 'apple-mobile-web-app-capable', content: 'yes' },
+        { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' }
+      ],
+      link: [
+        { rel: 'apple-touch-icon', href: '/icon-192.png' },
+        { rel: 'icon', type: 'image/png', href: '/icon-192.png' }
+      ]
+    }
+  },
   pwa: {
     manifest: {
       name: 'GAMEINT',
@@ -27,13 +41,13 @@ export default defineNuxtConfig({
       background_color: '#F5F5F5',
       icons: [
         {
-          src: 'icon-192.png',
+          src: '/icon-192.png',
           sizes: '192x192',
           type: 'image/png',
           purpose: 'any maskable'
         },
         {
-          src: 'icon-512.png',
+          src: '/icon-512.png',
           sizes: '512x512',
           type: 'image/png',
           purpose: 'any maskable'
