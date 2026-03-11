@@ -51,17 +51,34 @@ export const useRanking = () => {
         error.value = null
         try {
             const usersRef = collection(getDb(), 'users')
-            const orderField = 
-                category === 'selection' ? 'selectionCount' :
-                category === 'activity'  ? 'activityCount' :
-                'likesReceivedCount'
-
-            const q = query(
-                usersRef,
-                where('status', '==', 'active'),
-                orderBy(orderField, 'desc'),
-                limit(limitCount)
-            )
+            let q;
+            if (category === 'selection') {
+                q = query(
+                    usersRef,
+                    where('status', '==', 'active'),
+                    orderBy('selectionCount', 'desc'),
+                    orderBy('activityCount', 'desc'),
+                    limit(limitCount)
+                )
+            } else if (category === 'activity') {
+                q = query(
+                    usersRef,
+                    where('status', '==', 'active'),
+                    orderBy('activityCount', 'desc'),
+                    orderBy('commentCount', 'desc'),
+                    orderBy('postCount', 'desc'),
+                    limit(limitCount)
+                )
+            } else {
+                // empathy
+                q = query(
+                    usersRef,
+                    where('status', '==', 'active'),
+                    orderBy('likesReceivedCount', 'desc'),
+                    orderBy('activityCount', 'desc'),
+                    limit(limitCount)
+                )
+            }
 
             const snapshot = await getDocs(q)
             return snapshot.docs.map(doc => ({

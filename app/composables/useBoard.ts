@@ -28,12 +28,10 @@ export const useBoard = () => {
       
       if (category !== '전체') {
         if (fetchLimit > 0) {
-          // 카테고리별 정렬된 최신글 조회를 위해 복합 인덱스가 필요할 수 있음
-          // 복합 인덱스가 정의되어 있다면 q = query(postsRef, where('category', '==', category), orderBy('createdAt', 'desc'), limit(fetchLimit))
-          // 안전을 위해 limit만 걸어둠
-          q = query(postsRef, where('category', '==', category), limit(fetchLimit))
+          // 카테고리별 정렬된 최신글 조회를 위해 복합 인덱스가 필요함
+          q = query(postsRef, where('category', '==', category), orderBy('createdAt', 'desc'), limit(fetchLimit))
         } else {
-          q = query(postsRef, where('category', '==', category))
+          q = query(postsRef, where('category', '==', category), orderBy('createdAt', 'desc'))
         }
       } else if (fetchLimit > 0) {
         q = query(postsRef, orderBy('createdAt', 'desc'), limit(fetchLimit))

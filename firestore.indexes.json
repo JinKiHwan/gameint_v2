@@ -13,6 +13,17 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "activityCount", "order": "DESCENDING" },
+        { "fieldPath": "commentCount", "order": "DESCENDING" },
+        { "fieldPath": "postCount", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "users",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "selectionCount", "order": "DESCENDING" },
         { "fieldPath": "activityCount", "order": "DESCENDING" }
       ]
     },
@@ -21,7 +32,8 @@
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
-        { "fieldPath": "likesReceivedCount", "order": "DESCENDING" }
+        { "fieldPath": "likesReceivedCount", "order": "DESCENDING" },
+        { "fieldPath": "activityCount", "order": "DESCENDING" }
       ]
     },
     {
@@ -30,6 +42,14 @@
       "fields": [
         { "fieldPath": "status", "order": "ASCENDING" },
         { "fieldPath": "exp", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "posts",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "category", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
   ],
