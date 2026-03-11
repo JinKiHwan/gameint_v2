@@ -61,12 +61,20 @@ export const useBoard = () => {
   }
 
   // 1-1. 특정 유저의 게시글 목록조회 (마이페이지용)
-  const fetchUserPosts = async (userId: string) => {
+  const fetchUserPosts = async (userId: string, fetchLimit: number = 0) => {
     loading.value = true
     error.value = null
     try {
       const postsRef = collection(getDb(), 'posts')
-      const q = query(postsRef, where('author.uid', '==', userId))
+      let q = query(
+        postsRef, 
+        where('author.uid', '==', userId), 
+        orderBy('createdAt', 'desc')
+      )
+      
+      if (fetchLimit > 0) {
+        q = query(q, limit(fetchLimit))
+      }
       const snapshot = await getDocs(q)
       
       const posts = snapshot.docs.map(document => ({

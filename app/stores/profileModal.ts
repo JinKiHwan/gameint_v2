@@ -30,23 +30,9 @@ export const useProfileModalStore = defineStore('profileModal', {
         async fetchRecentPosts(uid: string) {
             this.isLoadingPosts = true
             try {
-                const { $firebase } = useNuxtApp()
-                const firestore = ($firebase as any).firestore
-                const postsRef = collection(firestore, 'posts')
-                
-                const q = query(
-                    postsRef,
-                    where('author.uid', '==', uid),
-                    orderBy('createdAt', 'desc'),
-                    limit(3)
-                )
-
-                const snapshot = await getDocs(q)
-                const posts = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }))
-
+                // useBoard composable 사용
+                const { fetchUserPosts } = useBoard()
+                const posts = await fetchUserPosts(uid, 3)
                 this.recentPostsCache[uid] = posts
             } catch (error) {
                 console.error('Error fetching recent posts for profile modal:', error)
