@@ -119,7 +119,8 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
         const genreToMap = bookGenre || (action === 'POST_RECOMMEND' ? '도서 추천' : ''); 
         if (genreToMap) {
           const CATEGORY_MAPPING: Record<string, string> = {
-            '소설': 'I', '자기계발': 'G', '경제/경영': 'G', '인문/사회': 'K', '과학/기술': 'K', '시/에세이': 'E', '만화': 'I'
+            '소설': 'I', '자기계발': 'G', '경제/경영': 'G', '인문/사회': 'K', '과학/기술': 'K', '시/에세이': 'E', '만화': 'I',
+            '도서 추천': 'G', '책 리뷰': 'I'
           };
           const axis = CATEGORY_MAPPING[genreToMap];
           if (axis) {
@@ -453,7 +454,9 @@ export const onUserScoresUpdate = functions
         'GK': '인생 전략가', 'GE': '자기 탐구자', 'GG': '목표 설계자', 'KK': '지식 수집가',
         'II': '몰입 독서가'
       };
-      dnaName = DNA_NAMES[dnaType] || '일반 독서가';
+      dnaName = DNA_NAMES[dnaType] || '데이터 부족';
+    } else {
+      dnaName = '데이터 부족';
     }
 
     await change.after.ref.set({

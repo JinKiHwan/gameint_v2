@@ -78,7 +78,7 @@ export const useDNA = () => {
       typeKey = first[0] + first[0]; // 데이터가 하나뿐일 때
     }
 
-    const typeInfo = DNA_TYPES[typeKey] || { name: '독서 탐험가', description: '다양한 장르를 탐색 중입니다.', recommended: [] };
+    const typeInfo = DNA_TYPES[typeKey] || { name: '데이터 부족', description: '글을 더 작성하여 당신의 독서 DNA를 확인해 보세요!', recommended: [] };
 
     return {
       dnaType: typeKey,

@@ -12,7 +12,9 @@ export const CATEGORY_MAPPING: Record<string, string> = {
   '인문/사회': 'K',
   '과학/기술': 'K',
   '시/에세이': 'E',
-  '만화': 'I'
+  '만화': 'I',
+  '도서 추천': 'G',
+  '책 리뷰': 'I'
 };
 
 export const DNA_TYPES: Record<string, any> = {
@@ -80,6 +82,11 @@ export const DNA_TYPES: Record<string, any> = {
     name: '지식 수집가',
     description: '극강의 지식 탐구, 학습형 독서가',
     recommended: ['백과사전', '심화 전공서']
+  },
+  'II': {
+    name: '몰입 독서가',
+    description: '문학적 감수성과 서사에 깊이 몰입하는 독서가',
+    recommended: ['소설', '희곡', '시나리오']
   },
   'BALANCED': {
     name: '균형 독서가',
