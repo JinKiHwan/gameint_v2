@@ -131,7 +131,7 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
         if (genreToMap) {
           const CATEGORY_MAPPING: Record<string, string> = {
             '소설': 'I', '자기계발': 'G', '경제/경영': 'G', '인문/사회': 'K', '과학/기술': 'K', '시/에세이': 'E', '만화': 'I',
-            '도서 추천': 'G', '책 리뷰': 'I'
+            '도서 추천': 'G', '책 리뷰': 'I', '책추천': 'G', '도서추천': 'G'
           };
           const axis = CATEGORY_MAPPING[genreToMap];
           if (axis) {
@@ -470,8 +470,18 @@ export const onUserScoresUpdate = functions
       dnaName = '데이터 부족';
     }
 
+    // ── 무한 루프 및 데이터 유실 방지 로직 ──
+    // 1. 기존 데이터와 동일하면 업데이트 생략 (무한 루프 방지)
+    if (after.dna?.dnaType === dnaType && after.dnaTitle === dnaName && JSON.stringify(after.dna?.ratios) === JSON.stringify(ratios)) {
+      console.log(`[onUserScoresUpdate] No significant change for ${change.after.id}. Skipping. (type=${dnaType})`);
+      return null;
+    }
+
+    console.log(`[onUserScoresUpdate] Updating ${change.after.id}: type=${dnaType}, name=${dnaName}`);
+
     await change.after.ref.set({
       dna: {
+        scores, // 중요: scores를 반드시 포함하여 데이터 유실 방지
         dnaType,
         dnaName,
         ratios,

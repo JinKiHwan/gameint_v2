@@ -138,7 +138,7 @@ async function rewardExp(userId, action, manualAmount, bookGenre, isTriggeredByU
                 if (genreToMap) {
                     const CATEGORY_MAPPING = {
                         '소설': 'I', '자기계발': 'G', '경제/경영': 'G', '인문/사회': 'K', '과학/기술': 'K', '시/에세이': 'E', '만화': 'I',
-                        '도서 추천': 'G', '책 리뷰': 'I'
+                        '도서 추천': 'G', '책 리뷰': 'I', '책추천': 'G', '도서추천': 'G'
                     };
                     const axis = CATEGORY_MAPPING[genreToMap];
                     if (axis) {
@@ -396,7 +396,7 @@ exports.onUserScoresUpdate = functions
     .region("asia-northeast3")
     .firestore.document("users/{userId}")
     .onUpdate(async (change) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     const after = change.after.data();
     if (!after)
         return null;
@@ -452,8 +452,16 @@ exports.onUserScoresUpdate = functions
     else {
         dnaName = '데이터 부족';
     }
+    // ── 무한 루프 및 데이터 유실 방지 로직 ──
+    // 1. 기존 데이터와 동일하면 업데이트 생략 (무한 루프 방지)
+    if (((_d = after.dna) === null || _d === void 0 ? void 0 : _d.dnaType) === dnaType && after.dnaTitle === dnaName && JSON.stringify((_e = after.dna) === null || _e === void 0 ? void 0 : _e.ratios) === JSON.stringify(ratios)) {
+        console.log(`[onUserScoresUpdate] No significant change for ${change.after.id}. Skipping. (type=${dnaType})`);
+        return null;
+    }
+    console.log(`[onUserScoresUpdate] Updating ${change.after.id}: type=${dnaType}, name=${dnaName}`);
     await change.after.ref.set({
         dna: {
+            scores,
             dnaType,
             dnaName,
             ratios,
