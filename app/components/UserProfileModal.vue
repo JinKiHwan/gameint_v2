@@ -75,7 +75,7 @@
                       >
                         {{ post.category }}
                       </span>
-                      <div class="text-[10px] text-grey-2 font-medium flex-shrink-0">{{ formatDate(post.createdAt) }}</div>
+                      <div class="text-[12px] text-grey-2 font-medium flex-shrink-0">{{ formatDate(post.createdAt) }}</div>
                     </div>
                     <div class="text-body-2 font-black text-grey-dark text-truncate w-full">{{ post.title }}</div>
                   </li>
