@@ -79,7 +79,6 @@
                     </div>
                     <div class="text-body-2 font-black text-grey-dark text-truncate w-full">{{ post.title }}</div>
                   </li>
-                  <hr v-if="index !== recentPosts.length - 1" class="border-t border-white/50" />
                 </template>
               </ul>
             </div>
@@ -196,6 +195,7 @@ const formatDate = (dateValue) => {
   height: 100%;
   background: linear-gradient(135deg, rgba(245, 247, 250, 0.5) 0%, rgba(228, 232, 240, 0.5) 100%);
   z-index: 0;
+  pointer-events: none; /* Prevent blocking clicks */
 }
 
 .profile-header > *:not(.profile-header__bg) {
