@@ -36,7 +36,7 @@ export const useProfileModalStore = defineStore('profileModal', {
                 
                 const q = query(
                     postsRef,
-                    where('authorId', '==', uid),
+                    where('author.uid', '==', uid),
                     orderBy('createdAt', 'desc'),
                     limit(3)
                 )
