@@ -62,13 +62,13 @@ export default defineNuxtConfig({
       type: 'module'
     }
   },
-  css: ['~/assets/scss/main.scss'],
+  css: ['~/app/assets/scss/main.scss'],
   vite: {
     css: {
       preprocessorOptions: {
         scss: {
           // 모든 파일에서 변수, 믹스인 자동 주입
-          additionalData: `@use "~/assets/scss/_variables.scss" as *;`
+          additionalData: `@use "~/app/assets/scss/_variables.scss" as *;`
         }
       }
     }
