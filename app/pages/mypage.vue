@@ -887,23 +887,6 @@ const handleUpdateProfile = async () => {
 /* ── EXP ──────────────────────────────────── */
 .exp-box { background: #FAFAFA; padding: 16px; border-radius: 16px; border: 1px solid #e0e0e0; }
 
-.info-tooltip-wrap {
-  position: relative;
-  cursor: help;
-}
-.info-tooltip {
-  position: absolute; bottom: 100%; left: 0;
-  width: 200px; padding: 12px; margin-bottom: 8px;
-  background: #212121; color: #fff; border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 10;
-  opacity: 0; pointer-events: none;
-  transform: translateY(10px);
-  transition: all 0.2s;
-}
-.info-tooltip-wrap:hover .info-tooltip { opacity: 1; pointer-events: auto; transform: translateY(0); }
-.tooltip-title { font-weight: 900; font-size: 0.8rem; margin-bottom: 6px; color: #FFD54F; }
-.tooltip-list { list-style: none; padding: 0; margin: 0; font-size: 0.75rem; color: #EEEEEE; line-height: 1.6; }
 
 /* ── Input util ───────────────────────────── */
 .input-with-icon {

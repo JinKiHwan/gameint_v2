@@ -15,5 +15,6 @@ onMounted(() => {
     <NuxtLayout>
       <NuxtPage />
     </NuxtLayout>
+    <UserProfileModal />
   </div>
 </template>

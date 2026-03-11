@@ -42,7 +42,7 @@
             <p class="text-[11px] text-grey-2 font-medium">이번 달 가장 많은 책이 선정된 멤버</p>
           </div>
           <div class="ranking-card__list pt-4">
-            <div v-for="(u, idx) in selectionKings" :key="u.uid" class="ranking-item">
+            <div v-for="(u, idx) in selectionKings" :key="u.uid" class="ranking-item cursor-pointer" @click="openProfileModal(u.uid)">
               <div class="ranking-item__rank" :class="`rank-${idx+1}`">{{ idx + 1 }}</div>
               <div class="avatar avatar--sm">
                 <img :src="getProfileImagePath(u.profileImageId)" alt="profile" />
@@ -70,7 +70,7 @@
             <p class="text-[11px] text-grey-2 font-medium">게시글과 댓글로 활발히 소통한 멤버</p>
           </div>
           <div class="ranking-card__list pt-4">
-            <div v-for="(u, idx) in diligenceKings" :key="u.uid" class="ranking-item">
+            <div v-for="(u, idx) in diligenceKings" :key="u.uid" class="ranking-item cursor-pointer" @click="openProfileModal(u.uid)">
               <div class="ranking-item__rank" :class="`rank-${idx+1}`">{{ idx + 1 }}</div>
               <div class="avatar avatar--sm">
                 <img :src="getProfileImagePath(u.profileImageId)" alt="profile" />
@@ -98,7 +98,7 @@
             <p class="text-[11px] text-grey-2 font-medium">작성한 글이 가장 많은 좋아요를 받은 멤버</p>
           </div>
           <div class="ranking-card__list pt-4">
-            <div v-for="(u, idx) in empathyKings" :key="u.uid" class="ranking-item">
+            <div v-for="(u, idx) in empathyKings" :key="u.uid" class="ranking-item cursor-pointer" @click="openProfileModal(u.uid)">
               <div class="ranking-item__rank" :class="`rank-${idx+1}`">{{ idx + 1 }}</div>
               <div class="avatar avatar--sm">
                 <img :src="getProfileImagePath(u.profileImageId)" alt="profile" />
@@ -131,10 +131,16 @@ import { useAuthStore } from '~/stores/auth'
 import { useRanking } from '~/composables/useRanking'
 import { getProfileImagePath } from '~/composables/useProfileImages'
 import { EXP_CONFIG } from '~/utils/expConfig'
+import { useProfileModalStore } from '~/stores/profileModal'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const { loading, error, fetchTopUsersByCategory } = useRanking()
+const profileModalStore = useProfileModalStore()
+
+const openProfileModal = (uid) => {
+  if (uid) profileModalStore.openModal(uid)
+}
 
 const selectionKings = ref([])
 const diligenceKings = ref([])

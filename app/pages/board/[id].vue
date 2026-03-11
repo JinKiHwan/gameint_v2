@@ -34,10 +34,10 @@
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
               <template v-for="author in [resolveUser(post.author.uid, post.author)]" :key="'author_' + post.id">
-                <div class="avatar avatar--sm border bg-white">
+                <div class="avatar avatar--sm border bg-white cursor-pointer" @click="openProfileModal(author.uid)">
                   <img :src="getProfileImagePath(author.profileImageId)" alt="프로필" />
                 </div>
-                <span class="text-subtitle-2 font-bold text-grey-dark">{{ author.nickname }}</span>
+                <span class="text-subtitle-2 font-bold text-grey-dark cursor-pointer hover:text-blue-dark transition-fast" @click="openProfileModal(author.uid)">{{ author.nickname }}</span>
               </template>
             </div>
             <div class="flex gap-4 text-body-2 text-grey-2 font-bold">
@@ -104,13 +104,13 @@
         <div v-else class="mb-6">
           <div v-for="comment in comments" :key="comment.id" class="comment-row mb-4 pb-4 border-b">
             <template v-for="cAuthor in [resolveUser(comment.author.uid, comment.author)]" :key="'comm_' + comment.id">
-              <div class="avatar avatar--sm border bg-white" style="margin-top:4px;">
+              <div class="avatar avatar--sm border bg-white cursor-pointer" style="margin-top:4px;" @click="openProfileModal(cAuthor.uid)">
                 <img :src="getProfileImagePath(cAuthor.profileImageId)" alt="프로필" />
               </div>
               <div class="flex-grow">
                 <div class="flex justify-between items-center mb-1">
                   <div class="flex items-center gap-2">
-                    <span class="text-subtitle-2 font-bold text-grey-dark">{{ cAuthor.nickname }}</span>
+                    <span class="text-subtitle-2 font-bold text-grey-dark cursor-pointer hover:text-blue-dark transition-fast" @click="openProfileModal(cAuthor.uid)">{{ cAuthor.nickname }}</span>
                     <span class="text-caption text-grey-2">{{ formatDate(comment.createdAt) }}</span>
                     <span v-if="comment.isEdited" class="text-caption text-grey-2 font-italic">(수정됨)</span>
                   </div>
@@ -184,12 +184,18 @@ import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
 import { useUserMapper } from '~/composables/useUserMapper'
 import { getProfileImagePath } from '~/composables/useProfileImages'
+import { useProfileModalStore } from '~/stores/profileModal'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
 const { fetchPost, incrementViewCount, deletePost, loading, fetchComments, createComment, updateComment, deleteComment, checkUserLiked, toggleLike } = useBoard()
 const { resolveUser } = useUserMapper()
+const profileModalStore = useProfileModalStore()
+
+const openProfileModal = (uid) => {
+  if (uid) profileModalStore.openModal(uid)
+}
 
 const post = ref(null)
 const confirmDelete = ref(false)

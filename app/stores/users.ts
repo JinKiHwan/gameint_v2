@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestor
 export interface UserProfile {
     uid: string
     nickname: string
+    realName?: string
     profileImageId: string
     tier?: string
     level?: number
@@ -40,6 +41,7 @@ export const useUsersStore = defineStore('users', {
                     this.users[doc.id] = {
                         uid: doc.id,
                         nickname: data.nickname,
+                        realName: data.realName,
                         profileImageId: data.profileImageId,
                         tier: data.tier,
                         level: data.level,

@@ -23,6 +23,17 @@ const getAxisColor = (id: string) => DNA_AXES[id as keyof typeof DNA_AXES]?.colo
       <div class="dna-badge">DNA</div>
       <h3 class="dna-type-name">{{ dna.dnaName }}</h3>
       <span class="dna-type-code">({{ dna.dnaType }} 타입)</span>
+      
+      <!-- DNA 판별 안내 툴팁 -->
+      <div class="info-tooltip-wrap ml-1" style="display: flex; align-items: center;">
+        <i class="mdi mdi-help-circle-outline text-grey-3" style="font-size: 1rem;"></i>
+        <div class="info-tooltip info-tooltip--right">
+          <div class="tooltip-title">🧬 DNA 판별 안내</div>
+          <p class="tooltip-text">
+            월간주제, 도서추천, 책리뷰를 통하여 나만의 독서 DNA를 판별받을 수 있습니다.
+          </p>
+        </div>
+      </div>
     </div>
     
     <p class="dna-description">

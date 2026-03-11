@@ -96,10 +96,12 @@
                 <h4 class="text-subtitle-1 font-bold text-grey-dark text-truncate">{{ post.title }}</h4>
               </div>
               <div class="flex items-center gap-3 text-caption font-medium text-grey-2">
-                <div class="flex items-center gap-1 font-bold text-grey-3">
+                <div class="flex items-center gap-1 font-bold text-grey-3 cursor-pointer hover:text-grey-dark" @click.stop="openProfileModal(author.uid)">
                   <template v-for="author in [resolveUser(post.author?.uid, post.author)]" :key="post.id + '_author'">
-                    <img :src="getProfileImagePath(author.profileImageId)" alt="프로필" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;" />
-                    <span>{{ author.nickname }}</span>
+                    <div class="flex items-center gap-1" @click.stop="openProfileModal(author.uid)">
+                      <img :src="getProfileImagePath(author.profileImageId)" alt="프로필" style="width: 16px; height: 16px; border-radius: 50%; object-fit: cover;" />
+                      <span>{{ author.nickname }}</span>
+                    </div>
                   </template>
                 </div>
                 <span>{{ formatDate(post.createdAt) }}</span>
@@ -136,11 +138,18 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useBoard } from '~/composables/useBoard'
+import { useUserMapper } from '~/composables/useUserMapper'
 import { getProfileImagePath } from '~/composables/useProfileImages'
+import { useProfileModalStore } from '~/stores/profileModal'
 
 const router = useRouter()
 const { fetchPosts, fetchHotPosts, loading } = useBoard()
 const { resolveUser } = useUserMapper()
+const profileModalStore = useProfileModalStore()
+
+const openProfileModal = (uid) => {
+  if (uid) profileModalStore.openModal(uid)
+}
 
 const boardTag = ref('전체')
 const boardSort = ref('최신순')
