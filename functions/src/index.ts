@@ -70,30 +70,41 @@ async function rewardExp(userId: string, action: keyof typeof EXP_CONFIG.REWARDS
       const expTracker = userData.expTracker || {};
 
       let expAmount = 0;
+      let expBlocked = false;
+
       if (action === 'MANUAL') {
         expAmount = Number(manualAmount) || 0;
       } else {
         expAmount = Number(EXP_CONFIG.REWARDS[action]) || 0;
 
         if (action === 'POST_GENERAL') {
-          if (expTracker.lastPostDate === today) return;
-          expTracker.lastPostDate = today;
+          if (expTracker.lastPostDate === today) {
+            expBlocked = true;
+          } else {
+            expTracker.lastPostDate = today;
+          }
         } else if (action === 'POST_RECOMMEND') {
-          if (expTracker.lastRecommendBookDate === today) return;
-          expTracker.lastRecommendBookDate = today;
+          if (expTracker.lastRecommendBookDate === today) {
+            expBlocked = true;
+          } else {
+            expTracker.lastRecommendBookDate = today;
+          }
         } else if (action === 'COMMENT') {
           const lastDate = expTracker.lastCommentDate || "";
           let countToday = (lastDate === today) ? Number(expTracker.commentCountToday || 0) : 0;
-          if (countToday >= EXP_CONFIG.LIMITS.COMMENT_PER_DAY) return;
-          expTracker.lastCommentDate = today;
-          expTracker.commentCountToday = countToday + 1;
+          if (countToday >= EXP_CONFIG.LIMITS.COMMENT_PER_DAY) {
+            expBlocked = true;
+          } else {
+            expTracker.lastCommentDate = today;
+            expTracker.commentCountToday = countToday + 1;
+          }
         }
       }
 
       const updateData: any = {};
       
       // Exp / Level 계산
-      if (expAmount > 0) {
+      if (expAmount > 0 && !expBlocked) {
         console.log(`[rewardExp] Adding ${expAmount} EXP to ${currentExp}`);
         currentExp += expAmount;
         while (currentExp >= EXP_CONFIG.getNextLevelExp(currentLevel + 1) && currentLevel < 100) {
