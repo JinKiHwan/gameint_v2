@@ -32,18 +32,24 @@
             </div>
 
             <!-- DNA Section -->
-            <div class="px-5 pb-5 pt-2" v-if="userProfile.dna && userProfile.dna.dnaName">
-              <div class="dna-container rounded-lg border bg-white pa-4 shadow-sm relative overflow-hidden">
+            <div class="px-5 pb-5 pt-2">
+              <div v-if="userProfile.dna && userProfile.dna.dnaName" class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden" style="background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);">
                 <div class="dna-container__deco"></div>
                 <div class="flex items-center gap-2 relative z-1">
                   <div class="dna-badge bg-indigo-50 text-indigo-700 border border-indigo-100"><i class="mdi mdi-dna mr-1"></i>DNA</div>
                   <span class="font-black text-grey-dark">{{ userProfile.dna.dnaName }}</span>
                 </div>
               </div>
+              <div v-else class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden text-center" style="background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);">
+                <div class="flex items-center justify-center gap-2 relative z-1">
+                  <div class="dna-badge bg-grey-100 text-grey-3 border border-grey-200"><i class="mdi mdi-dna mr-1"></i>DNA</div>
+                  <span class="font-bold text-grey-2 text-caption">데이터가 부족합니다</span>
+                </div>
+              </div>
             </div>
 
             <!-- Recent Posts -->
-            <div class="pa-5 bg-grey-50 border-t">
+            <div class="pa-5 border-t border-white/40 glass-panel">
               <h4 class="text-subtitle-2 font-black text-grey-dark mb-3 flex items-center gap-2 px-1">
                 <i class="mdi mdi-square-edit-outline text-blue-dark"></i> 최근 작성한 글
               </h4>
@@ -51,10 +57,10 @@
               <div v-if="modalStore.isLoadingPosts" class="text-center py-6">
                 <div class="spinner spinner--sm mx-auto"></div>
               </div>
-              <div v-else-if="!recentPosts || recentPosts.length === 0" class="text-center py-6 text-grey-3 text-caption font-bold bg-white rounded-lg border border-dashed">
+              <div v-else-if="!recentPosts || recentPosts.length === 0" class="text-center py-6 text-grey-3 text-caption font-bold bg-white/50 rounded-lg border border-white/50 border-dashed backdrop-blur-sm">
                 최근 작성한 글이 없습니다.
               </div>
-              <ul v-else class="list pa-0 bg-white rounded-lg border shadow-sm overflow-hidden">
+              <ul v-else class="list pa-0 bg-white/70 backdrop-blur-md rounded-lg border border-white/60 shadow-sm overflow-hidden">
                 <template v-for="(post, index) in recentPosts" :key="post.id">
                   <li 
                     class="list-item flex flex-col gap-1.5 py-3 px-4 cursor-pointer hover-bg transition-colors" 
@@ -64,16 +70,16 @@
                        <span 
                         :class="[
                           `chip chip--xs`,
-                          post.category === '도서 추천' ? 'chip--recommend' : `chip--${getCategoryChipClass(post.category)}`
+                          `chip--${getCategoryChipClass(post.category)}`
                         ]"
                       >
                         {{ post.category }}
                       </span>
-                      <div class="text-[11px] text-grey-3 font-medium flex-shrink-0">{{ formatDate(post.createdAt) }}</div>
+                      <div class="text-[10px] text-grey-2 font-medium flex-shrink-0">{{ formatDate(post.createdAt) }}</div>
                     </div>
-                    <div class="text-caption font-bold text-grey-dark text-truncate w-full">{{ post.title }}</div>
+                    <div class="text-body-2 font-black text-grey-dark text-truncate w-full">{{ post.title }}</div>
                   </li>
-                  <hr v-if="index !== recentPosts.length - 1" class="border-t border-grey-100" />
+                  <hr v-if="index !== recentPosts.length - 1" class="border-t border-white/50" />
                 </template>
               </ul>
             </div>
@@ -133,7 +139,7 @@ const goToPost = (postId) => {
 }
 
 const getCategoryChipClass = (cat) => {
-  const map = { '도서 추천': 'deep-purple', '책 리뷰': 'green', '만화': 'pink', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
+  const map = { '도서 추천': 'light-green', '책 리뷰': 'green', '만화': 'pink', '자유글': 'grey', '정보/팁': 'orange', '건의사항': 'red' }
   return map[cat] || 'grey'
 }
 
@@ -154,9 +160,10 @@ const getTierChipClass = (tier) => {
 const formatDate = (dateValue) => {
   if (!dateValue) return ''
   const date = dateValue.toDate ? dateValue.toDate() : new Date(dateValue)
+  const y = date.getFullYear()
   const m = String(date.getMonth()+1).padStart(2,'0')
   const d = String(date.getDate()).padStart(2,'0')
-  return `${m}.${d}`
+  return `${y}.${m}.${d}`
 }
 </script>
 
@@ -165,7 +172,11 @@ const formatDate = (dateValue) => {
   width: 90%;
   max-width: 380px;
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.85); /* Glassmorphism base */
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
 
@@ -174,7 +185,7 @@ const formatDate = (dateValue) => {
   padding-bottom: 0;
   z-index: 10;
   position: relative;
-  background: white;
+  background: transparent;
 }
 
 .profile-header__bg {
@@ -182,10 +193,9 @@ const formatDate = (dateValue) => {
   top: 0;
   left: 0;
   right: 0;
-  height: 100px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
+  height: 100%;
+  background: linear-gradient(135deg, rgba(245, 247, 250, 0.5) 0%, rgba(228, 232, 240, 0.5) 100%);
   z-index: 0;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
 }
 
 .profile-header > *:not(.profile-header__bg) {
@@ -204,10 +214,11 @@ const formatDate = (dateValue) => {
 }
 
 .hover-bg {
-  transition: background-color 0.2s;
+  transition: all 0.2s;
 }
 .hover-bg:hover {
-  background-color: #f8fafc;
+  background-color: rgba(255, 255, 255, 0.9);
+  transform: translateY(-1px);
 }
 
 .dna-badge {
