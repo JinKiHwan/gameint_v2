@@ -59,8 +59,8 @@ async function createNotification(params) {
 /**
  * 2. Helper function to reward EXP to a user and handle level-ups.
  */
-async function rewardExp(userId, action, manualAmount, bookGenre, isTriggeredByUpdate = false) {
-    console.log(`[rewardExp] ENTER: userId=${userId}, action=${action}, isTriggeredByUpdate=${isTriggeredByUpdate}`);
+async function rewardExp(userId, action, manualAmount, bookGenre, isDecrement = false) {
+    console.log(`[rewardExp] ENTER: userId=${userId}, action=${action}, isDecrement=${isDecrement}`);
     const userRef = db.collection("users").doc(userId);
     const today = getKstDate();
     try {
@@ -112,8 +112,8 @@ async function rewardExp(userId, action, manualAmount, bookGenre, isTriggeredByU
                 }
             }
             const updateData = {};
-            // Exp / Level 계산
-            if (expAmount > 0 && !expBlocked) {
+            // Exp / Level 계산 (차감 시에는 스킵)
+            if (!isDecrement && expAmount > 0 && !expBlocked) {
                 console.log(`[rewardExp] Adding ${expAmount} EXP to ${currentExp}`);
                 currentExp += expAmount;
                 while (currentExp >= expConfig_1.EXP_CONFIG.getNextLevelExp(currentLevel + 1) && currentLevel < 100) {
@@ -126,13 +126,13 @@ async function rewardExp(userId, action, manualAmount, bookGenre, isTriggeredByU
                 updateData.level = currentLevel;
                 updateData.tier = expConfig_1.EXP_CONFIG.getTier(currentLevel);
             }
-            // Tracker 업데이트 (Dot notation)
-            if (expTracker) {
+            // Tracker 업데이트 (차감 시에는 스킵)
+            if (!isDecrement && expTracker) {
                 Object.keys(expTracker).forEach(key => {
                     updateData[`expTracker.${key}`] = expTracker[key];
                 });
             }
-            // DNA 증분 (기존 로직 복구)
+            // DNA 증분/차감
             if (bookGenre || action === 'POST_RECOMMEND' || action === 'CYCLE_REVIEW') {
                 const genreToMap = bookGenre || (action === 'POST_RECOMMEND' ? '도서 추천' : '');
                 if (genreToMap) {
@@ -142,26 +142,32 @@ async function rewardExp(userId, action, manualAmount, bookGenre, isTriggeredByU
                     };
                     const axis = CATEGORY_MAPPING[genreToMap];
                     if (axis) {
-                        updateData[`dna.scores.${axis}`] = admin.firestore.FieldValue.increment(1);
+                        updateData[`dna.scores.${axis}`] = admin.firestore.FieldValue.increment(isDecrement ? -1 : 1);
                     }
                 }
             }
-            // 랭킹용 카운터 증분 (서버 부하 방지를 위해 필드 합산 처리)
+            // 카운터 및 활동량 업데이트
             if (action === 'POST_GENERAL' || action === 'POST_RECOMMEND') {
-                updateData.postCount = admin.firestore.FieldValue.increment(1);
-                updateData.activityCount = admin.firestore.FieldValue.increment(1);
+                updateData.postCount = admin.firestore.FieldValue.increment(isDecrement ? -1 : 1);
+                updateData.activityCount = admin.firestore.FieldValue.increment(isDecrement ? -1 : 1);
             }
-            else if (action === 'COMMENT') {
-                updateData.commentCount = admin.firestore.FieldValue.increment(1);
-                updateData.activityCount = admin.firestore.FieldValue.increment(1);
+            else if (action === 'CYCLE_REVIEW') {
+                updateData.activityCount = admin.firestore.FieldValue.increment(isDecrement ? -1 : 1);
             }
-            else if (action === 'LIKE_RECEIVED') {
-                updateData.likesReceivedCount = admin.firestore.FieldValue.increment(1);
+            else if (!isDecrement) {
+                // 댓글/좋아요 등은 점수 차감 로직이 별도 트리거에 있으므로 여기서는 생성 시에만 처리
+                if (action === 'COMMENT') {
+                    updateData.commentCount = admin.firestore.FieldValue.increment(1);
+                    updateData.activityCount = admin.firestore.FieldValue.increment(1);
+                }
+                else if (action === 'LIKE_RECEIVED') {
+                    updateData.likesReceivedCount = admin.firestore.FieldValue.increment(1);
+                }
+                else if (action === 'CYCLE_WIN') {
+                    updateData.selectionCount = admin.firestore.FieldValue.increment(1);
+                }
             }
-            else if (action === 'CYCLE_WIN') {
-                updateData.selectionCount = admin.firestore.FieldValue.increment(1);
-            }
-            console.log(`[rewardExp] Final Update Object:`, JSON.stringify(updateData));
+            console.log(`[rewardExp] Final Update Object (isDecrement=${isDecrement}):`, JSON.stringify(updateData));
             transaction.update(userRef, updateData);
         });
         console.log(`[rewardExp] Transaction committed for ${userId}`);
@@ -196,11 +202,10 @@ exports.onPostDelete = functions
     const data = snapshot.data();
     if (!data || !data.author || !data.author.uid)
         return null;
-    const userRef = db.collection("users").doc(data.author.uid);
-    await userRef.update({
-        postCount: admin.firestore.FieldValue.increment(-1),
-        activityCount: admin.firestore.FieldValue.increment(-1)
-    });
+    // 점수 차감 및 DNA 보정 호출
+    const action = data.category === '도서 추천' ? 'POST_RECOMMEND' : 'POST_GENERAL';
+    const genre = data.bookGenre || (data.category === '만화' ? '만화' : (data.category === '도서 추천' ? '자기계발' : null));
+    await rewardExp(data.author.uid, action, undefined, genre, true);
     return null;
 });
 /**
@@ -328,8 +333,11 @@ exports.onReviewDelete = functions
     .region("asia-northeast3")
     .firestore.document("cycles/{cycleId}/reviews/{reviewId}")
     .onDelete(async (snapshot, context) => {
-    // const data = snapshot.data();
-    // DNA 삭제 시 보정 로직은 비용 대비 실익이 적어 생략
+    const data = snapshot.data();
+    if (!data || !data.authorUid)
+        return null;
+    // 리뷰 삭제 시 DNA 점수 차감
+    await rewardExp(data.authorUid, 'CYCLE_REVIEW', undefined, data.category, true);
     return null;
 });
 // 기존 DNA 스캔 로직들 비활성화 (비용 방어)
