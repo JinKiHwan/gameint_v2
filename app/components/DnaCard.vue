@@ -25,8 +25,8 @@ const getAxisColor = (id: string) => DNA_AXES[id as keyof typeof DNA_AXES]?.colo
       <span class="dna-type-code">({{ dna.dnaType }} 타입)</span>
       
       <!-- DNA 판별 안내 툴팁 -->
-      <div class="info-tooltip-wrap ml-1" style="display: flex; align-items: center;">
-        <i class="mdi mdi-help-circle-outline text-grey-3" style="font-size: 1rem;"></i>
+      <div class="info-tooltip-wrap ml-1">
+        <i class="mdi mdi-help-circle-outline text-grey-1" style="font-size: 1rem;"></i>
         <div class="info-tooltip info-tooltip--right">
           <div class="tooltip-title">🧬 DNA 판별 안내</div>
           <p class="tooltip-text">

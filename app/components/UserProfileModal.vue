@@ -60,13 +60,13 @@
               <div v-else-if="!recentPosts || recentPosts.length === 0" class="text-center py-6 text-grey-3 text-caption font-bold bg-white/80 rounded-lg border border-white/50 border-dashed backdrop-blur-sm">
                 최근 작성한 글이 없습니다.
               </div>
-              <ul v-else class="list pa-0 bg-white/90 backdrop-blur-md rounded-lg border border-white/60 shadow-sm overflow-hidden">
+              <ul v-else class="list profile-post-list pa-0 bg-white/90 backdrop-blur-md rounded-lg border border-white/60 shadow-sm overflow-hidden">
                 <template v-for="(post, index) in recentPosts" :key="post.id">
                   <li 
-                    class="list-item flex flex-col gap-1.5 py-3 px-4 cursor-pointer hover-bg transition-colors" 
+                    class="list-item cursor-pointer hover-bg transition-colors" 
                     @click="goToPost(post.id)"
                   >
-                    <div class="flex items-center justify-between gap-2">
+                    <div class="item-header">
                        <span 
                         :class="[
                           `chip chip--xs`,
@@ -75,9 +75,9 @@
                       >
                         {{ post.category }}
                       </span>
-                      <div class="text-[12px] text-grey-2 font-medium flex-shrink-0">{{ formatDate(post.createdAt) }}</div>
+                      <div class="item-date">{{ formatDate(post.createdAt) }}</div>
                     </div>
-                    <div class="text-subtitle-2 font-black text-grey-dark text-truncate w-full">{{ post.title }}</div>
+                    <div class="item-title">{{ post.title }}</div>
                   </li>
                 </template>
               </ul>
