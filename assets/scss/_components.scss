@@ -581,19 +581,38 @@
   cursor: help;
 }
 .info-tooltip {
-  position: absolute; bottom: 100%; left: 0;
-  width: 220px; padding: sp(3); margin-bottom: sp(2);
-  background: $grey-darken-4; color: $white; border-radius: $radius-lg;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 10;
+  position: absolute; bottom: calc(100% + 10px); left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  width: 240px; padding: sp(4); 
+  background: rgba($grey-darken-4, 0.95); color: $white; border-radius: $radius-lg;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  z-index: 100;
   opacity: 0; pointer-events: none;
-  transform: translateY(10px);
-  transition: all 0.2s ease;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba($white, 0.1);
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: sp(1.5);
+    border-style: solid;
+    border-color: rgba($grey-darken-4, 0.95) transparent transparent transparent;
+  }
   
   // Right aligned tooltip option
-  &--right { left: auto; right: 0; }
+  &--right { 
+    left: auto; right: -10px; transform: translateY(10px);
+    &::after { left: auto; right: 20px; transform: none; }
+  }
 }
-.info-tooltip-wrap:hover .info-tooltip { opacity: 1; pointer-events: auto; transform: translateY(0); }
-.tooltip-title { font-weight: 900; font-size: 0.8rem; margin-bottom: sp(1.5); color: $amber-lighten-2; }
-.tooltip-list { list-style: none; padding: 0; margin: 0; font-size: 0.75rem; color: $grey-lighten-4; line-height: 1.6; }
-.tooltip-text { font-size: 0.75rem; line-height: 1.5; color: $grey-lighten-4; }
+.info-tooltip-wrap:hover .info-tooltip { opacity: 1; pointer-events: auto; transform: translateX(-50%) translateY(0); }
+.info-tooltip-wrap:hover .info-tooltip--right { transform: translateY(0); }
+
+.tooltip-title { font-weight: 900; font-size: 0.875rem; margin-bottom: sp(2); color: $amber-lighten-3; border-bottom: 1px solid rgba($white, 0.1); padding-bottom: sp(2); }
+.tooltip-list { list-style: none; padding: 0; margin: 0; font-size: 0.8125rem; color: rgba($white, 0.9); line-height: 1.6; }
+.tooltip-list li + li { margin-top: sp(1); }
+.tooltip-text { font-size: 0.8125rem; line-height: 1.6; color: rgba($white, 0.9); }

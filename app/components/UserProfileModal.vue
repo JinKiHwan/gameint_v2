@@ -33,17 +33,17 @@
 
             <!-- DNA Section -->
             <div class="px-5 pb-5 pt-2">
-              <div v-if="userProfile.dna && userProfile.dna.dnaName" class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);">
+              <div v-if="userProfile.dna && userProfile.dna.dnaName" class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden glass-panel-light">
                 <div class="dna-container__deco"></div>
                 <div class="flex items-center gap-2 relative z-1">
                   <div class="dna-badge bg-indigo-50 text-indigo-700 border border-indigo-100"><i class="mdi mdi-dna mr-1"></i>DNA</div>
                   <span class="font-black text-grey-dark">{{ userProfile.dna.dnaName }}</span>
                 </div>
               </div>
-              <div v-else class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden text-center" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);">
+              <div v-else class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden text-center glass-panel-light">
                 <div class="flex items-center justify-center gap-2 relative z-1">
                   <div class="dna-badge bg-grey-100 text-grey-3 border border-grey-200"><i class="mdi mdi-dna mr-1"></i>DNA</div>
-                  <span class="font-bold text-grey-2 text-caption">데이터가 부족합니다</span>
+                  <span class="font-bold text-grey-2 text-subtitle-2">데이터가 부족합니다</span>
                 </div>
               </div>
             </div>
@@ -77,7 +77,7 @@
                       </span>
                       <div class="text-[12px] text-grey-2 font-medium flex-shrink-0">{{ formatDate(post.createdAt) }}</div>
                     </div>
-                    <div class="text-body-2 font-black text-grey-dark text-truncate w-full">{{ post.title }}</div>
+                    <div class="text-subtitle-2 font-black text-grey-dark text-truncate w-full">{{ post.title }}</div>
                   </li>
                 </template>
               </ul>
@@ -217,8 +217,13 @@ const formatDate = (dateValue) => {
   transition: all 0.2s;
 }
 .hover-bg:hover {
-  background-color: rgba(255, 255, 255, 0.9);
+  background-color: rgba(255, 255, 255, 0.95);
   transform: translateY(-1px);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(10px);
 }
 
 .dna-badge {

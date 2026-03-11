@@ -797,55 +797,6 @@ const handleUpdateProfile = async () => {
 .justify-center { justify-content: center; }
 .justify-sm-start { @media(min-width:600px){ justify-content:flex-start; } }
 
-.info-tooltip-wrap {
-  position: relative;
-  cursor: help;
-  display: inline-flex;
-  align-items: center;
-}
-.info-tooltip {
-  display: none;
-  position: absolute;
-  top: 100%;
-  left: 0;
-  margin-top: 8px;
-  background: white;
-  border: 1px solid #E0E0E0;
-  border-radius: 12px;
-  padding: 16px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  z-index: 100;
-  width: max-content;
-  min-width: 240px;
-}
-.info-tooltip-wrap:hover .info-tooltip {
-  display: block;
-}
-.tooltip-title {
-  font-size: 0.875rem;
-  font-weight: 900;
-  color: #212121;
-  margin-bottom: 12px;
-  border-bottom: 1px solid #F5F5F5;
-  padding-bottom: 8px;
-}
-.tooltip-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-.tooltip-list li {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: #616161;
-  margin-bottom: 6px;
-  line-height: 1.4;
-}
-.tooltip-list li.is-completed {
-  color: #BDBDBD;
-  text-decoration: line-through;
-}
-
 /* ── 탭 메뉴 ─────────────────────────────────── */
 .tabs-container {
   width: 100%;
