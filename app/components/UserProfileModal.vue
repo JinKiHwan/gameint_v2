@@ -33,14 +33,14 @@
 
             <!-- DNA Section -->
             <div class="px-5 pb-5 pt-2">
-              <div v-if="userProfile.dna && userProfile.dna.dnaName" class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden" style="background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);">
+              <div v-if="userProfile.dna && userProfile.dna.dnaName" class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);">
                 <div class="dna-container__deco"></div>
                 <div class="flex items-center gap-2 relative z-1">
                   <div class="dna-badge bg-indigo-50 text-indigo-700 border border-indigo-100"><i class="mdi mdi-dna mr-1"></i>DNA</div>
                   <span class="font-black text-grey-dark">{{ userProfile.dna.dnaName }}</span>
                 </div>
               </div>
-              <div v-else class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden text-center" style="background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(10px);">
+              <div v-else class="dna-container rounded-lg border pa-4 shadow-sm relative overflow-hidden text-center" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(10px);">
                 <div class="flex items-center justify-center gap-2 relative z-1">
                   <div class="dna-badge bg-grey-100 text-grey-3 border border-grey-200"><i class="mdi mdi-dna mr-1"></i>DNA</div>
                   <span class="font-bold text-grey-2 text-caption">데이터가 부족합니다</span>
@@ -49,7 +49,7 @@
             </div>
 
             <!-- Recent Posts -->
-            <div class="pa-5 border-t border-white/40 glass-panel">
+            <div class="pa-5 border-t border-white/60 glass-panel">
               <h4 class="text-subtitle-2 font-black text-grey-dark mb-3 flex items-center gap-2 px-1">
                 <i class="mdi mdi-square-edit-outline text-blue-dark"></i> 최근 작성한 글
               </h4>
@@ -57,10 +57,10 @@
               <div v-if="modalStore.isLoadingPosts" class="text-center py-6">
                 <div class="spinner spinner--sm mx-auto"></div>
               </div>
-              <div v-else-if="!recentPosts || recentPosts.length === 0" class="text-center py-6 text-grey-3 text-caption font-bold bg-white/50 rounded-lg border border-white/50 border-dashed backdrop-blur-sm">
+              <div v-else-if="!recentPosts || recentPosts.length === 0" class="text-center py-6 text-grey-3 text-caption font-bold bg-white/80 rounded-lg border border-white/50 border-dashed backdrop-blur-sm">
                 최근 작성한 글이 없습니다.
               </div>
-              <ul v-else class="list pa-0 bg-white/70 backdrop-blur-md rounded-lg border border-white/60 shadow-sm overflow-hidden">
+              <ul v-else class="list pa-0 bg-white/90 backdrop-blur-md rounded-lg border border-white/60 shadow-sm overflow-hidden">
                 <template v-for="(post, index) in recentPosts" :key="post.id">
                   <li 
                     class="list-item flex flex-col gap-1.5 py-3 px-4 cursor-pointer hover-bg transition-colors" 
@@ -173,10 +173,10 @@ const formatDate = (dateValue) => {
   max-width: 380px;
   overflow: hidden;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.85); /* Glassmorphism base */
+  background: rgba(245, 247, 250, 0.95); /* Less transparent glassmorphism base */
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 10px 40px rgba(0,0,0,0.1);
 }
 
