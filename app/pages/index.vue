@@ -145,7 +145,7 @@
     <div class="mb-16 text-center py-6">
       <a href="https://t.me/asp367" target="_blank" class="telegram-btn btn--indigo">
         <i class="mdi mdi-telegram text-h5"></i>
-        <span class="font-black ml-2">가입문의</span>
+        <span class="font-black ml-0">가입문의</span>
       </a>
     </div>
   </div>

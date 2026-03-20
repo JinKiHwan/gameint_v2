@@ -124,6 +124,7 @@ const selectBook = (book) => {
   flex-direction: column;
   padding: 0;
   overflow: hidden;
+  margin-right: 0;
 }
 
 .book-search-bar {
