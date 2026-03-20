@@ -123,6 +123,7 @@ const selectBook = (book) => {
   display: flex;
   flex-direction: column;
   padding: 0;
+  overflow: hidden;
 }
 
 .book-search-bar {
