@@ -444,8 +444,17 @@
                       <div class="text-caption text-grey-2">{{ formatDate(r.createdAt) }}</div>
                     </div>
                   </template>
-                  <div class="ml-auto">
+                  <div class="ml-auto flex items-center gap-2">
                     <StarRating :modelValue="r.rating" :readonly="true" />
+                    <button
+                      v-if="r.authorUid === authStore.user?.uid"
+                      class="btn btn--text btn--sm text-blue cursor-pointer pa-1"
+                      style="min-width:auto; height:32px;"
+                      @click="openEditReviewModal(r)"
+                      title="리뷰 수정"
+                    >
+                      <i class="mdi mdi-pencil" style="font-size:1.1rem; color:#1E88E5;"></i>
+                    </button>
                   </div>
                 </div>
                 <p class="text-body-2 text-grey-3" style="white-space:pre-wrap;">{{ r.content }}</p>
@@ -556,9 +565,13 @@
                 <div class="flex flex-wrap gap-2">
                   <button 
                     v-for="cat in BOOK_CATEGORIES" :key="cat"
-                    class="chip chip--xs cursor-pointer"
-                    :class="reviewCategory === cat ? 'chip--deep-purple' : 'chip--grey-lt'"
-                    @click="reviewCategory = cat"
+                    class="chip chip--xs"
+                    :class="[
+                      reviewCategory === cat ? 'chip--deep-purple' : 'chip--grey-lt',
+                      editingReviewId ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    ]"
+                    :disabled="!!editingReviewId"
+                    @click="!editingReviewId && (reviewCategory = cat)"
                   >
                     {{ cat }}
                   </button>
@@ -710,7 +723,7 @@ const {
   fetchActiveCycle, createCycle, updateCyclePhase,
   fetchParticipants, registerBook, fetchMyParticipation,
   castVote, fetchMyVote, confirmCommonBook,
-  fetchReviews, submitReview, fetchMyReview,
+  fetchReviews, submitReview, updateReview, fetchMyReview,
   fetchMeetingRecords, addMeetingRecord, fetchClosedCycles
 } = useCycle()
 const { resolveUser } = useUserMapper()
@@ -953,8 +966,9 @@ const handleVote = async (targetUid) => {
   } catch (err) { alert('투표 실패: ' + err.message) }
 }
 
-// ── 리뷰 작성 ─────────────────────────────────────────────────────
+// ── 리뷰 작성 및 수정 ─────────────────────────────────────────────────────
 const reviewModal = ref(false)
+const editingReviewId = ref(null)
 const reviewRating = ref(0)
 const reviewContent = ref('')
 const reviewCategory = ref('소설') // 기본값
@@ -964,11 +978,21 @@ const reviewError = ref('')
 const BOOK_CATEGORIES = ['소설', '자기계발', '경제/경영', '인문/사회', '과학/기술', '시/에세이', '기타']
 
 const openReviewModal = () => {
+  editingReviewId.value = null
   reviewModal.value = true
   reviewRating.value = 0
   reviewContent.value = ''
   reviewCategory.value = '소설'
   reviewError.value = ''
+}
+
+const openEditReviewModal = (r) => {
+  editingReviewId.value = r.id
+  reviewRating.value = r.rating
+  reviewContent.value = r.content
+  reviewCategory.value = r.category || '소설'
+  reviewError.value = ''
+  reviewModal.value = true
 }
 
 const handleSubmitReview = async () => {
@@ -977,12 +1001,23 @@ const handleSubmitReview = async () => {
   reviewError.value = ''
   submittingReview.value = true
   try {
-    const phase = cycle.value.phase === 'phase2_reading' ? 'phase2' : 'phase1'
-    await submitReview(cycle.value.id, reviewRating.value, reviewContent.value.trim(), phase, reviewCategory.value)
+    if (editingReviewId.value) {
+      await updateReview(cycle.value.id, editingReviewId.value, reviewRating.value, reviewContent.value.trim())
+    } else {
+      const phase = cycle.value.phase === 'phase2_reading' ? 'phase2' : 'phase1'
+      await submitReview(cycle.value.id, reviewRating.value, reviewContent.value.trim(), phase, reviewCategory.value)
+    }
     reviewModal.value = false
-    myReview.value = { rating: reviewRating.value, content: reviewContent.value, category: reviewCategory.value }
+    
+    // 로컬 상태 업데이트
+    if (editingReviewId.value && myReview.value) {
+      myReview.value.rating = reviewRating.value
+      myReview.value.content = reviewContent.value.trim()
+    } else {
+      myReview.value = { rating: reviewRating.value, content: reviewContent.value.trim(), category: reviewCategory.value }
+    }
     reviews.value = await fetchReviews(cycle.value.id)
-  } catch (err) { reviewError.value = err.message || '리뷰 등록 실패' }
+  } catch (err) { reviewError.value = err.message || '리뷰 처리 실패' }
   finally { submittingReview.value = false }
 }
 

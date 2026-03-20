@@ -97,7 +97,7 @@ const starFill = (n) => {
 
 /* 회색 배경 별 */
 .star--base {
-  color: #E0E0E0;
+  color: #BDBDBD;
   width: 100%;
 }
 
@@ -106,6 +106,7 @@ const starFill = (n) => {
   color: #FFB300;
   width: 0%;
   transition: width 0.1s;
+  filter: drop-shadow(0 0 3px rgba(255,179,0,0.5));
 }
 
 /* 클릭·호버 투명 영역 */

@@ -379,17 +379,33 @@ export const useBoard = () => {
     }
   }
 
-  // 11. HOT 게시글 조회 (좋아요 높은 순, 최대 3개)
+  // 11. HOT 게시글 조회 (최신글 최대 30개 중 7일 이내, 좋아요 높은 순 Top 3)
   const fetchHotPosts = async () => {
     try {
       const postsRef = collection(getDb(), 'posts')
-      const q = query(postsRef, orderBy('likeCount', 'desc'), limit(3))
+      
+      const weeklyAgo = new Date()
+      weeklyAgo.setDate(weeklyAgo.getDate() - 7)
+      
+      // 최신글 30개 제한 (비용/과다 Read 방어)
+      const q = query(postsRef, orderBy('createdAt', 'desc'), limit(30))
       const snapshot = await getDocs(q)
       
-      return snapshot.docs.map(doc => ({
+      let posts = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }))
+      
+      // 7일 이내 게시물만 필터링
+      posts = posts.filter((p: any) => {
+        const d = p.createdAt?.toDate ? p.createdAt.toDate() : new Date(p.createdAt || 0)
+        return d >= weeklyAgo
+      })
+
+      // 좋아요 수 기준 내림차순 정렬
+      posts.sort((a: any, b: any) => (b.likeCount || 0) - (a.likeCount || 0))
+      
+      return posts.slice(0, 3)
     } catch (err: any) {
       console.error('Fetch hot posts error:', err)
       return []

@@ -181,6 +181,17 @@ export const useCycle = () => {
         } catch { }
     }
 
+    // ── 리뷰 수정 ─────────────────────────────────────────────────────
+    const updateReview = async (cycleId: string, reviewId: string, rating: number, content: string) => {
+        const uid = authStore.user?.uid
+        if (!uid) throw new Error('로그인이 필요합니다.')
+        await updateDoc(doc(getDb(), 'cycles', cycleId, 'reviews', reviewId), {
+            rating,
+            content,
+            updatedAt: serverTimestamp(),
+        })
+    }
+
     // ── 내 리뷰 전체 조회 (마이페이지용) ──────────────────────────────
     const fetchUserReviews = async (userId: string) => {
         try {
@@ -256,7 +267,7 @@ export const useCycle = () => {
         fetchActiveCycle, createCycle, updateCyclePhase,
         fetchParticipants, registerBook, fetchMyParticipation,
         castVote, fetchMyVote, confirmCommonBook,
-        fetchReviews, submitReview, fetchMyReview, fetchUserReviews,
+        fetchReviews, submitReview, updateReview, fetchMyReview, fetchUserReviews,
         fetchMeetingRecords, addMeetingRecord, fetchClosedCycles,
     }
 }
