@@ -141,7 +141,7 @@ const selectBook = (book) => {
   border: 1.5px solid #E0E0E0; border-radius: 8px; background: #fff; overflow: hidden;
   &:focus-within { border-color: #1E88E5; box-shadow: 0 0 0 3px rgba(30,136,229,0.12); }
   input { flex:1; border:none; background:transparent; padding:10px 12px 10px 4px; font-size:0.9375rem; font-weight:500; outline:none; &::placeholder{ color:#BDBDBD; } }
-  .append-btn { margin: 0 8px 0 0; height: 36px; }
+  .append-btn { margin: 0; height: 36px; }
 }
 
 .book-results {
