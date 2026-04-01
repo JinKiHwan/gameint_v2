@@ -14,10 +14,16 @@ export interface ProfileImageMeta {
   path: string         // 실제 이미지 경로 (nuxt asset)
   label: string        // 표시 이름
   unlockType: 'default' | 'tier' | 'quest' | 'level' | 'role'
-  tier?: string        // unlockType === 'tier' 일 때 필요한 최소 티어
+  
+  //── 해금 조건 (여러 개 지정 시 ALL 만족해야 함) ──
+  tier?: string        // 최소 티어 (예: 'Silver')
+  level?: number       // 최소 레벨
+  posts?: number       // 최소 게시글 수
+  comments?: number    // 최소 댓글 수
+  role?: string        // 특정 역할전용 (예: 'master')
+
+  // 레거시 지원용 (기존 데이터 유지)
   quest?: { type: 'posts' | 'comments'; count: number }
-  level?: number       // unlockType === 'level' 일 때 필요한 최소 레벨
-  role?: string        // unlockType === 'role' 일 때 필요한 최소 역할 (예: 'master')
 }
 
 // 티어 순서 (숫자가 낮을수록 낮은 티어)
@@ -35,7 +41,7 @@ export const PROFILE_IMAGES: ProfileImageMeta[] = [
   { id: 'default_06', path: '/images/profile_image/default_06.webp', label: '기본 6', unlockType: 'default' },
   { id: 'default_07', path: '/images/profile_image/default_07.webp', label: '기본 7', unlockType: 'default' },
 
-  // ── 퀘스트 해금 ────────────────────────────────────────────
+  // ── 퀘스트 해금 (기존) ────────────────────────────────────────────
   { id: 'default_08', path: '/images/profile_image/default_08.webp', label: '첫 게시글',   unlockType: 'quest', quest: { type: 'posts',    count: 1  } },
   { id: 'default_09', path: '/images/profile_image/default_09.webp', label: '게시글 5개',  unlockType: 'quest', quest: { type: 'posts',    count: 5  } },
   { id: 'default_10', path: '/images/profile_image/default_10.webp', label: '게시글 10개', unlockType: 'quest', quest: { type: 'posts',    count: 10 } },
@@ -45,7 +51,7 @@ export const PROFILE_IMAGES: ProfileImageMeta[] = [
   { id: 'default_14', path: '/images/profile_image/default_14.webp', label: '댓글 30개',  unlockType: 'quest', quest: { type: 'comments', count: 30 } },
   { id: 'default_15', path: '/images/profile_image/default_15.webp', label: '댓글 50개',  unlockType: 'quest', quest: { type: 'comments', count: 50 } },
 
-  // ── 티어 해금 ───────────────────────────────────────────────
+  // ── 티어 해금 (기존) ───────────────────────────────────────────────
   { id: 'default_16', path: '/images/profile_image/default_16.webp', label: 'Silver 해금',   unlockType: 'tier', tier: 'Silver'   },
   { id: 'default_17', path: '/images/profile_image/default_17.webp', label: 'Silver 해금',   unlockType: 'tier', tier: 'Silver'   },
   { id: 'default_18', path: '/images/profile_image/default_18.webp', label: 'Silver 해금',   unlockType: 'tier', tier: 'Silver'   },
@@ -60,7 +66,7 @@ export const PROFILE_IMAGES: ProfileImageMeta[] = [
   { id: 'default_27', path: '/images/profile_image/default_27.webp', label: 'Diamond 해금',  unlockType: 'tier', tier: 'Diamond'  },
   { id: 'default_28', path: '/images/profile_image/default_28.webp', label: 'Diamond 해금',  unlockType: 'tier', tier: 'Diamond'  },
 
-  // ── 레벨 해금 ──────────────────────────────────────────────
+  // ── 레벨 해금 (기존) ──────────────────────────────────────────────
   { id: 'profile_level_01',  path: '/images/profile_image/level/profile_level_01.webp',  label: '레벨 1 달성',   unlockType: 'level', level: 1 },
   { id: 'profile_level_05',  path: '/images/profile_image/level/profile_level_05.webp',  label: '레벨 5 달성',   unlockType: 'level', level: 5 },
   { id: 'profile_level_10',  path: '/images/profile_image/level/profile_level_10.webp',  label: '레벨 10 달성',  unlockType: 'level', level: 10 },
@@ -70,7 +76,7 @@ export const PROFILE_IMAGES: ProfileImageMeta[] = [
   { id: 'profile_level_100', path: '/images/profile_image/level/profile_level_100.webp', label: '레벨 100 달성', unlockType: 'level', level: 100 },
   { id: 'profile_master',    path: '/images/profile_image/level/profile_master.webp',    label: '회장 전용',     unlockType: 'role',  role: 'master' },
 
-  // ── 랭크 해금 ──────────────────────────────────────────────
+  // ── 랭크 해금 (기존) ──────────────────────────────────────────────
   { id: 'profile_rank_bronze',      path: '/images/profile_image/rank/profile_rank_bronze.webp',      label: 'Bronze 달성',      unlockType: 'tier', tier: 'Bronze' },
   { id: 'profile_rank_silver',      path: '/images/profile_image/rank/profile_rank_silver.webp',      label: 'Silver 달성',      unlockType: 'tier', tier: 'Silver' },
   { id: 'profile_rank_gold',        path: '/images/profile_image/rank/profile_rank_gold.webp',        label: 'Gold 달성',        unlockType: 'tier', tier: 'Gold' },
@@ -78,6 +84,31 @@ export const PROFILE_IMAGES: ProfileImageMeta[] = [
   { id: 'profile_rank_diamond',     path: '/images/profile_image/rank/profile_rank_diamond.webp',     label: 'Diamond 달성',     unlockType: 'tier', tier: 'Diamond' },
   { id: 'profile_rank_master',      path: '/images/profile_image/rank/profile_rank_master.webp',      label: 'Master 달성',      unlockType: 'tier', tier: 'Master' },
   { id: 'profile_rank_grandmaster', path: '/images/profile_image/rank/profile_rank_grandmaster.webp', label: 'Grandmaster 달성', unlockType: 'tier', tier: 'Grandmaster' },
+
+  // ── 신규 퀘스트 해금 (자동 등록) ───────────────────────────────────
+  { id: 'bronze', path: '/images/profile_image/quest/bronze.webp', label: 'Bronze 달성', unlockType: 'tier', tier: 'Bronze' },
+  { id: 'challenger_comment150', path: '/images/profile_image/quest/challenger_comment150.webp', label: 'Challenger + 댓글 150', unlockType: 'quest', tier: 'Challenger', comments: 150 },
+  { id: 'comment1', path: '/images/profile_image/quest/comment1.webp', label: '첫 댓글', unlockType: 'quest', comments: 1 },
+  { id: 'comment10', path: '/images/profile_image/quest/comment10.webp', label: '댓글 10개', unlockType: 'quest', comments: 10 },
+  { id: 'comment20', path: '/images/profile_image/quest/comment20.webp', label: '댓글 20개', unlockType: 'quest', comments: 20 },
+  { id: 'diamond', path: '/images/profile_image/quest/diamond.webp', label: 'Diamond 달성', unlockType: 'tier', tier: 'Diamond' },
+  { id: 'diamond_comment50', path: '/images/profile_image/quest/diamond_comment50.webp', label: 'Diamond + 댓글 50', unlockType: 'quest', tier: 'Diamond', comments: 50 },
+  { id: 'gold_post25', path: '/images/profile_image/quest/gold_post25.webp', label: 'Gold + 게시물 25', unlockType: 'quest', tier: 'Gold', posts: 25 },
+  { id: 'gold_post35', path: '/images/profile_image/quest/gold_post35.webp', label: 'Gold + 게시물 35', unlockType: 'quest', tier: 'Gold', posts: 35 },
+  { id: 'grandmaster', path: '/images/profile_image/quest/grandmaster.webp', label: 'Grandmaster 달성', unlockType: 'tier', tier: 'Grandmaster' },
+  { id: 'grandmaster_comment30', path: '/images/profile_image/quest/grandmaster_comment30.webp', label: 'Grandmaster + 댓글 30', unlockType: 'quest', tier: 'Grandmaster', comments: 30 },
+  { id: 'master_post_20', path: '/images/profile_image/quest/master_post_20.webp', label: 'Master + 게시물 20', unlockType: 'quest', tier: 'Master', posts: 20 },
+  { id: 'platinum', path: '/images/profile_image/quest/platinum.webp', label: 'Platinum 달성', unlockType: 'tier', tier: 'Platinum' },
+  { id: 'post1', path: '/images/profile_image/quest/post1.webp', label: '첫 게시물', unlockType: 'quest', posts: 1 },
+  { id: 'post10_comment10', path: '/images/profile_image/quest/post10_comment10.webp', label: '게시물 10 + 댓글 10', unlockType: 'quest', posts: 10, comments: 10 },
+  { id: 'post10_comment20', path: '/images/profile_image/quest/post10_comment20.webp', label: '게시물 10 + 댓글 20', unlockType: 'quest', posts: 10, comments: 20 },
+  { id: 'post2', path: '/images/profile_image/quest/post2.webp', label: '게시물 2개', unlockType: 'quest', posts: 2 },
+  { id: 'post3', path: '/images/profile_image/quest/post3.webp', label: '게시물 3개', unlockType: 'quest', posts: 3 },
+  { id: 'post4', path: '/images/profile_image/quest/post4.webp', label: '게시물 4개', unlockType: 'quest', posts: 4 },
+  { id: 'post50 (2)', path: '/images/profile_image/quest/post50 (2).webp', label: '게시물 50개', unlockType: 'quest', posts: 50 },
+  { id: 'post50_coment50', path: '/images/profile_image/quest/post50_coment50.webp', label: '게시물 50 + 댓글 50', unlockType: 'quest', posts: 50, comments: 50 },
+  { id: 'silver_post10', path: '/images/profile_image/quest/silver_post10.webp', label: 'Silver + 게시물 10', unlockType: 'quest', tier: 'Silver', posts: 10 },
+  { id: 'silver_post5', path: '/images/profile_image/quest/silver_post5.webp', label: 'Silver + 게시물 5', unlockType: 'quest', tier: 'Silver', posts: 5 },
 ]
 
 /**
@@ -89,27 +120,36 @@ export function isImageUnlocked(
 ): boolean {
   if (image.unlockType === 'default') return true
 
-  if (image.unlockType === 'tier' && image.tier) {
+  // 1. 티어 조건 체크
+  if (image.tier) {
     const userTierLevel = TIER_ORDER[userData.tier || 'Bronze'] ?? 1
     const requiredTierLevel = TIER_ORDER[image.tier] ?? 99
-    return userTierLevel >= requiredTierLevel
+    if (userTierLevel < requiredTierLevel) return false
   }
 
-  if (image.unlockType === 'quest' && image.quest) {
-    const { type, count } = image.quest
-    if (type === 'posts')    return (userData.postCount    ?? 0) >= count
-    if (type === 'comments') return (userData.commentCount ?? 0) >= count
+  // 2. 게시글 수 조건 체크 (필드 또는 레거시 quest 객체)
+  const reqPosts = image.posts ?? (image.quest?.type === 'posts' ? image.quest.count : undefined)
+  if (reqPosts !== undefined) {
+    if ((userData.postCount ?? 0) < reqPosts) return false
   }
 
-  if (image.unlockType === 'level' && image.level !== undefined) {
-    return (userData.level ?? 1) >= image.level
+  // 3. 댓글 수 조건 체크 (필드 또는 레거시 quest 객체)
+  const reqComments = image.comments ?? (image.quest?.type === 'comments' ? image.quest.count : undefined)
+  if (reqComments !== undefined) {
+    if ((userData.commentCount ?? 0) < reqComments) return false
   }
 
-  if (image.unlockType === 'role' && image.role) {
-    return userData.role === image.role
+  // 4. 레벨 조건 체크
+  if (image.level !== undefined) {
+    if ((userData.level ?? 1) < image.level) return false
   }
 
-  return false
+  // 5. 역할 조건 체크
+  if (image.role) {
+    if (userData.role !== image.role) return false
+  }
+
+  return true
 }
 
 /**

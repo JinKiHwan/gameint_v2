@@ -675,12 +675,18 @@ const isUnlocked = (img) => isImageUnlocked(img, {
 
 const getLockLabel = (img) => {
   if (img.unlockType === 'role')  return '회장 전용'
-  if (img.unlockType === 'level') return `Lv.${img.level} 달성`
-  if (img.unlockType === 'tier')  return `${img.tier} 이상`
-  if (img.unlockType === 'quest') {
-    const typeLabel = img.quest.type === 'posts' ? '게시글' : '댓글'
-    return `${typeLabel} ${img.quest.count}개`
-  }
+  
+  const labels = []
+  if (img.tier) labels.push(`${img.tier} 이상`)
+  if (img.level !== undefined) labels.push(`Lv.${img.level} 달성`)
+  
+  const postCount = img.posts ?? (img.quest?.type === 'posts' ? img.quest.count : undefined)
+  if (postCount !== undefined) labels.push(`게시글 ${postCount}개`)
+  
+  const commentCount = img.comments ?? (img.quest?.type === 'comments' ? img.quest.count : undefined)
+  if (commentCount !== undefined) labels.push(`댓글 ${commentCount}개`)
+
+  if (labels.length > 0) return labels.join(' + ')
   return '잠금'
 }
 

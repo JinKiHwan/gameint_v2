@@ -23,7 +23,8 @@ A web-based platform for a corporate reading club, featuring book registration, 
 - **Ranking System**: Firestore-optimized (limit 10) leaderboard with Tier-based badges (Bronze to Diamond).
 - **Board & Recommendation**: Integrated post/comment system with pagination and sorting (Latest, Popular).
 - **Cycle Management**: Phase-based logic (Phase 1: Individual Reading → Phase 2: Common Book).
-- **Authentication & Profile**: Complete Google Auth integration, custom nickname sync across all posts/comments, and profile image system.
+- **Authentication & Profile**: Complete Google Auth integration, custom nickname sync across all posts/comments, and an enhanced profile image system supporting **combined unlock conditions** (Tier + Posts + Comments).
+- **New Quest Avatars**: 24 additional profile images registered with complex unlock logic (e.g., Gold + Posts 25).
 
 ### 3. Backend & Data
 - **Firestore Indexing**: Complex indexes configured for sorting/filtering top users.
