@@ -233,8 +233,13 @@
               <i class="mdi mdi-flag-checkered"></i> 사이클 종료
             </button>
             <button class="btn btn--tonal font-bold rounded-sm" @click="openMeetingModal">
-              <i :class="meetings.length > 0 ? 'mdi mdi-pencil-box-outline' : 'mdi mdi-pencil-box'"></i>
-              {{ meetings.length > 0 ? '모임 기록 수정' : '모임 기록 작성' }}
+              <i :class="currentPhaseMeeting ? 'mdi mdi-pencil-box-outline' : 'mdi mdi-pencil-box'"></i>
+              <template v-if="cycle.phase === 'phase2_reading'">
+                {{ currentPhaseMeeting ? '2회차 모임 기록 수정' : '2회차 모임 기록 추가' }}
+              </template>
+              <template v-else>
+                {{ currentPhaseMeeting ? '모임 기록 수정' : '모임 기록 작성' }}
+              </template>
             </button>
           </div>
 
@@ -477,7 +482,7 @@
             </div>
           </div>
           <div v-else class="flex flex-col gap-4">
-            <div v-for="m in meetings" :key="m.id" class="card">
+            <div v-for="m in [...meetings].sort((a,b) => (a.createdAt?.toDate?.() || 0) - (b.createdAt?.toDate?.() || 0))" :key="m.id" class="card">
               <div class="card-body">
                 <div class="flex items-center justify-between mb-3">
                   <h4 class="text-subtitle-1 font-black text-grey-dark">{{ m.title }}</h4>
@@ -802,6 +807,12 @@ const avgRating = computed(() => {
 // ── 모임 기록 ─────────────────────────────────────────────────────
 const meetings = ref([])
 const loadingMeetings = ref(false)
+const currentPhaseMeeting = computed(() => {
+  if (!cycle.value) return null
+  // 현재 페이즈(phase1_reading, voting, phase2_reading)에 해당하는 기록이 있는지 확인
+  // phase1_reading이나 voting은 동일하게 phase1 기록으로 간주할 수 있음 (또는 단순 일치 확인)
+  return meetings.value.find(m => m.phase === cycle.value.phase)
+})
 
 // ── 추천인 사용자 객체 ──────────────────────────────────────────────────
 const recommenderUser = computed(() => {
@@ -1030,10 +1041,9 @@ const savingMeeting = ref(false)
 
 // 기존 기록이 있으면 수정 모드로 모달 열기
 const openMeetingModal = () => {
-  if (meetings.value.length > 0) {
-    const m = meetings.value[0]
-    meetingTitle.value = m.title || ''
-    meetingContent.value = m.content || ''
+  if (currentPhaseMeeting.value) {
+    meetingTitle.value = currentPhaseMeeting.value.title || ''
+    meetingContent.value = currentPhaseMeeting.value.content || ''
   } else {
     meetingTitle.value = ''
     meetingContent.value = ''
@@ -1044,11 +1054,10 @@ const openMeetingModal = () => {
 const handleAddMeeting = async () => {
   savingMeeting.value = true
   try {
-    if (meetings.value.length > 0) {
-      // 기존 기록 수정
-      const existingId = meetings.value[0].id
-      const { updateDoc, doc } = await import('firebase/firestore')
-      const { serverTimestamp } = await import('firebase/firestore')
+    if (currentPhaseMeeting.value) {
+      // 해당 페이즈의 기존 기록 수정
+      const existingId = currentPhaseMeeting.value.id
+      const { updateDoc, doc, serverTimestamp } = await import('firebase/firestore')
       const nuxtApp = useNuxtApp()
       const fb = nuxtApp.$firebase
       await updateDoc(doc(fb.firestore, 'cycles', cycle.value.id, 'meetings', existingId), {
@@ -1057,7 +1066,7 @@ const handleAddMeeting = async () => {
         updatedAt: serverTimestamp(),
       })
     } else {
-      // 신규 작성
+      // 새 회차 기록 작성
       await addMeetingRecord(cycle.value.id, meetingTitle.value.trim(), meetingContent.value.trim(), cycle.value.phase)
     }
     masterMeetingModal.value = false
