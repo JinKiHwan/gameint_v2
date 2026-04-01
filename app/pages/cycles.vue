@@ -51,8 +51,9 @@
                 </div>
               </div>
             </div>
-            <div class="text-body-2 font-medium" style="color:rgba(255,255,255,0.8);">
-              <i class="mdi mdi-calendar"></i> {{ formatDateRange(cycle.phase2Start, cycle.phase2End) }}
+            <div class="flex items-center gap-4 text-body-2 font-medium" style="color:rgba(255,255,255,0.8);">
+              <span class="flex items-center gap-1"><i class="mdi mdi-calendar"></i> {{ formatDateRange(cycle.phase2Start, cycle.phase2End) }}</span>
+              <span class="flex items-center gap-1"><i class="mdi mdi-map-marker"></i> 모임장소 : 하와이</span>
             </div>
           </template>
 
@@ -422,14 +423,14 @@
             </div>
           </div>
           <div v-if="loadingReviews" class="text-center pa-8"><div class="spinner" style="margin:0 auto;"></div></div>
-          <div v-else-if="reviews.length === 0" class="card">
+          <div v-else-if="currentPhaseReviews.length === 0" class="card">
             <div class="card-body text-center pa-8 text-grey-2 font-bold">
               아직 리뷰가 없습니다. 가장 먼저 감상을 남겨보세요!
             </div>
           </div>
           <div v-else class="flex flex-col gap-3">
             <div
-              v-for="r in reviews.filter(r => r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1'))"
+              v-for="r in currentPhaseReviews"
               :key="r.id"
               class="card"
             >
