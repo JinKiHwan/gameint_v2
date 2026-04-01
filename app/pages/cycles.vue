@@ -1373,6 +1373,6 @@ const formatDate = (dateValue) => {
   &:hover { transform: translateY(-3px); border-color: #1E88E5 !important; box-shadow: 0 6px 16px rgba(0,0,0,0.08); }
 }
 .card--flat { border: 1px solid #EEEEEE !important; background: #FAFAFA !important; box-shadow: none !important; }
-.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 3; }
 
 </style>
