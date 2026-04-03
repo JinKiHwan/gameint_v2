@@ -38,12 +38,30 @@ service cloud.firestore {
       // Notifications sub-collection
       match /notifications/{notiId} {
         allow read, update, delete: if isAuthenticated() && request.auth.uid == userId;
+        // Allow other users to send notifications (e.g., rental requests)
+        allow create: if isAuthenticated();
       }
       
       // Notification states (for global notifications)
       match /notification_states/{notiId} {
         allow read, write: if isAuthenticated() && request.auth.uid == userId;
       }
+    }
+
+    // Bookshelf Reading Club Feature
+    match /bookshelf/{bookId} {
+      allow read: if isAuthenticated();
+      
+      // Active users can register books
+      allow create: if isActiveUser() && request.resource.data.ownerUid == request.auth.uid;
+      
+      // Owner or borrower(for rental actions) can update
+      allow update: if isActiveUser() && (
+                      resource.data.ownerUid == request.auth.uid || 
+                      (request.resource.data.diff(resource.data).affectedKeys().hasAny(['status', 'borrowerUid', 'borrowerNickname', 'requestedAt', 'rentedAt']))
+                    );
+                    
+      allow delete: if isActiveUser() && resource.data.ownerUid == request.auth.uid;
     }
     
     // Global Activities Feed
@@ -110,7 +128,7 @@ service cloud.firestore {
       match /reviews/{reviewId} {
         allow read: if true;
         allow create: if isActiveUser() && request.resource.data.authorUid == request.auth.uid;
-        allow update, delete: if isActiveUser() && resource.data.authorUid == request.auth.uid || isMaster();
+        allow update, delete: if isActiveUser() && (resource.data.authorUid == request.auth.uid || isMaster());
       }
 
       // meetings sub-collection (master only writes, all active users read)

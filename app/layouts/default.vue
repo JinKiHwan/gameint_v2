@@ -48,6 +48,9 @@
               <button class="dropdown-item" @click="handleNav('/ranking')">
                 <i class="mdi mdi-trophy-variant-outline"></i> 명예의 전당
               </button>
+              <button class="dropdown-item" @click="handleNav('/bookshelf')">
+                <i class="mdi mdi-book-multiple"></i> 책장공유
+              </button>
               <div class="dropdown-divider"></div>
               <button class="dropdown-item text-red" @click="handleLogout">
                 <i class="mdi mdi-logout"></i> 로그아웃
@@ -216,7 +219,7 @@
     <!-- 모바일 하단 네비게이션 -->
     <nav class="bottom-nav">
       <NuxtLink
-        v-for="item in navigation.slice(0, 5)"
+        v-for="item in mobileNavigation"
         :key="item.id"
         :to="item.to"
         class="bottom-nav__item"
@@ -306,6 +309,16 @@ const navigation = [
   { id: 'recommend', label: '도서 추천',  icon: 'mdi-bookshelf',              to: '/recommend' },
   { id: 'board',     label: '통합 게시판', icon: 'mdi-bulletin-board',       to: '/board' },
   { id: 'ranking',   label: '랭킹',      icon: 'mdi-trophy',                to: '/ranking' },
+  { id: 'bookshelf', label: '책장공유',  icon: 'mdi-book-multiple', to: '/bookshelf' },
+  { id: 'mypage',    label: '마이페이지', icon: 'mdi-account',               to: '/mypage' },
+]
+
+// 모바일 하단 네비: 도서추천 대신 책장공유로 교체 (5개 유지)
+const mobileNavigation = [
+  { id: 'home',      label: '홈',       icon: 'mdi-home-variant',          to: '/' },
+  { id: 'cycles',    label: '월간 주제',  icon: 'mdi-calendar-check',        to: '/cycles' },
+  { id: 'bookshelf', label: '책장공유',  icon: 'mdi-book-multiple', to: '/bookshelf' },
+  { id: 'board',     label: '게시판',    icon: 'mdi-bulletin-board',       to: '/board' },
   { id: 'mypage',    label: '마이페이지', icon: 'mdi-account',               to: '/mypage' },
 ]
 
