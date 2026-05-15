@@ -81,9 +81,11 @@
                 <div class="text-caption text-grey-2 font-medium">키워드 <strong>#{{ cycle.keyword }}</strong>에 맞는 책을 검색하고 등록해주세요.</div>
               </div>
             </div>
-            <button class="btn btn--primary btn--lg font-black rounded-sm" @click="openBookRegisterModal">
-              <i class="mdi mdi-book-plus-outline"></i> 책 검색/등록
-            </button>
+            <div class="flex gap-2">
+              <button class="btn btn--primary btn--lg font-black rounded-sm" @click="openBookRegisterModal()">
+                <i class="mdi mdi-book-plus-outline"></i> 책 검색/등록
+              </button>
+            </div>
           </template>
 
           <!-- Phase 1: 책 등록함 + 리뷰 미작성 -->
@@ -98,9 +100,14 @@
                 </div>
               </div>
             </div>
-            <button class="btn btn--primary btn--lg font-black rounded-sm" @click="openReviewModal">
-              <i class="mdi mdi-star-outline"></i> 내 책 리뷰 쓰기
-            </button>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn--tonal btn--lg font-black rounded-sm" @click="openBookRegisterModal(myParticipation)">
+                <i class="mdi mdi-book-edit-outline"></i> 책 수정
+              </button>
+              <button class="btn btn--primary btn--lg font-black rounded-sm" @click="openReviewModal">
+                <i class="mdi mdi-star-outline"></i> 내 책 리뷰 쓰기
+              </button>
+            </div>
           </template>
 
           <!-- Phase 1: 책 등록 + 리뷰 완료 -->
@@ -114,7 +121,12 @@
                 </div>
               </div>
             </div>
-            <StarRating :modelValue="myReview.rating" :readonly="true" />
+            <div class="flex items-center gap-3">
+              <button class="btn btn--text btn--sm font-bold text-blue-dark" @click="openBookRegisterModal(myParticipation)">
+                <i class="mdi mdi-book-edit-outline"></i> 책 수정
+              </button>
+              <StarRating :modelValue="myReview.rating" :readonly="true" />
+            </div>
           </template>
 
           <!-- 투표 단계 (일반 유저) -->
@@ -176,9 +188,14 @@
               <div class="text-caption text-grey-2 font-medium">내 책이 공통 도서로 선정되었습니다! 나만의 자유 도서를 추가 등록할 수 있어요.</div>
             </div>
           </div>
-          <button class="btn btn--lg font-black rounded-sm" style="background:#FFF8E1;color:#F57C00;border:1px solid #FFB300;" @click="openBookRegisterModal">
-            <i class="mdi mdi-book-plus"></i> 자유 도서 추가
-          </button>
+          <div class="flex flex-wrap gap-2">
+            <button class="btn btn--lg font-bold rounded-sm" style="background:#fff;color:#F57C00;border:1px solid #FFB300;" @click="openBookRegisterModal(myParticipation)">
+              <i class="mdi mdi-book-edit"></i> 수정
+            </button>
+            <button class="btn btn--lg font-black rounded-sm" style="background:#FFF8E1;color:#F57C00;border:1px solid #FFB300;" @click="openBookRegisterModal()">
+              <i class="mdi mdi-book-plus"></i> 자유 도서 추가
+            </button>
+          </div>
         </div>
       </div>
 
@@ -503,7 +520,7 @@
         <div v-if="bookRegisterModal" class="modal-overlay" @click.self="bookRegisterModal = false">
           <div class="modal" style="max-width:500px;">
             <div class="modal__header">
-              <span class="modal__title">📚 책 등록하기</span>
+              <span class="modal__title">📚 책 {{ isEditing ? '수정하기' : '등록하기' }}</span>
               <button class="btn btn--text btn--icon" @click="bookRegisterModal = false"><i class="mdi mdi-close"></i></button>
             </div>
             <div class="modal__body">
@@ -545,7 +562,7 @@
                 :class="{'is-loading':registeringBook}"
                 :disabled="!selectedBook || registeringBook"
                 @click="handleRegisterBook"
-              >등록하기</button>
+              >{{ isEditing ? '수정완료' : '등록하기' }}</button>
             </div>
           </div>
         </div>
@@ -918,15 +935,24 @@ const selectedBook = ref(null)
 const bookRegisterReason = ref('')
 const registeringBook = ref(false)
 const registerError = ref('')
+const isEditing = ref(false)
 
-const openBookRegisterModal = () => {
+const openBookRegisterModal = (p = null) => {
   bookRegisterModal.value = true
   bookSearchQuery.value = ''
   bookSearchResults.value = []
   hasSearched.value = false
-  selectedBook.value = null
-  bookRegisterReason.value = ''
   registerError.value = ''
+  
+  if (p) {
+    isEditing.value = true
+    selectedBook.value = { ...p.book }
+    bookRegisterReason.value = p.reason || ''
+  } else {
+    isEditing.value = false
+    selectedBook.value = null
+    bookRegisterReason.value = ''
+  }
 }
 
 const searchBook = async () => {
@@ -945,6 +971,11 @@ const searchBook = async () => {
 
 const handleRegisterBook = async () => {
   if (!selectedBook.value) return
+  if (isEditing.value && myReview.value) {
+    if (!confirm('이미 작성한 리뷰가 있습니다. 책을 변경하면 기존 리뷰 내용과 맞지 않을 수 있습니다. 그래도 변경하시겠습니까?')) {
+      return
+    }
+  }
   registerError.value = ''
   registeringBook.value = true
   try {
