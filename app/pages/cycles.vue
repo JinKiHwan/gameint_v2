@@ -444,6 +444,25 @@
               <span class="text-caption text-grey-2">({{ currentPhaseReviews.length }}명)</span>
             </div>
           </div>
+
+          <!-- Phase 2인 경우 1회차/2회차 리뷰 선택 필터 제공 -->
+          <div v-if="cycle.phase === 'phase2_reading'" class="chip-group mb-4">
+            <span
+              class="chip chip--outlined cursor-pointer"
+              :class="{ 'chip--active-blue': selectedReviewPhase === 'phase2' }"
+              @click="selectedReviewPhase = 'phase2'"
+            >
+              2회차 리뷰 (공통 도서)
+            </span>
+            <span
+              class="chip chip--outlined cursor-pointer"
+              :class="{ 'chip--active-blue': selectedReviewPhase === 'phase1' }"
+              @click="selectedReviewPhase = 'phase1'"
+            >
+              1회차 리뷰 (개별 도서)
+            </span>
+          </div>
+
           <div v-if="loadingReviews" class="text-center pa-8"><div class="spinner" style="margin:0 auto;"></div></div>
           <div v-else-if="currentPhaseReviews.length === 0" class="card">
             <div class="card-body text-center pa-8 text-grey-2 font-bold">
@@ -480,6 +499,21 @@
                     </button>
                   </div>
                 </div>
+
+                <!-- 대상 도서 정보 -->
+                <div v-if="getBookForReview(r)" class="review-book-info mb-3">
+                  <img
+                    v-if="getBookForReview(r).thumbnail"
+                    :src="getBookForReview(r).thumbnail"
+                    class="review-book-info__thumb"
+                    alt="도서 표지"
+                  />
+                  <div class="review-book-info__detail">
+                    <div class="review-book-info__title">{{ getBookForReview(r).title }}</div>
+                    <div class="review-book-info__authors">{{ getBookForReview(r).authors?.join(', ') }}</div>
+                  </div>
+                </div>
+
                 <p class="text-body-2 text-grey-3" style="white-space:pre-wrap;">{{ r.content }}</p>
               </div>
             </div>
@@ -732,7 +766,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useAuthStore } from '~/stores/auth'
 import { useCycle } from '~/composables/useCycle'
 import { useUserMapper } from '~/composables/useUserMapper'
@@ -754,6 +788,22 @@ const { resolveUser } = useUserMapper()
 // ── 기본 상태 ────────────────────────────────────────────────────
 const cycle = ref(null)
 const loadingCycle = ref(true)
+
+// ── 리뷰 필터 및 편집 상태 ─────────────────────────────────────────
+const selectedReviewPhase = ref('phase2')
+const editingReviewPhase = ref('')
+
+watch(
+  () => cycle.value?.phase,
+  (newPhase) => {
+    if (newPhase === 'phase2_reading') {
+      selectedReviewPhase.value = 'phase2'
+    } else {
+      selectedReviewPhase.value = 'phase1'
+    }
+  },
+  { immediate: true }
+)
 // ── 히스토리 페이지네이션 ───────────────────────────────
 const historyPage = ref(1)
 const historyItemsPerPage = 6
@@ -810,16 +860,30 @@ const loadingReviews = ref(false)
 const myReview = ref(null)
 
 // 현재 페이즈의 리뷰만 필터
-const currentPhaseKey = computed(() =>
-  cycle.value?.phase === 'phase2_reading' ? 'phase2' : 'phase1'
-)
 const currentPhaseReviews = computed(() =>
-  reviews.value.filter(r => r.phase === currentPhaseKey.value)
+  reviews.value.filter(r => r.phase === selectedReviewPhase.value)
 )
 const avgRating = computed(() => {
   if (!currentPhaseReviews.value.length) return 0
   return currentPhaseReviews.value.reduce((sum, r) => sum + (r.rating || 0), 0) / currentPhaseReviews.value.length
 })
+
+// 각 리뷰의 대상 도서 조회 헬퍼
+const getBookForReview = (r) => {
+  if (!r) return null
+  if (r.phase === 'phase2') {
+    // 추천인이 자율 도서를 등록한 경우, 추천인의 리뷰는 자율 도서 대상
+    const isRecommender = r.authorUid === cycle.value?.commonBookRecommenderUid
+    const recommenderPart = participants.value.find(p => p.uid === r.authorUid)
+    if (isRecommender && recommenderPart?.freeBookRegistered) {
+      return recommenderPart.book
+    }
+    return cycle.value?.commonBook
+  } else {
+    // Phase 1: 개별 도서
+    return participants.value.find(p => p.uid === r.authorUid)?.book
+  }
+}
 
 // ── 모임 기록 ─────────────────────────────────────────────────────
 const meetings = ref([])
@@ -1022,6 +1086,7 @@ const BOOK_CATEGORIES = ['소설', '자기계발', '경제/경영', '인문/사�
 
 const openReviewModal = () => {
   editingReviewId.value = null
+  editingReviewPhase.value = cycle.value?.phase === 'phase2_reading' ? 'phase2' : 'phase1'
   reviewModal.value = true
   reviewRating.value = 0
   reviewContent.value = ''
@@ -1031,6 +1096,7 @@ const openReviewModal = () => {
 
 const openEditReviewModal = (r) => {
   editingReviewId.value = r.id
+  editingReviewPhase.value = r.phase
   reviewRating.value = r.rating
   reviewContent.value = r.content
   reviewCategory.value = r.category || '소설'
@@ -1053,11 +1119,16 @@ const handleSubmitReview = async () => {
     reviewModal.value = false
     
     // 로컬 상태 업데이트
-    if (editingReviewId.value && myReview.value) {
-      myReview.value.rating = reviewRating.value
-      myReview.value.content = reviewContent.value.trim()
-    } else {
-      myReview.value = { rating: reviewRating.value, content: reviewContent.value.trim(), category: reviewCategory.value }
+    const reviewPhase = editingReviewId.value ? editingReviewPhase.value : (cycle.value.phase === 'phase2_reading' ? 'phase2' : 'phase1')
+    const currentPhaseKey = cycle.value.phase === 'phase2_reading' ? 'phase2' : 'phase1'
+    
+    if (reviewPhase === currentPhaseKey) {
+      if (editingReviewId.value && myReview.value) {
+        myReview.value.rating = reviewRating.value
+        myReview.value.content = reviewContent.value.trim()
+      } else {
+        myReview.value = { rating: reviewRating.value, content: reviewContent.value.trim(), category: reviewCategory.value }
+      }
     }
     reviews.value = await fetchReviews(cycle.value.id)
   } catch (err) { reviewError.value = err.message || '리뷰 처리 실패' }
@@ -1414,5 +1485,48 @@ const formatDate = (dateValue) => {
 }
 .card--flat { border: 1px solid #EEEEEE !important; background: #FAFAFA !important; box-shadow: none !important; }
 .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; line-clamp: 3; }
+
+/* ── 리뷰 대상 도서 정보 ── */
+.review-book-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #F9F9F9;
+  border: 1px solid #ECEFF1;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+.review-book-info__thumb {
+  width: 36px;
+  height: 52px;
+  object-fit: cover;
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  flex-shrink: 0;
+}
+.review-book-info__detail {
+  min-width: 0;
+  flex: 1;
+}
+.review-book-info__title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #37474F;
+  line-clamp: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.review-book-info__authors {
+  font-size: 0.75rem;
+  color: #78909C;
+  margin-top: 2px;
+  line-clamp: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 </style>
