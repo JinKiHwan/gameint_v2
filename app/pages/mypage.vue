@@ -535,12 +535,10 @@ import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
 import { useCycle } from '~/composables/useCycle'
 import { useDNA } from '~/composables/useDNA'
-import { useBookRecommendation } from '~/composables/useBookRecommendation'
 import { useUserMapper } from '~/composables/useUserMapper'
 import { PROFILE_IMAGES, isImageUnlocked, getProfileImagePath } from '~/composables/useProfileImages'
 import { EXP_CONFIG } from '~/utils/expConfig'
 import DnaCard from '~/components/DnaCard.vue'
-import BookRecommendationReport from '~/components/BookRecommendationReport.vue'
 
 // ── KST 날짜 유틸 ──────────────────────────────────────────────
 const getKstDate = () => {
@@ -617,9 +615,8 @@ const loadUserReviews = async () => {
   }
 }
 
-// ── 독서 DNA 및 맞춤 도서 추천 분석 (본인 + 멤버 전환 지원) ──────
+// ── 독서 DNA 분석 및 Q&A 채팅창 연동 ──────────────────────────
 const { analyzeDNA } = useDNA()
-const { analyzeUserReadingAndRecommend } = useBookRecommendation()
 
 const dnaResult = computed(() => {
   const readingActivities = [
@@ -629,72 +626,10 @@ const dnaResult = computed(() => {
   return analyzeDNA(readingActivities)
 })
 
-const selectedMemberUid = ref('')
-const selectedMemberNickname = ref('')
-const otherMemberReviews = ref([])
-const otherMemberPosts = ref([])
-const loadingOtherAnalysis = ref(false)
-
-const currentAnalysisUid = computed(() => selectedMemberUid.value || authStore.userData?.uid || '')
-const isViewingSelf = computed(() => !selectedMemberUid.value || selectedMemberUid.value === authStore.userData?.uid)
-
-const loadingTargetAnalysis = computed(() =>
-  isViewingSelf.value ? (loadingReviews.value || loadingPosts.value) : loadingOtherAnalysis.value
-)
-
-const targetAnalysisNickname = computed(() =>
-  isViewingSelf.value ? (authStore.userData?.nickname || '') : selectedMemberNickname.value
-)
-
-const targetDnaResult = computed(() => {
-  if (isViewingSelf.value) return dnaResult.value
-  const activities = [
-    ...otherMemberReviews.value,
-    ...otherMemberPosts.value.filter(p => ['도서 추천', '책 리뷰', '만화'].includes(p.category))
-  ]
-  return analyzeDNA(activities)
-})
-
-const targetRecommendationResult = computed(() => {
-  const revs = isViewingSelf.value ? userReviews.value : otherMemberReviews.value
-  const psts = isViewingSelf.value ? userPosts.value : otherMemberPosts.value
-  return analyzeUserReadingAndRecommend(revs, psts, targetDnaResult.value, {
-    uid: currentAnalysisUid.value,
-    nickname: targetAnalysisNickname.value
-  })
-})
-
 const curatorChatOpen = useState('curatorChatOpen', () => false)
-const curatorChatTargetUid = useState('curatorChatTargetUid', () => '')
 
 const openCuratorChatForTarget = () => {
-  curatorChatTargetUid.value = currentAnalysisUid.value
   curatorChatOpen.value = true
-}
-
-const selectMemberForAnalysis = async (member) => {
-  if (!member?.uid || member.uid === authStore.userData?.uid) {
-    selectedMemberUid.value = ''
-    selectedMemberNickname.value = ''
-    curatorChatTargetUid.value = authStore.userData?.uid || ''
-    return
-  }
-  selectedMemberUid.value = member.uid
-  selectedMemberNickname.value = resolveUser(member.uid, member).nickname || member.nickname || ''
-  curatorChatTargetUid.value = member.uid
-  loadingOtherAnalysis.value = true
-  try {
-    const [revs, psts] = await Promise.all([
-      fetchUserReviews(member.uid),
-      fetchUserPosts(member.uid)
-    ])
-    otherMemberReviews.value = revs
-    otherMemberPosts.value = psts
-  } catch (err) {
-    console.error('Failed to load member reading analysis:', err)
-  } finally {
-    loadingOtherAnalysis.value = false
-  }
 }
 
 

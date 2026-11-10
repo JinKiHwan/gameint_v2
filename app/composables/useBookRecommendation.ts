@@ -1,4 +1,5 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore'
+import { getAI, getGenerativeModel, GoogleAIBackend, Schema } from 'firebase/ai'
 import { DNA_AXES } from '../utils/dnaConfig'
 import type { DNAResult } from './useDNA'
 
@@ -1209,8 +1210,148 @@ export const useBookRecommendation = () => {
   }
 
   /**
-   * 방법 B: Firestore 캐시 조회 + 새 리뷰 감지 시 Gemini API 호출 후 DB 자동 저장
+   * 방법 B: Firestore 캐시 조회 + 새 리뷰 감지 시 Firebase AI Logic (gemini-3.8-flash) 호출 후 DB 자동 저장
    */
+  const generateWithClientFirebaseAI = async (params: {
+    firebaseApp: any
+    nickname: string
+    dna: DNAResult | null
+    reviews: any[]
+    posts: any[]
+  }) => {
+    const { firebaseApp, nickname, dna, reviews, posts } = params
+
+    const reviewSummaries = (Array.isArray(reviews) ? reviews : []).map((r: any, idx: number) => {
+      const title = r.book?.title || r.bookTitle || r.category || `도서 ${idx + 1}`
+      const authors = Array.isArray(r.book?.authors) ? r.book.authors.join(', ') : (r.bookAuthors || '')
+      return `- [${idx + 1}] 도서명: 『${title}』 (${authors || '저자 미상'}) | 장르: ${r.category || '일반'} | 평점: ★${r.rating || 0} | 리뷰 내용: "${String(r.content || '').replace(/\s+/g, ' ').trim()}"`
+    }).join('\n')
+
+    const postSummaries = (Array.isArray(posts) ? posts : [])
+      .filter((p: any) => ['도서 추천', '책 리뷰', '만화'].includes(p.category))
+      .map((p: any, idx: number) => {
+        const bTitle = p.bookTitle || p.book?.title || p.title || `게시글 ${idx + 1}`
+        const cleanText = String(p.content || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300)
+        return `- [게시글 ${idx + 1}] 분류: ${p.category} | 도서/제목: 『${bTitle}』 (${p.bookGenre || '일반'}) | 내용 요약: "${cleanText}"`
+      }).join('\n')
+
+    const dnaSummary = dna
+      ? `독서 DNA 유형: ${dna.dnaName}(${dna.dnaType}), 설명: ${dna.description}, 축별 비중: I(상상력)=${Math.round((dna.ratios?.I || 0) * 100)}%, K(지식)=${Math.round((dna.ratios?.K || 0) * 100)}%, G(성장)=${Math.round((dna.ratios?.G || 0) * 100)}%, E(감성)=${Math.round((dna.ratios?.E || 0) * 100)}%`
+      : '독서 DNA 정보 없음'
+
+    const prompt = `당신은 독서 모임 회원의 리뷰·평점·도서 추천글을 정밀 분석하는 'AI 독서 큐레이터'입니다.
+아래는 '${nickname}' 님의 실제 독서 기록입니다.
+
+[독서 DNA 요약]
+${dnaSummary}
+
+[작성한 사이클 리뷰 목록 (총 ${reviews.length}건)]
+${reviewSummaries || '작성한 리뷰 없음'}
+
+[작성한 도서 관련 게시글 목록]
+${postSummaries || '작성한 도서 게시글 없음'}
+
+위 데이터를 바탕으로 다음 5가지 질문(A1~A5)에 대한 맞춤형 분석 결과를 JSON 스키마에 맞춰 한국어로 작성해 주세요.
+주의사항:
+1. 반드시 유저가 실제로 읽은 책 제목, 별점, 리뷰 속 문장/표현을 근거로 들어 구체적이고 설득력 있게 작성하세요.
+2. 가독성을 위해 문장은 간결하고 명확하게 작성하세요.
+3. inferredReasons 배열의 각 항목은 반드시 "핵심 요인 소제목: 구체적인 데이터 기반 추론 설명" 형식(콜론 ':' 포함)으로 작성하세요.
+4. favoriteBooks는 유저가 아직 읽지 않은 실제 출간 명저 중 1, 2, 3순위로 정확히 3권을 추천하세요.
+5. expansionBooks는 현재 유저의 독서 DNA에서 비중이 낮거나 보완하면 좋은 영역을 넓혀줄 실제 도서 1권을 추천하세요.
+6. lowRatingInferences는 평점이 2.0점 이하(또는 2.5점 이하, 없으면 가장 낮은 평점을 준 도서)인 책에 대해 왜 맞지 않았는지 리뷰 내용을 바탕으로 추론하세요.
+7. highRatingInferences는 평점이 4.0점 이상(또는 가장 높은 평점을 준 도서 및 인생 책 추천글)인 책에 대해 왜 높게 평가했는지 리뷰 내용을 바탕으로 추론하세요.`
+
+    const responseSchema = Schema.object({
+      properties: {
+        keywords: Schema.array({
+          description: '#으로 시작하는 핵심 독서 성향 해시태그 4개',
+          items: Schema.string()
+        }),
+        overallSummary: Schema.string({
+          description: 'A1. 유저의 리뷰와 평점을 종합한 독서 양태 분석 요약 (2~3문장)'
+        }),
+        favoriteBooks: Schema.array({
+          description: 'A2. 유저가 좋아할 만한 책 1, 2, 3순위 추천 (3권)',
+          items: Schema.object({
+            properties: {
+              rank: Schema.integer(),
+              title: Schema.string(),
+              author: Schema.string(),
+              genre: Schema.string(),
+              axis: Schema.string(),
+              reason: Schema.string(),
+              basisBooks: Schema.array({ items: Schema.string() })
+            }
+          })
+        }),
+        expansionBooks: Schema.array({
+          description: 'A3. 취향에 맞으면서 독서 스펙트럼을 확장할 만한 책 추천 (1권)',
+          items: Schema.object({
+            properties: {
+              title: Schema.string(),
+              author: Schema.string(),
+              genre: Schema.string(),
+              targetAxis: Schema.string({ description: 'I, K, G, E 중 하나' }),
+              targetAxisLabel: Schema.string({ description: '예: 성장 (G) · 경제/경영' }),
+              reason: Schema.string(),
+              bridgePoint: Schema.string({ description: '예: 『기존 선호 도서』의 관심사 → 확장 도서 영역으로 연결' })
+            }
+          })
+        }),
+        lowRatingInferences: Schema.array({
+          description: 'A4. 저평가 도서(★2.0 이하 또는 상대적 최저점) 불호 원인 추론 (1~2건)',
+          items: Schema.object({
+            properties: {
+              bookTitle: Schema.string(),
+              bookAuthors: Schema.string(),
+              rating: Schema.number(),
+              category: Schema.string(),
+              isStrictUnderTwo: Schema.boolean(),
+              badgeLabel: Schema.string(),
+              reviewExcerpt: Schema.string(),
+              inferredReasons: Schema.array({
+                description: '"핵심 소제목: 상세 설명" 형태의 추론 이유 2개',
+                items: Schema.string()
+              }),
+              dataComparison: Schema.string()
+            }
+          })
+        }),
+        highRatingInferences: Schema.array({
+          description: 'A5. 고평가 도서(★4.0 이상 또는 최고점 도서) 선호 원인 추론 (1~2건)',
+          items: Schema.object({
+            properties: {
+              bookTitle: Schema.string(),
+              bookAuthors: Schema.string(),
+              ratingLabel: Schema.string(),
+              category: Schema.string(),
+              reviewExcerpt: Schema.string(),
+              inferredReasons: Schema.array({
+                description: '"핵심 소제목: 상세 설명" 형태의 추론 이유 2개',
+                items: Schema.string()
+              }),
+              coreFactor: Schema.string()
+            }
+          })
+        })
+      }
+    })
+
+    const ai = getAI(firebaseApp, { backend: new GoogleAIBackend() })
+    const model = getGenerativeModel(ai, {
+      model: 'gemini-3.8-flash',
+      generationConfig: {
+        temperature: 0.4,
+        responseMimeType: 'application/json',
+        responseSchema
+      }
+    })
+
+    const result = await model.generateContent(prompt)
+    const rawText = result.response.text()
+    return JSON.parse(rawText)
+  }
+
   const fetchOrGenerateAIAnalysis = async (params: {
     uid: string
     nickname: string
@@ -1234,6 +1375,7 @@ export const useBookRecommendation = () => {
 
     const currentSignature = computeReadingSignature(reviews, posts)
     const { $firebase } = useNuxtApp()
+    const firebaseApp = ($firebase as any)?.app
     const firestore = ($firebase as any)?.firestore
 
     // 1. 강제 새로고침이 아니면 Firestore에 저장된 AI 분석 캐시 확인
@@ -1270,73 +1412,91 @@ export const useBookRecommendation = () => {
       }
     }
 
-    // 2. 캐시가 없거나 새 리뷰가 추가되어 서명이 달라졌거나(또는 강제 새로고침 시) Gemini API 호출
-    const savedLocalKey = typeof window !== 'undefined' ? (localStorage.getItem('gameint_gemini_api_key') || '') : ''
-    const effectiveKey = apiKey || savedLocalKey
+    // 2. 캐시가 없거나 새 리뷰가 추가되어 서명이 달라졌거나(또는 강제 새로고침 시) Firebase AI Logic 호출
+    let generatedParsed: any = null
+    let generatedAt = new Date().toISOString()
 
-    try {
-      const response: any = await $fetch('/api/analyze-reading', {
-        method: 'POST',
-        body: {
-          uid,
+    // (2-A) 클라이언트 Firebase AI Logic 직접 호출 (Netlify 정적 배포 환경에서도 서버 없이 작동)
+    if (firebaseApp) {
+      try {
+        generatedParsed = await generateWithClientFirebaseAI({
+          firebaseApp,
           nickname,
           dna,
           reviews,
-          posts,
-          apiKey: effectiveKey
-        }
-      })
-
-      if (response?.success && response?.result) {
-        const ratios = dna?.ratios || { I: 0, K: 0, G: 0, E: 0 }
-        const freshAnalysis: UserReadingRecommendationResult = {
-          ...baseFallback,
-          ...response.result,
-          totalReviews: baseFallback.totalReviews,
-          totalBookPosts: baseFallback.totalBookPosts,
-          avgRating: baseFallback.avgRating,
-          topRatedBooks: baseFallback.topRatedBooks,
-          expansionBooks: (response.result.expansionBooks || baseFallback.expansionBooks).map((item: any) => ({
-            ...item,
-            currentRatioPercent: Math.round((ratios[item.targetAxis] || 0) * 100)
-          }))
-        }
-
-        // Firestore에 새로운 AI 분석 결과 + 현재 리뷰 서명(signature) 저장
-        if (firestore) {
-          try {
-            const cacheRef = doc(firestore, 'users', uid, 'notification_states', 'ai_reading_analysis')
-            await setDoc(cacheRef, {
-              signature: currentSignature,
-              updatedAt: response.generatedAt || new Date().toISOString(),
-              result: response.result
-            })
-          } catch (writeErr) {
-            console.warn('[AI Analysis Cache Write Warning]:', writeErr)
-          }
-        }
-
-        return {
-          analysis: freshAnalysis,
-          source: 'ai-fresh',
-          updatedAt: response.generatedAt
-        }
+          posts
+        })
+      } catch (clientAiErr) {
+        console.warn('[Client Firebase AI Fallback to Server API]:', clientAiErr)
       }
-    } catch (apiErr: any) {
-      const statusMsg = apiErr?.data?.statusMessage || apiErr?.statusMessage || ''
-      const msg = apiErr?.data?.message || apiErr?.message || 'AI 호출 중 오류가 발생했습니다.'
-      if (statusMsg === 'MISSING_GEMINI_API_KEY') {
+    }
+
+    // (2-B) 만약 클라이언트 호출이 실패하면 서버 API(/api/analyze-reading) 시도
+    if (!generatedParsed) {
+      const savedLocalKey = typeof window !== 'undefined' ? (localStorage.getItem('gameint_gemini_api_key') || '') : ''
+      const effectiveKey = apiKey || savedLocalKey
+      try {
+        const response: any = await $fetch('/api/analyze-reading', {
+          method: 'POST',
+          body: {
+            uid,
+            nickname,
+            dna,
+            reviews,
+            posts,
+            apiKey: effectiveKey
+          }
+        })
+        if (response?.success && response?.result) {
+          generatedParsed = response.result
+          generatedAt = response.generatedAt || generatedAt
+        }
+      } catch (apiErr: any) {
+        const msg = apiErr?.data?.message || apiErr?.message || 'AI 호출 중 오류가 발생했습니다.'
         return {
           analysis: baseFallback,
           source: 'fallback',
-          needsApiKey: true,
           errorMessage: msg
         }
       }
+    }
+
+    if (generatedParsed) {
+      const ratios = dna?.ratios || { I: 0, K: 0, G: 0, E: 0 }
+      const freshAnalysis: UserReadingRecommendationResult = {
+        ...baseFallback,
+        ...generatedParsed,
+        totalReviews: baseFallback.totalReviews,
+        totalBookPosts: baseFallback.totalBookPosts,
+        avgRating: baseFallback.avgRating,
+        topRatedBooks: baseFallback.topRatedBooks,
+        expansionBooks: (generatedParsed.expansionBooks || baseFallback.expansionBooks).map((item: any) => ({
+          ...item,
+          currentRatioPercent: Math.round((ratios[item.targetAxis] || 0) * 100)
+        }))
+      }
+
+      // Kakao Book API 메타데이터 보강
+      await enrichWithKakaoBooks(freshAnalysis)
+
+      // Firestore에 새로운 AI 분석 결과 + 현재 리뷰 서명(signature) 저장
+      if (firestore) {
+        try {
+          const cacheRef = doc(firestore, 'users', uid, 'notification_states', 'ai_reading_analysis')
+          await setDoc(cacheRef, {
+            signature: currentSignature,
+            updatedAt: generatedAt,
+            result: freshAnalysis
+          })
+        } catch (writeErr) {
+          console.warn('[AI Analysis Cache Write Warning]:', writeErr)
+        }
+      }
+
       return {
-        analysis: baseFallback,
-        source: 'fallback',
-        errorMessage: msg
+        analysis: freshAnalysis,
+        source: 'ai-fresh',
+        updatedAt: generatedAt
       }
     }
 
