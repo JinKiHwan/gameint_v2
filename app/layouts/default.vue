@@ -243,6 +243,9 @@
       </div>
     </div>
 
+    <!-- 우하단 독서 큐레이터 Q&A 채팅창 -->
+    <ReadingCuratorChat v-if="authStore.user && !isPendingUser" />
+
     <!-- ===== 레벨업 축하 모달 (전역) ===== -->
     <ClientOnly>
       <Teleport to="body">

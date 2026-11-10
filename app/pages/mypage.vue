@@ -187,19 +187,51 @@
     </div>
 
 
-    <!-- 탭 콘텐츠: 독서 DNA -->
+    <!-- 탭 콘텐츠: 독서 DNA & 맞춤 도서 추천 -->
     <div v-if="activeTab === 'dna'" class="mb-6">
-      <template v-if="loadingReviews">
+      <template v-if="loadingReviews || loadingPosts">
         <div class="card pa-10 text-center">
-            <div class="spinner" style="margin:0 auto 16px;"></div>
-            <p class="text-caption font-bold text-grey-2">독서 DNA를 분석하고 있습니다...</p>
+          <div class="spinner" style="margin:0 auto 16px;"></div>
+          <p class="text-caption font-bold text-grey-2">독서 DNA를 분석하고 있습니다...</p>
         </div>
       </template>
-      <DnaCard v-else-if="dnaResult" :dna="dnaResult" />
+      <template v-else-if="dnaResult">
+        <DnaCard :dna="dnaResult" />
+
+        <!-- 우하단 Q&A 채팅창 바로 열기 배너 (Toss UI 스타일) -->
+        <div
+          class="card mt-4"
+          style="border: 1px solid #E5E8EB; background: #FFFFFF; border-radius: 20px; box-shadow: 0 4px 16px rgba(25, 31, 40, 0.04);"
+        >
+          <div class="card-body py-4 px-5 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center gap-3">
+              <div
+                style="width: 42px; height: 42px; border-radius: 14px; background: #E8F3FF; color: #3182F6; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; flex-shrink: 0;"
+              >
+                <i class="mdi mdi-book-open-variant"></i>
+              </div>
+              <div>
+                <div style="font-size: 0.98rem; font-weight: 800; color: #191F28; letter-spacing: -0.02em;">
+                  {{ authStore.userData?.nickname || '회원' }}님의 독서 분석 Q&amp;A
+                </div>
+                <div style="font-size: 0.82rem; font-weight: 600; color: #6B7684; margin-top: 2px;">
+                  5가지 질문지(종합 분석 · 취향 도서 추천 · 스펙트럼 확장 · 저평가/고평가 추론)로 확인해 보세요
+                </div>
+              </div>
+            </div>
+            <button
+              style="background: #3182F6; color: #FFFFFF; border: none; border-radius: 12px; padding: 10px 16px; font-size: 0.85rem; font-weight: 700; cursor: pointer;"
+              @click="openCuratorChatForTarget"
+            >
+              질문하러 가기
+            </button>
+          </div>
+        </div>
+      </template>
       <div v-else class="card pa-10 text-center">
         <i class="mdi mdi-dna" style="font-size:3rem;color:#E0E0E0;display:block;margin-bottom:12px;"></i>
         <p class="text-subtitle-1 font-black text-grey-dark mb-1">아직 분석 결과가 없습니다</p>
-        <p class="text-caption font-bold text-grey-2">최소 1개 이상의 리뷰를 작성해주세요!</p>
+        <p class="text-caption font-bold text-grey-2">최소 1개 이상의 리뷰 또는 도서 추천글을 작성해주세요!</p>
       </div>
     </div>
 
@@ -225,18 +257,30 @@
           <template v-for="(rev, index) in paginatedUserReviews" :key="rev.id">
             <li class="list-item rounded-sm">
               <div class="flex-grow min-w-0">
-                <div class="flex items-center justify-between mb-1">
-                  <div class="flex items-center gap-2">
+                <div class="flex items-center justify-between mb-1 flex-wrap gap-1">
+                  <div class="flex items-center gap-2 flex-wrap">
                     <span class="chip chip--green chip--xs">{{ rev.category || '일반' }}</span>
+                    <span v-if="rev.bookTitle" class="text-subtitle-2 font-black text-blue-dark">
+                      『{{ rev.bookTitle }}』
+                    </span>
                     <div class="text-amber flex items-center gap-1">
-                      <i v-for="i in 5" :key="i" class="mdi" :class="i <= rev.rating ? 'mdi-star' : 'mdi-star-outline'" style="font-size:0.9rem;"></i>
+                      <i
+                        v-for="i in 5"
+                        :key="i"
+                        class="mdi"
+                        :class="i <= rev.rating ? 'mdi-star' : (i - 0.5 <= rev.rating ? 'mdi-star-half-full' : 'mdi-star-outline')"
+                        style="font-size:0.9rem;"
+                      ></i>
+                      <span class="text-caption font-black text-grey-dark ml-1">{{ rev.rating }}</span>
                     </div>
                   </div>
                   <span class="text-caption text-grey-2">{{ formatDate(rev.createdAt) }}</span>
                 </div>
                 <div class="text-subtitle-2 font-bold text-grey-dark mb-1 whitespace-pre-wrap">{{ rev.content }}</div>
                 <div v-if="rev.phase" class="text-caption font-bold text-grey-2">
-                  <i class="mdi mdi-link-variant"></i> {{ rev.phase === 'phase1' ? 'Phase 1. 개인 도서 리뷰' : 'Phase 2. 공통 도서 리뷰' }}
+                  <i class="mdi mdi-link-variant"></i>
+                  <span v-if="rev.cycleKeyword">#{{ rev.cycleKeyword }} · </span>
+                  {{ rev.phase === 'phase1' ? 'Phase 1. 개인 도서 리뷰' : 'Phase 2. 공통 도서 리뷰' }}
                 </div>
               </div>
             </li>
@@ -491,10 +535,12 @@ import { useAuthStore } from '~/stores/auth'
 import { useBoard } from '~/composables/useBoard'
 import { useCycle } from '~/composables/useCycle'
 import { useDNA } from '~/composables/useDNA'
+import { useBookRecommendation } from '~/composables/useBookRecommendation'
 import { useUserMapper } from '~/composables/useUserMapper'
 import { PROFILE_IMAGES, isImageUnlocked, getProfileImagePath } from '~/composables/useProfileImages'
 import { EXP_CONFIG } from '~/utils/expConfig'
 import DnaCard from '~/components/DnaCard.vue'
+import BookRecommendationReport from '~/components/BookRecommendationReport.vue'
 
 // ── KST 날짜 유틸 ──────────────────────────────────────────────
 const getKstDate = () => {
@@ -571,15 +617,85 @@ const loadUserReviews = async () => {
   }
 }
 
-// ── 독서 DNA 분석 ───────────────────────────────────────────────
+// ── 독서 DNA 및 맞춤 도서 추천 분석 (본인 + 멤버 전환 지원) ──────
 const { analyzeDNA } = useDNA()
+const { analyzeUserReadingAndRecommend } = useBookRecommendation()
+
 const dnaResult = computed(() => {
   const readingActivities = [
     ...userReviews.value,
-    ...userPosts.value.filter(p => ['도서 추천', '책 리뷰'].includes(p.category))
+    ...userPosts.value.filter(p => ['도서 추천', '책 리뷰', '만화'].includes(p.category))
   ]
   return analyzeDNA(readingActivities)
 })
+
+const selectedMemberUid = ref('')
+const selectedMemberNickname = ref('')
+const otherMemberReviews = ref([])
+const otherMemberPosts = ref([])
+const loadingOtherAnalysis = ref(false)
+
+const currentAnalysisUid = computed(() => selectedMemberUid.value || authStore.userData?.uid || '')
+const isViewingSelf = computed(() => !selectedMemberUid.value || selectedMemberUid.value === authStore.userData?.uid)
+
+const loadingTargetAnalysis = computed(() =>
+  isViewingSelf.value ? (loadingReviews.value || loadingPosts.value) : loadingOtherAnalysis.value
+)
+
+const targetAnalysisNickname = computed(() =>
+  isViewingSelf.value ? (authStore.userData?.nickname || '') : selectedMemberNickname.value
+)
+
+const targetDnaResult = computed(() => {
+  if (isViewingSelf.value) return dnaResult.value
+  const activities = [
+    ...otherMemberReviews.value,
+    ...otherMemberPosts.value.filter(p => ['도서 추천', '책 리뷰', '만화'].includes(p.category))
+  ]
+  return analyzeDNA(activities)
+})
+
+const targetRecommendationResult = computed(() => {
+  const revs = isViewingSelf.value ? userReviews.value : otherMemberReviews.value
+  const psts = isViewingSelf.value ? userPosts.value : otherMemberPosts.value
+  return analyzeUserReadingAndRecommend(revs, psts, targetDnaResult.value, {
+    uid: currentAnalysisUid.value,
+    nickname: targetAnalysisNickname.value
+  })
+})
+
+const curatorChatOpen = useState('curatorChatOpen', () => false)
+const curatorChatTargetUid = useState('curatorChatTargetUid', () => '')
+
+const openCuratorChatForTarget = () => {
+  curatorChatTargetUid.value = currentAnalysisUid.value
+  curatorChatOpen.value = true
+}
+
+const selectMemberForAnalysis = async (member) => {
+  if (!member?.uid || member.uid === authStore.userData?.uid) {
+    selectedMemberUid.value = ''
+    selectedMemberNickname.value = ''
+    curatorChatTargetUid.value = authStore.userData?.uid || ''
+    return
+  }
+  selectedMemberUid.value = member.uid
+  selectedMemberNickname.value = resolveUser(member.uid, member).nickname || member.nickname || ''
+  curatorChatTargetUid.value = member.uid
+  loadingOtherAnalysis.value = true
+  try {
+    const [revs, psts] = await Promise.all([
+      fetchUserReviews(member.uid),
+      fetchUserPosts(member.uid)
+    ])
+    otherMemberReviews.value = revs
+    otherMemberPosts.value = psts
+  } catch (err) {
+    console.error('Failed to load member reading analysis:', err)
+  } finally {
+    loadingOtherAnalysis.value = false
+  }
+}
 
 
 // ── EXP 및 레벨업 ───────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { useNuxtApp } from '#app'
 import {
-    collection, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
+    collection, collectionGroup, doc, getDocs, getDoc, addDoc, updateDoc, deleteDoc,
     query, where, orderBy, serverTimestamp, increment, setDoc, limit
 } from 'firebase/firestore'
 import { useAuthStore } from '~/stores/auth'
@@ -192,13 +192,80 @@ export const useCycle = () => {
         })
     }
 
-    // ── 내 리뷰 전체 조회 (마이페이지용) ──────────────────────────────
+    // ── 내 리뷰 전체 조회 (마이페이지용, 도서·사이클 메타데이터 결합) ──
     const fetchUserReviews = async (userId: string) => {
         try {
-            const { collectionGroup } = await import('firebase/firestore')
-            const q = query(collectionGroup(getDb(), 'reviews'), where('authorUid', '==', userId), orderBy('createdAt', 'desc'))
+            const db = getDb()
+            const q = query(collectionGroup(db, 'reviews'), where('authorUid', '==', userId), orderBy('createdAt', 'desc'))
             const snapshot = await getDocs(q)
-            return snapshot.docs.map(d => ({ id: d.id, ...d.data() })) as any[]
+
+            const rawReviews = snapshot.docs.map(d => ({
+                id: d.id,
+                cycleId: d.ref.parent.parent?.id || '',
+                ...(d.data() as any)
+            }))
+
+            const cycleIds = Array.from(new Set(rawReviews.map(r => r.cycleId).filter(Boolean)))
+            const cycleMap: Record<string, any> = {}
+            const partMap: Record<string, any> = {}
+
+            await Promise.all(cycleIds.map(async (cid) => {
+                try {
+                    const [cSnap, pSnap] = await Promise.all([
+                        getDoc(doc(db, 'cycles', cid)),
+                        getDoc(doc(db, 'cycles', cid, 'participants', userId))
+                    ])
+                    if (cSnap.exists()) cycleMap[cid] = { id: cSnap.id, ...cSnap.data() }
+                    if (pSnap.exists()) partMap[cid] = { id: pSnap.id, ...pSnap.data() }
+                } catch { }
+            }))
+
+            return rawReviews.map(r => {
+                const c = cycleMap[r.cycleId]
+                const p = partMap[r.cycleId]
+                const isRecommender = c && r.authorUid === c.commonBookRecommenderUid
+                let book = r.book || null
+
+                if (!book && c) {
+                    const contentStr = String(r.content || '')
+                    if (p?.book?.title && contentStr.includes(p.book.title)) {
+                        book = p.book
+                    } else if (c.commonBook?.title && contentStr.includes(c.commonBook.title)) {
+                        book = c.commonBook
+                    } else if (p?.book?.title === '테오' && contentStr.includes('초상화')) {
+                        book = p.book
+                    } else if (r.phase === 'phase2') {
+                        if (isRecommender && p?.freeBookRegistered) {
+                            // 가족 사이클(상원)처럼 2회차 리뷰가 공통도서(오베라는 남자) 내용인 경우 예외 보정
+                            if (contentStr.includes('죽음을 선택하려는 고지식한 인물')) {
+                                book = c.commonBook
+                            } else {
+                                book = p.book
+                            }
+                        } else {
+                            book = c.commonBook || p?.book || null
+                        }
+                    } else {
+                        // phase1
+                        if (isRecommender && p?.freeBookRegistered) {
+                            if (p.book?.title?.includes('변두리 로켓') || r.cycleId === '6jMvFpElIUq646NstNyg') {
+                                book = p.book
+                            } else {
+                                book = c.commonBook || p.book
+                            }
+                        } else {
+                            book = p?.book || c.commonBook || null
+                        }
+                    }
+                }
+
+                return {
+                    ...r,
+                    cycleKeyword: c?.keyword || '',
+                    book,
+                    bookTitle: book?.title || r.bookTitle || ''
+                }
+            })
         } catch (err) {
             console.error('Fetch user reviews error:', err)
             return []
