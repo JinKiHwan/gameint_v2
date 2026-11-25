@@ -73,7 +73,7 @@
         <div class="card-body action-box">
 
           <!-- Phase 1: 책 미등록 -->
-          <template v-if="(cycle.phase === 'phase1_reading') && !myParticipation">
+          <template v-if="cycle.phase === 'phase1_reading' && !myParticipation?.book">
             <div class="action-box__text">
               <i class="mdi mdi-alert-circle-outline action-box__icon text-orange-dark"></i>
               <div>
@@ -220,7 +220,7 @@
                 </div>
                 <div class="master-book-select">
                   <div
-                    v-for="p in participants"
+                    v-for="p in participantsWithBooks"
                     :key="p.uid"
                     class="master-book-option"
                     :class="{ 'is-selected': masterSelectedUid === p.uid }"
@@ -239,7 +239,7 @@
                 </div>
                 <button
                   class="btn btn--primary font-black rounded-sm mt-3 w-100"
-                  :disabled="!masterSelectedUid"
+                  :disabled="!selectedCommonBookParticipant"
                   @click="handleConfirmCommonBook"
                 >
                   <i class="mdi mdi-trophy"></i> 선택한 책으로 공통 도서 확정 → 2회차 시작
@@ -260,32 +260,31 @@
             </button>
           </div>
 
-          <!-- 마스터: 리뷰 미작성자 현황 -->
-          <div v-if="cycle.phase !== 'closed' && participants.length > 0" class="mt-4 pt-4" style="border-top: 1px solid rgba(0,0,0,0.08);">
+          <!-- 마스터: 리뷰 작성 현황 -->
+          <div v-if="cycle.phase !== 'closed' && !loadingReviews && masterReviewProgress.length > 0" class="mt-4 pt-4" style="border-top: 1px solid rgba(0,0,0,0.08);">
             <div class="text-caption font-bold text-grey-2 mb-2">
               <i class="mdi mdi-clipboard-check-outline"></i>
               리뷰 작성 현황 ({{ cycle.phase === 'phase2_reading' ? '2회차' : '1회차' }})
             </div>
             <div class="master-review-progress">
               <div
-                v-for="p in participants"
-                :key="p.uid"
+                v-for="member in masterReviewProgress"
+                :key="member.uid"
                 class="master-review-item"
               >
-                <template v-for="u in [resolveUser(p.uid, p)]" :key="'master_rev_' + p.uid">
-                  <div class="avatar avatar--xs">
-                    <img :src="getProfileImagePath(u.profileImageId)" alt="프로필" />
-                  </div>
-                  <span class="text-caption font-medium text-grey-dark flex-1">
-                    {{ u.nickname }}
-                  </span>
-                </template>
-                <span
-                  class="chip chip--sm"
-                  :class="reviews.some(r => r.authorUid === p.uid && r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1')) ? 'chip--green' : 'chip--grey'"
-                >
-                  {{ reviews.some(r => r.authorUid === p.uid && r.phase === (cycle.phase === 'phase2_reading' ? 'phase2' : 'phase1')) ? '리뷰 완료 ✓' : '리뷰 없음' }}
+                <div class="avatar avatar--xs">
+                  <img :src="getProfileImagePath(member.profileImageId)" alt="프로필" />
+                </div>
+                <span class="master-review-name text-caption font-medium text-grey-dark flex-grow min-w-0">
+                  {{ member.nickname }}
                 </span>
+                <span
+                  class="chip chip--sm flex-shrink-0"
+                  :class="member.hasReviewed ? 'chip--green' : 'chip--grey'"
+                >
+                  {{ member.hasReviewed ? '리뷰 완료 ✓' : '리뷰 없음' }}
+                </span>
+                <span v-if="member.isParticipating" class="chip chip--sm chip--primary flex-shrink-0">참여 중</span>
               </div>
             </div>
           </div>
@@ -411,7 +410,7 @@
               </div>
               <!-- 정보 -->
               <div class="participant-info">
-                <div class="text-subtitle-2 font-black text-grey-dark line-clamp-2 mb-1">{{ p.book?.title }}</div>
+                <div class="text-subtitle-2 font-black text-grey-dark line-clamp-2 mb-1">{{ p.book?.title || '책 미등록' }}</div>
                 <div class="text-caption text-grey-2 font-medium mb-2">{{ p.book?.authors?.join(', ') }}</div>
                 <div class="flex items-center gap-2 mb-3">
                   <template v-for="u in [resolveUser(p.uid, p)]" :key="'part_' + p.uid">
@@ -783,7 +782,7 @@ const {
   fetchReviews, submitReview, updateReview, fetchMyReview,
   fetchMeetingRecords, addMeetingRecord, fetchClosedCycles
 } = useCycle()
-const { resolveUser } = useUserMapper()
+const { resolveUser, usersStore } = useUserMapper()
 
 // ── 기본 상태 ────────────────────────────────────────────────────
 const cycle = ref(null)
@@ -853,11 +852,26 @@ const participants = ref([])
 const loadingParticipants = ref(false)
 const myParticipation = ref(null)
 const myVote = ref(null)
+const participantsWithBooks = computed(() => participants.value.filter(participant => participant.book))
 
 // ── 리뷰 ──────────────────────────────────────────────────────────
 const reviews = ref([])
-const loadingReviews = ref(false)
+const loadingReviews = ref(true)
 const myReview = ref(null)
+
+const masterReviewProgress = computed(() => {
+  const phase = cycle.value?.phase === 'phase2_reading' ? 'phase2' : 'phase1'
+  const reviewedUids = new Set(reviews.value.filter(review => review.phase === phase).map(review => review.authorUid))
+  const participantUids = new Set(participants.value.map(participant => participant.uid))
+
+  return Object.values(usersStore.users)
+    .filter(member => member.status === 'active')
+    .map(member => ({
+      ...member,
+      hasReviewed: reviewedUids.has(member.uid),
+      isParticipating: participantUids.has(member.uid),
+    }))
+})
 
 // 현재 페이즈의 리뷰만 필터
 const currentPhaseReviews = computed(() =>
@@ -906,11 +920,11 @@ const recommenderUser = computed(() => {
 const loadTabData = async () => {
   if (!cycle.value) return
 
+  loadingReviews.value = true
   loadingParticipants.value = true
   participants.value = await fetchParticipants(cycle.value.id)
   loadingParticipants.value = false
 
-  loadingReviews.value = true
   reviews.value = await fetchReviews(cycle.value.id)
   loadingReviews.value = false
 
@@ -974,10 +988,12 @@ const changePhase = async (phase) => {
 
 // 마스터가 직접 선택한 uid
 const masterSelectedUid = ref('')
+const selectedCommonBookParticipant = computed(() =>
+  participantsWithBooks.value.find(participant => participant.uid === masterSelectedUid.value)
+)
 
 const handleConfirmCommonBook = async () => {
-  if (!masterSelectedUid.value) { alert('공통 도서로 확정할 책을 선택해주세요.'); return }
-  const selected = participants.value.find(p => p.uid === masterSelectedUid.value)
+  const selected = selectedCommonBookParticipant.value
   if (!selected) return
   if (!confirm(`[ 공통 도서 확정 ]\n\n"${selected.book?.title}"\n(추천인: @${selected.nickname})을 이달의 공통 돈로 확정하고 2회차를 시작하시겠습니까?`)) return
   await updateCyclePhase(cycle.value.id, 'phase2_reading', {
@@ -1442,6 +1458,7 @@ const formatDate = (dateValue) => {
   border-radius: 8px;
   &:hover { background: rgba(0,0,0,0.03); }
 }
+.master-review-name { overflow-wrap: anywhere; }
 .chip--green { background: #E8F5E9 !important; color: #2E7D32 !important; }
 
 /* ── Phase 2 \uacf5\ud1b5\ub3c8 \ud2b9\uc9d1 \uce74\ub4dc ──────────────── */

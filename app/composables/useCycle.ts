@@ -68,7 +68,7 @@ export const useCycle = () => {
         await updateDoc(doc(getDb(), 'cycles', cycleId), { phase, ...extraData })
     }
 
-    // ── 참여자 (책 등록) 조회 ────────────────────────────────────────
+    // ── 참여자 조회 ─────────────────────────────────────────────────
     const fetchParticipants = async (cycleId: string) => {
         try {
             const ref = collection(getDb(), 'cycles', cycleId, 'participants')
@@ -139,7 +139,7 @@ export const useCycle = () => {
 
     // ── 투표 결과 → 공통도서 확정 (마스터 전용) ─────────────────────────
     const confirmCommonBook = async (cycleId: string, participants: any[]) => {
-        const top = [...participants].sort((a, b) => b.voteCount - a.voteCount)[0]
+        const top = participants.filter(p => p.book).sort((a, b) => b.voteCount - a.voteCount)[0]
         if (!top) return
         await updateDoc(doc(getDb(), 'cycles', cycleId), {
             phase: 'phase2_reading',

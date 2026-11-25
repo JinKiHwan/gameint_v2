@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { collection, query, where, getDocs, onSnapshot } from 'firebase/firestore'
+import { collection, query, where, onSnapshot } from 'firebase/firestore'
 
 export interface UserProfile {
     uid: string
@@ -36,9 +36,10 @@ export const useUsersStore = defineStore('users', {
 
             if (this.unsubUsers) this.unsubUsers()
             this.unsubUsers = onSnapshot(q, (snapshot) => {
+                const users: Record<string, UserProfile> = {}
                 snapshot.docs.forEach(doc => {
                     const data = doc.data() as UserProfile
-                    this.users[doc.id] = {
+                    users[doc.id] = {
                         uid: doc.id,
                         nickname: data.nickname,
                         realName: data.realName,
@@ -50,6 +51,7 @@ export const useUsersStore = defineStore('users', {
                         dna: data.dna
                     }
                 })
+                this.users = users
                 this.isInitialized = true
             }, (error) => {
                 console.error('Error subscribing to users:', error)
